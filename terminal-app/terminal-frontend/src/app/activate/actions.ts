@@ -2,30 +2,7 @@
 
 import fs from "fs";
 import path from "path";
-
-type TerminalStatus = 'pending' | 'active' | 'revoked';
-interface TerminalConfig {
-  terminal_id: number;
-  name: string;
-  terminal_code: string;
-  branch: string;
-  status: TerminalStatus;
-  auth_capabilities: {
-    auth_type_id: number;
-    auth_type: string;
-  }[];
-  access_rule: {
-    group_id: number | null;
-    subgroup_id: number | null;
-    auth_type_id: number;
-  }[];
-  access_policy: {
-    group_id: number | null;
-    subgroup_id: number | null;
-    auth_type_id: number;
-    auth_step: number;
-  }[];
-}
+import { TerminalConfig } from "@/types";
 
 //mock realistic terminal config
 const newConfig: TerminalConfig = {
