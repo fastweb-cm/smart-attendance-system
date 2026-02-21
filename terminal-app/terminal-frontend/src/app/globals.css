@@ -8,7 +8,7 @@
   /* Base */        /* Deep slate */        /* Almost white */
 
   /* Primary */
-  --primary: oklch(0.21 0.034 264.665);           /* Institutional blue */
+  --primary: oklch(50.018% 0.25427 279.632);           /* Institutional blue */
   --primary-foreground: oklch(0.985 0.002 247.839);
 
   /* Success */
@@ -21,7 +21,7 @@
   --warning: #f59e0b;
 
   /* Muted */
-  --muted: oklch(0.967 0.003 264.542);
+  --muted: oklch(46.033% 0.00851 268.487);
   --border: oklch(0.928 0.006 264.531);
   --radius: 0.625rem;
   --background: oklch(1 0 0);

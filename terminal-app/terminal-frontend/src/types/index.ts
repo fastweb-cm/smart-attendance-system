@@ -12,3 +12,17 @@ export interface InputFieldProps {
   defaultValue?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement>;
 }
+
+export interface Announcements {
+  id: number;
+  name: string;
+  message: string;
+}
+
+export interface Events {
+  id: number;
+  name: string;
+  startDateTime: string;
+  endDateTime: string;
+  handshake: number;
+}
