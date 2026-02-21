@@ -14,8 +14,8 @@
   /* Success */
   --success: #16a34a;
 
-  /* Error */
-  --error: #dc2626;
+  /* danger */
+  --danger: #dc2626;
 
   /* Warning */
   --warning: #f59e0b;
@@ -59,7 +59,7 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-success: var(--success);
-  --color-error: var(--error);
+  --color-danger: var(--danger);
   --color-warning: var(--warning);
   --color-muted: var(--muted);
   --color-border: var(--border);

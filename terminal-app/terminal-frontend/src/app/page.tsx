@@ -4,13 +4,21 @@ import path from "path";
 
 
 export default function Home() {
-  const configPath = path.join(process.cwd(), "config.json");
-  const isActivated = fs.existsSync(configPath);
+  const configPath = path.join(process.cwd(), "terminal-configs/config.json");
+  let status = "pending";
 
-  if (isActivated) {
+  if(fs.existsSync(configPath)) {
+    // then let us read the file content
+    const data = JSON.parse(fs.readFileSync(configPath,'utf-8'));
+    status = data.status;
+  }
+
+  if (status === "active") {
     redirect("/terminal");
-  } else {
+  } else if(status === 'pending'){
     redirect("/activate");
+  }else{
+    redirect("/access-denied");
   }
 
 }
