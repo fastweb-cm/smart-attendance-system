@@ -2,7 +2,7 @@ import Annoucements from '@/components/Annoucements'
 import ClockDisplay from '@/components/ClockDisplay'
 import EventsList from '@/components/Events'
 import HeaderBar from '@/components/HeaderBar'
-import { AnnouncementsData, EventsData } from '@/utils/data'
+import { AnnouncementsData, EventsData } from '@/lib/data'
 import React from 'react'
 
 export default function TerminalPage() {

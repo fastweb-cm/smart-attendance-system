@@ -9,15 +9,10 @@ export default function Page() {
   const config = useTerminalConfig();
 
   useEffect(() => {
-    if (!config) {
-      router.push("/activate");
-      return;
-    }
-
-    if (config.status === "active") {
-      router.push("/terminal");
+    if (config?.status === "active") {
+      router.replace("/terminal");
     } else {
-      router.push("/activate");
+      router.replace("/activate");
     }
   }, [config, router]);
 
