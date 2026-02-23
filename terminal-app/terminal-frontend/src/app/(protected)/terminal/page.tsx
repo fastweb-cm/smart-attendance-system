@@ -6,10 +6,19 @@ import EventsList from '@/components/Events'
 import HeaderBar from '@/components/HeaderBar'
 import WebcamCapture from '@/components/WebcamCapture';
 import { AnnouncementsData, EventsData } from '@/lib/data'
+import StatusModal from '@/components/StatusModal'
 import { useState } from 'react'
 
 export default function TerminalPage() {
   const [showWebcam, setShowWebcam] = useState(false);
+  const [statusModal, setStatusModal] = useState({
+    isOpen: true,
+    status: "success",
+    message: "Welcome Ichami, You have successfull checkin, please ensure to checkout before leaving."
+  });
+  setTimeout(()=>{
+    setStatusModal({...statusModal, isOpen: false}) //close modal after 5 5 seconds
+  },2000)
   return (
     <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg py-2 px-8">
         <HeaderBar />
@@ -30,6 +39,15 @@ export default function TerminalPage() {
             <WebcamCapture open={showWebcam} onClose={() => setShowWebcam(false)}/>
           </div>
         )}
+
+        <StatusModal
+          isOpen={statusModal.isOpen}
+          status={statusModal.status}
+          message={statusModal.message}
+          onClose={() =>
+            setStatusModal({ ...statusModal, isOpen: false })
+          }
+        />
     </div>
   )
 }
