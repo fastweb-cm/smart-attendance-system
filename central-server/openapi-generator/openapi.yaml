@@ -1,0 +1,1622 @@
+openapi: 3.1.0
+info:
+  title: Smart Attendance System API
+  version: "1.0.0"
+  description: This is the API documentation for the Smart Attendance System.
+  # license:
+  #   name: Apache 2.0
+  #   url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://api.smartattendance.local:8080/v1
+    description: Core Business Logic Endpoint
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Invalid input
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing token
+
+    NotFound:
+      description: Resource not found
+
+    InternalServerError:
+      description: Internal server error
+
+  schemas:
+    UserType:
+      type: string
+      enum: [student, staff]
+
+    UserStatus:
+      type: string
+      enum: [active, inactive, dismissed]
+
+    BiometricEnrollmentStatus:
+      type: string
+      enum: [pending, completed]
+
+    User:
+      type: object
+      required:
+        - fname
+        - lname
+        - email
+        - user_type
+      properties:
+        fname:
+          type: string
+          example: Ichami
+        lname:
+          type: string
+          example: Brandon
+        email:
+          type: string
+          example: brandon@example.com
+        user_type:
+          $ref: "#/components/schemas/UserType"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        biometric_enrollment_status:
+          $ref: "#/components/schemas/BiometricEnrollmentStatus"
+
+    UserCreate:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            role_id:
+              type: integer
+              description: role id for privileged staff
+            class_id:
+              type: integer
+              description: current class of the student
+            regno:
+              type: string
+
+    UserResponse:
+      allOf:
+        - $ref: "#/components/schemas/UserCreate"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+
+    # Role Schema
+    Role:
+      type: object
+      required:
+        - role_name
+      properties:
+        role_name:
+          type: string
+          example: Admin
+        description:
+          type: string
+          example: Admin user
+    RoleResponse:
+      allOf:
+        - $ref: "#/components/schemas/Role"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+
+    # Branch schema
+    Branch:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Buea Campus
+        location:
+          type: string
+          example: "Buea, Cameroon"
+        description:
+          type: string
+          example: "Main campus of the institution"
+        status:
+          type: string
+          enum: [active, revoked]
+    BranchResponse:
+      allOf:
+        - $ref: "#/components/schemas/Branch"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            admin_id:
+              type: integer
+            date_created:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+
+    # Group Schema
+    Group:
+      type: object
+      required:
+        - branch_id
+        - grouptype_id
+        - name
+        - absence_threshold
+      properties:
+        branch_id:
+          type: integer
+          example: 1
+        grouptype_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Class A
+        expected_weekly_hours:
+          type: integer
+          example: 40
+        absence_threshold:
+          type: integer
+          example: 3
+        supervisors:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: integer
+
+    GroupResponse:
+      allOf:
+        - $ref: "#/components/schemas/Group"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            date_created:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+
+    # Subgroup Schema
+    Subgroup:
+      type: object
+      required:
+        - group_id
+        - name
+        - absence_threshold
+      properties:
+        group_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Subgroup 1
+        absence_threshold:
+          type: integer
+          example: 2
+        created_by:
+          type: integer
+          example: 101
+
+    SubgroupResponse:
+      allOf:
+        - $ref: "#/components/schemas/Subgroup"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            date_created:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+
+    # permission schema
+    PermissionRequest:
+      type: object
+      properties:
+        permissiontype_id:
+          type: integer
+        user_id:
+          type: integer
+        initiatedby:
+          type: integer
+          description: The admin or HR who initiated this permission
+        reason:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        additional_proof:
+          type: string
+          description: The stored file name (optional)
+        requested_at:
+          type: string
+          format: date-time
+
+    PermissionApproval:
+      type: object
+      properties:
+        permission_id:
+          type: integer
+        approver_id:
+          type: integer
+        remark:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+
+    # Annoucement schema
+    Annoucement:
+      type: object
+      properties:
+        name:
+          type: string
+        message:
+          type: string
+        start_datetime:
+          type: string
+          format: date-time
+          description: The date, time the annoucement will be visible to its respective groups/subgroups - terminals
+        end_datetime:
+          type: string
+          format: date-time
+          description: The date, time the annoucement will be disappear to its respective groups/subgroups - terminals
+        created_by:
+          type: integer
+          description: The admin who created the announcement
+
+    AnnouncementResponse:
+      allOf:
+        - $ref: "#/components/schemas/Annoucement"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            date_created:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+    # Events schema
+    Event:
+      type: object
+      properties:
+        name:
+          type: string
+          example: PTA Meeting
+
+        group_id:
+          type: ["integer", "null"]
+          description: Target group (exclusive with subgroup_id)
+
+        subgroup_id:
+          type: ["integer", "null"]
+          description: Target subgroup (exclusive with group_id)
+
+        start_datetime:
+          type: string
+          format: date-time
+          example: "2026-03-01T09:00:00Z"
+
+        end_datetime:
+          type: string
+          format: date-time
+          example: "2026-03-01T11:00:00Z"
+
+        affects_attendance:
+          type: boolean
+          default: true
+
+        handshake:
+          type: integer
+          enum: [1, 2]
+          default: 1
+          description: |
+            1 = check-in only
+            2 = check-in and check-out
+
+        created_by:
+          type: integer
+
+    EventCheckinCheckoutRange:
+      type: object
+      properties:
+        checkin_start_datetime:
+          type: string
+          format: date-time
+        checkin_end_datetime:
+          type: string
+          format: date-time
+        checkout_start_datetime:
+          type: ["string", "null"]
+          format: date-time
+        checkout_end_datetime:
+          type: ["string", "null"]
+          format: date-time
+
+    EventCreate:
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          required:
+            - name
+            - start_datetime
+            - end_datetime
+          properties:
+            checkin_ranges:
+              description: check-in/check-out range for this event
+              $ref: "#/components/schemas/EventCheckinCheckoutRange"
+
+    EventResponse:
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+
+    #exceptions schemas
+    Exception:
+      type: object
+      properties:
+        exception_type_id:
+          type: integer
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        created_by:
+          type: integer
+          description: The admin who created the exception
+
+    ExceptionResponse:
+      allOf:
+        - $ref: "#/components/schemas/Exception"
+        - type: object
+          required:
+            - exception_type_id
+            - start_date
+            - end_date
+          properties:
+            id:
+              type: integer
+              example: 1
+
+    #terminal schema
+    Terminal:
+      type: object
+      properties:
+        name:
+          type: string
+        activation_code:
+          type: string
+          description: Auto generated by the system
+        branch_id:
+          type: integer
+        slug:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "active", "revoked"]
+
+    TerminalAuthTypes:
+      type: string
+      enum: ["face", "card", "fingerprint"]
+    TerminalCapabilities:
+      description: This defines the type of auth supported by the terminal
+      type: object
+      properties:
+        auth_type_id:
+          type: integer
+          description: reference to the terminal auth types
+    TerminalAccessPolicy:
+      description: groups/subgroups allowed to auth at this terminal
+      type: object
+      properties:
+        group_id:
+          type: integer
+        subgroup_id:
+          type: integer
+        auth_type_id:
+          type: integer
+        auth_step:
+          type: integer
+
+    TerminalCreate:
+      allOf:
+        - $ref: "#/components/schemas/Terminal"
+        - type: object
+          required:
+            - name
+            - activation_code
+            - branch_id
+          properties:
+            auth_capabilities:
+              description: The supported auth types for this terminal
+              type: array
+              items:
+                $ref: "#/components/schemas/TerminalCapabilities"
+            access_policy:
+              type: array
+              items:
+                $ref: "#/components/schemas/TerminalAccessPolicy"
+
+    TerminalResponse:
+      allOf:
+        - $ref: "#/components/schemas/Terminal"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            date_created:
+              type: string
+              format: date-time
+              example: "2026-01-30T00:00:00Z"
+
+    # Biometric schema
+    BiometricFaceEnrollRequest:
+      type: object
+      required:
+        - user_id
+        - face_image
+      properties:
+        user_id:
+          type: integer
+        face_image:
+          type: string
+          format: byte
+          description: Base64 encoded face image
+    BiometricFaceEnrollResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        biometric_profile_id:
+          type: integer
+      required:
+        - message
+        - biometric_profile_id
+    BiometricFaceVerifyRequest:
+      type: object
+      required:
+        - terminal_id
+        - face_image
+      properties:
+        terminal_id:
+          type: integer
+        face_image:
+          type: string
+          format: byte
+    BiometricFaceVerifyResponse:
+      type: object
+      properties:
+        matched:
+          type: boolean
+        user_id:
+          type: ["integer", "null"]
+        confidence_score:
+          type: number
+          format: float
+        message:
+          type: string
+      required:
+        - matched
+    # terminal auth schema
+    AttendanceStatus:
+      type: object
+      properties:
+        name:
+          type: string
+          enum: ["present", "absent", "late", "on permission"]
+    TerminalAuthSession:
+      description: track progress throughout the auth sequence
+      type: object
+      properties:
+        user_id:
+          type: integer
+        terminal_id:
+          type: integer
+        current_step:
+          type: integer
+          default: 1
+          description: |
+            Since most terminals are presummed to support atleast 2 auth types,
+            the current step will help track the progress to ensure that the user completes all the terminal required auth types
+            before there are dimmed to have completed an auth session( check-in or check-out)
+        status:
+          type: string
+          enum: ["in_progress", "completed"]
+          default: in_progress
+
+    TerminalAuthLog:
+      description: logs each auth attemp, ie record is created for each completed auth session
+      type: object
+      properties:
+        user_id:
+          type: integer
+        terminal_id:
+          type: integer
+        attendance_context:
+          type: string
+          enum: ["daily", "event"]
+        event_id:
+          type: integer
+        auth_type_id:
+          type: integer
+
+    TerminalAttendanceSession:
+      description: |
+        Represents attendance after auth successs
+        ie upon successfull checkin and checkout for daily attendance
+        or checkin and/or checkout for event attendance depending on the handshake
+      type: object
+      properties:
+        user_id:
+          type: integer
+        terminal_id:
+          type: integer
+        attendance_context:
+          type: string
+          enum: ["daily", "event"]
+        event_id:
+          type: integer
+        checkin_timestamp:
+          type: string
+          format: date-time
+        checkout_timestamp:
+          type: string
+          format: date-time
+        checkin_status:
+          type: string
+          enum: ["on time", "late"]
+        checkout_status:
+          type: string
+          enum: ["on time", "early"]
+        session_status:
+          type: string
+          enum: ["active", "completed", "missed checkout"]
+          default: active
+        sync_status:
+          type: string
+          enum: ["pending", "synced", "error"]
+          default: pending
+
+    TerminalAttendanceSummary:
+      description: |
+        Summary of the daily/event attendance, this is the record that get sync to the central db
+        Was the user present, late or on permission for this day
+      type: object
+      properties:
+        user_id:
+          type: integer
+        terminal_id:
+          type: integer
+        attendance_date:
+          type: string
+          format: date
+        attendance_context:
+          type: string
+          enum: ["daily", "event"]
+        event_id:
+          type: integer
+        first_checkin:
+          type: string
+          format: date-time
+        last_checkout:
+          type: string
+          format: date-time
+        total_hours:
+          type: integer
+          description: Time difference in int btn last checkout and first checkin
+        attendance_status:
+          type: integer
+        derived_from_session:
+          type: boolean
+          description: useful when the user is on a permission, so we do not have to compute the attendance session to arive to get the summary
+
+    TerminalAuthCreate:
+      allOf:
+        - $ref: "#/components/schemas/TerminalAuthSession"
+        - type: object
+          required:
+            - user_id
+            - terminal_id
+          properties:
+            terminal_auth_log:
+              allOf:
+                - $ref: "#/components/schemas/TerminalAuthLog"
+                - type: object
+                  required:
+                    - attendance_context
+                    - auth_type_id
+    TerminalAuthInProgressResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["in_progress"]
+        current_step:
+          type: integer
+          example: 1
+        next_auth_type_id:
+          type: integer
+          example: 2
+      required:
+        - status
+        - current_step
+        - next_auth_type_id
+
+    TerminalAuthCompletedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["completed"]
+        message:
+          type: string
+        attendance_session:
+          $ref: "#/components/schemas/TerminalAttendanceSession"
+      required:
+        - status
+        - attendance_session
+
+    TerminalAttendanceSummaryCreate:
+      allOf:
+        - $ref: "#/components/schemas/TerminalAttendanceSummary"
+        - type: object
+          required:
+            - user_id
+            - terminal_id
+            - attendance_date
+            - attendance_context
+            - attendance_status
+
+    # logs schema
+    Logs:
+      type: object
+      properties:
+        category:
+          type: string
+        description:
+          type: string
+        user_id:
+          type: integer
+
+paths:
+  /users:
+    post:
+      operationId: createUser
+      summary: Create a new user
+      tags: [Users]
+      requestBody:
+        required: true
+        description: Ensure you insert into staff tbl specifying the role and of the staff if the user type is staff
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listUsers
+      summary: List all users
+      tags: [Users]
+      parameters:
+        - in: query
+          name: user_type
+          schema:
+            $ref: "#/components/schemas/UserType"
+          description: Filter by user type
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+          description: Filter by status
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{id}:
+    get:
+      operationId: getUserById
+      summary: Get a user by ID
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The unique ID of the user
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      operationId: updateUser
+      summary: Update a user
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The unique ID of the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deleted successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /roles:
+    get:
+      operationId: listRoles
+      summary: List all roles
+      tags: [Roles]
+      responses:
+        "200":
+          description: Roles list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /branches:
+    post:
+      operationId: createBranch
+      summary: Create a new branch
+      tags: [Branches]
+      description: Creat a new branch or campus within the institution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Branch"
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      description: branch admin
+      responses:
+        "201":
+          description: Branch created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listBranches
+      summary: List all branchs
+      tags: [Branches]
+      responses:
+        "200":
+          description: List of branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /branches/{id}:
+    put:
+      operationId: updateBranch
+      summary: Update branch details
+      tags: [Branches]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Branch"
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+      responses:
+        "200":
+          description: Branch updated successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/group_type:
+    post:
+      operationId: createGroupType
+      summary: Create a group type
+      tags: [Groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: class
+                abbreviation:
+                  type: string
+                  example: CL
+      responses:
+        "201":
+          description: Group type created successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups:
+    post:
+      operationId: createGroup
+      summary: Create a group (class / department)
+      tags: [Groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Group"
+      responses:
+        "201":
+          description: Group created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listGroups
+      summary: List all groups
+      tags: [Groups]
+      responses:
+        "200":
+          description: Groups list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/members:
+    post:
+      operationId: assignUsersToGroup
+      summary: Assign users to a group
+      tags: [Groups]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: integer
+                  example: 1
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 2, 3]
+      responses:
+        "200":
+          description: Users assigned to group
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/{groupId}/subgroups:
+    post:
+      operationId: createSubgroup
+      summary: Create a subgroup
+      tags: [Subgroups]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subgroup"
+      responses:
+        "201":
+          description: Subgroup created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listSubgroups
+      summary: List subgroups under a group
+      tags: [Subgroups]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subgroup list
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /subgroups/member:
+    post:
+      operationId: assignUsersToSubgroup
+      summary: Assign users to a subgroup
+      tags: [Subgroups]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subgroup_id:
+                  type: integer
+                  example: 1
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 2, 3]
+      responses:
+        "200":
+          description: Users assigned to subgroup
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /permissions:
+    post:
+      operationId: createPermissionRequest
+      summary: Create permission request for a user
+      tags: [Permissions (Leaves)]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/PermissionRequest"
+                - type: object
+                  required:
+                    - permissiontype_id
+                    - user_id
+                    - start_date
+                    - end_date
+      responses:
+        "201":
+          description: Permission request created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /permissions/decision:
+    post:
+      operationId: decidePermissionRequest
+      summary: Approve or reject a permission request
+      tags: [Permissions (Leaves)]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/PermissionApproval"
+                - type: object
+                  required: [status]
+      responses:
+        "200":
+          description: Permission decision recorded
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /announcement:
+    post:
+      operationId: createAnnouncement
+      summary: Create an announcement
+      tags: [Announcements]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Annoucement"
+                - type: object
+                  required:
+                    - name
+                    - message
+                    - start_datetime
+                    - end_datetime
+                    - group_id
+                    - subgroup_id
+                    - created_by
+                  properties:
+                    group_id:
+                      type: array
+                      items:
+                        type: integer
+                      description: Target groups
+                    subgroup_id:
+                      type: array
+                      items:
+                        type: integer
+                      description: Target subgroups
+      responses:
+        "200":
+          description: Annoucement created successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: ListAnnouncements
+      summary: Get all announcements or filter by group or subgroup ID
+      tags: [Announcements]
+      parameters:
+        - in: query
+          name: group_id
+          required: false
+          schema:
+            type: integer
+          description: If provided, returns pending announcements for the specified group.
+        - in: query
+          name: subgroup_id
+          required: false
+          schema:
+            type: integer
+          description: If provided, returns pending announcements for the specified subgroup.
+      responses:
+        "200":
+          description: List of events (optionally filtered by group or subgroup)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnnouncementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events:
+    post:
+      operationId: createEvent
+      summary: Create an event
+      tags: [Events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreate"
+      responses:
+        "200":
+          description: Event created successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listEvents
+      summary: Get all events or filter by group or subgroup ID
+      tags: [Events]
+      parameters:
+        - in: query
+          name: group_id
+          required: false
+          schema:
+            type: integer
+          description: If provided, returns pending events for the specified group.
+        - in: query
+          name: subgroup_id
+          required: false
+          schema:
+            type: integer
+          description: If provided, returns pending events for the specified subgroup.
+      responses:
+        "200":
+          description: List of events (optionally filtered by group or subgroup)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /exceptions:
+    post:
+      operationId: createException
+      summary: Create an exception
+      tags: [Exceptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Exception"
+      responses:
+        "200":
+          description: Exception created successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      operationId: listExceptions
+      summary: Get all exceptions
+      tags: [Exceptions]
+      responses:
+        "200":
+          description: List of exceptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExceptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /terminals:
+    post:
+      operationId: createTerminal
+      summary: create a terminal
+      tags: [Terminals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TerminalCreate"
+      responses:
+        "200":
+          description: Terminal created successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /terminals/${branchid}:
+    get:
+      operationId: listTerminals
+      summary: List all terminals at a particular branch
+      tags: [Terminals]
+      parameters:
+        - in: path
+          name: branchid
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of all terminals at that branch
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TerminalCreate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /terminals/{terminalId}:
+    get:
+      operationId: terminalCapabilities
+      summary: Get the auth types,policy supported by the terminal
+      tags: [Terminals]
+      parameters:
+        - in: path
+          name: terminalId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List the auth types supported by this terminal
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TerminalCreate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /terminals/auth:
+    post:
+      operationId: terminalAuth
+      summary: Authenticate at a terminal
+      tags: [Terminals Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TerminalAuthCreate"
+      responses:
+        "200":
+          # now the response needs to be two, the case where the current step is not equal terminal required auth types, then we just return the current step and the next auth type to complete, but if the current step is equal to the terminal required auth types, then we create the attendance session under the hood and return success message with the attendance session details
+          description: Authentication successful, if there are more auth types to complete, the response will indicate
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TerminalAuthInProgressResponse"
+                  - $ref: "#/components/schemas/TerminalAuthCompletedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /attendance/sync:
+    post:
+      operationId: syncAttendanceSummary
+      summary: Sync attendance summary to central database
+      tags: [Attendance Sync]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/TerminalAttendanceSummaryCreate"
+      responses:
+        "200":
+          description: Attendance summary synced
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Attendance summary synced successfully"
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Some records failed to sync"
+                      failed_records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            user_id:
+                              type: integer
+                            terminal_id:
+                              type: integer
+                            attendance_date:
+                              type: string
+                              format: date
+                            attendance_context:
+                              type: string
+                            attendance_status:
+                              type: integer
+                            error_message:
+                              type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /biometric/face/enroll:
+    post:
+      operationId: faceEnrollment
+      summary: Enroll face biometric profile
+      tags: [Biometrics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BiometricFaceEnrollRequest"
+      responses:
+        "200":
+          description: face enrollment successfull
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BiometricFaceEnrollResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /biometric/face/verify:
+    post:
+      operationId: faceVerification
+      summary: Authenticate user via face recognition
+      tags: [Biometrics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BiometricFaceVerifyRequest"
+      responses:
+        "200":
+          description: face verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BiometricFaceVerifyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"

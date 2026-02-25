@@ -30,5 +30,12 @@ clean:
 	cd $(CENTRALSERVER_DIR) && rm -rf node_modules dist
 	cd $(TERMINALAPP_DIR) && rm -rf node_modules dist
 
+generate-central-client:
+	@echo "Generating unified TypeScript Client..."
+	@mkdir -p central-server/admin-frontend/src/client
+	@docker build -t openapi-generator ./central-server/openapi-generator
+	@docker run --rm -v $(PWD)/central-server:/workspace -w /workspace/openapi-generator openapi-generator
+	@echo "TypeScript Client Generated Successfully."
+
 
 
