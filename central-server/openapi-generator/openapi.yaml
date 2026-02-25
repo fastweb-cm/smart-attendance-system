@@ -83,6 +83,10 @@ components:
           description: current class of the student
         regno:
           type: string
+        username:
+          type: string
+        password:
+          type: string
 
     UserCreate:
       allOf:

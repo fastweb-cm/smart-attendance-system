@@ -28,6 +28,8 @@ export type User = {
      */
     class_id?: number;
     regno?: string;
+    username?: string;
+    password?: string;
 };
 
 export type UserCreate = User;

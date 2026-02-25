@@ -23,7 +23,9 @@ export const zUser = z.object({
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role_id: z.optional(z.int()),
     class_id: z.optional(z.int()),
-    regno: z.optional(z.string())
+    regno: z.optional(z.string()),
+    username: z.optional(z.string()),
+    password: z.optional(z.string())
 });
 
 export const zUserCreate = zUser;
