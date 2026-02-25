@@ -30,7 +30,19 @@ export const zUser = z.object({
 
 export const zUserCreate = zUser;
 
-export const zUserResponse = zUserCreate;
+export const zUserResponse = z.object({
+    id: z.optional(z.int()),
+    name: z.optional(z.string()),
+    email: z.optional(z.string()),
+    gender: z.optional(z.enum(['male', 'female'])),
+    user_type: z.optional(zUserType),
+    status: z.optional(zUserStatus),
+    biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
+    role: z.optional(z.string()),
+    class: z.optional(z.string()),
+    regno: z.optional(z.string()),
+    username: z.optional(z.string())
+});
 
 export const zRole = z.object({
     role_name: z.string(),

@@ -93,8 +93,30 @@ components:
         - $ref: "#/components/schemas/User"
 
     UserResponse:
-      allOf:
-        - $ref: "#/components/schemas/UserCreate"
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          example: brandon@example.com
+        gender:
+          type: string
+          enum: [male, female]
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        biometric_enrollment_status:
+          $ref: "#/components/schemas/BiometricEnrollmentStatus"
+        role:
+          type: string
+        class:
+          type: string
+        regno:
+          type: string
+        username:
+          type: string
 
     # Role Schema
     Role:

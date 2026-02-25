@@ -3,13 +3,14 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardBreadcrumb } from "@/components/dashboardBreadcrumb";
 
-// import { queryClient } from "@/lib/queryClient";
-// import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    // <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
       <SidebarProvider>
         <div className="flex h-screen w-full">
           <AppSidebar />
@@ -32,6 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </SidebarProvider>
-    // </QueryClientProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   )
 }

@@ -34,7 +34,19 @@ export type User = {
 
 export type UserCreate = User;
 
-export type UserResponse = UserCreate;
+export type UserResponse = {
+    id?: number;
+    name?: string;
+    email?: string;
+    gender?: 'male' | 'female';
+    user_type?: UserType;
+    status?: UserStatus;
+    biometric_enrollment_status?: BiometricEnrollmentStatus;
+    role?: string;
+    class?: string;
+    regno?: string;
+    username?: string;
+};
 
 export type Role = {
     role_name: string;
