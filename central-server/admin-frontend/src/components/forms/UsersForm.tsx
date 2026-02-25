@@ -1,19 +1,22 @@
 "use client";
 
-import { createUserFormValues, zUserCreate } from '@/schema/index.schema'
+import { createUserFormValues, userCreateForm } from '@/schema/user.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormProvider, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import InputField from '../ui/InputField'
 import { Button } from '../ui/button';
 
-export default function UsersForm({ userType }: { userType: z.infer<typeof zUserCreate>['user_type'] }) {
+export default function UsersForm({ userType }: { userType: z.infer<typeof userCreateForm>['user_type'] }) {
+
+  
   const methods = useForm<createUserFormValues>({
-    resolver: zodResolver(zUserCreate),
+    resolver: zodResolver(userCreateForm),
     defaultValues: {
       user_type: userType
     }
   })
+
 
   const onSubmit = (data: createUserFormValues) => {
     console.log("user:",data);
@@ -26,15 +29,27 @@ export default function UsersForm({ userType }: { userType: z.infer<typeof zUser
           Create a new {userType}
         </h2>
         <form onSubmit={methods.handleSubmit(onSubmit)} className='space-y-4'>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <InputField name='fname' label='First Name' required />
             <InputField name='lname' label='Last Name' required />
             <InputField name='email' label='Email Adress' required />
 
-            <Button className='mt-4 w-1/2 rounded-none' type="submit">
-              create {userType}
-            </Button>
+            { userType === 'student' && <>
+              <InputField name='regno' label='Reg No' required={true} />
+              <InputField name='class_id' type='select' required label='Student Class' options={[{ label: "Form 1A", value: 1 }, { label: "Form 2A", value: 2 }]} valueType="number"/>
+              </>
+            }
+
+            {
+              userType === "staff" && <>
+              </>
+            }
+            <InputField required name='gender' type='radio' label='Gender' options={[{label: "Male", value: "male"}, {label: "Female", value:"female"}]} />
+            
           </div>
+          <Button className='mt-4 rounded-none' type="submit">
+              create {userType}
+          </Button>
         </form>
       </div>
     </FormProvider>

@@ -2,16 +2,17 @@ import { ColumnDef } from "@tanstack/react-table";
 
 interface Option {
   label: string
-  value: string
+  value: string | number
 }
 export interface InputFieldProps {
   label?: string;
-  type?: "text" | "email" | "password" | "select" | "checkbox";
+  type?: "text" | "email" | "password" | "select" | "checkbox" | "radio";
   name: string;
   required?: boolean;
   options?: Option[];
   defaultValue?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement>;
+  valueType?: string | number;
 }
 export interface InputGroupProps {
   name: string
