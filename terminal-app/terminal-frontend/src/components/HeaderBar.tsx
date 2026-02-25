@@ -1,6 +1,9 @@
+"use client"
 import Image from "next/image"
+import { useTerminalConfig } from "@/context/TerminalConfigContext"
 
 export default function HeaderBar() {
+  const config = useTerminalConfig();
   return (
     <div className="flex items-center justify-between">
         {/* logo */}
@@ -13,8 +16,13 @@ export default function HeaderBar() {
           Branch: Main Street
         </div> */}
         {/* terminal name */}
-        <div className="text-sm font-medium text-gray-600">
-          Terminal: T001
+        <div className="flex items-start flex-col">
+          <div className="text-sm font-medium">
+            Terminal: <span className="text-muted">{config?.terminal_code}</span>
+          </div>
+          <div className="text-sm font-medium">
+            Branch: <span className="text-muted">{config?.branch}</span>
+          </div>
         </div>
     </div>
   )
