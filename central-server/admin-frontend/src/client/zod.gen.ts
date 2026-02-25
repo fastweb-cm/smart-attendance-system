@@ -35,7 +35,6 @@ export const zUserResponse = z.object({
     name: z.optional(z.string()),
     email: z.optional(z.string()),
     gender: z.optional(z.enum(['male', 'female'])),
-    user_type: z.optional(zUserType),
     status: z.optional(zUserStatus),
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role: z.optional(z.string()),

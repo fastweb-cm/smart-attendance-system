@@ -6,9 +6,12 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import InputField from '../ui/InputField'
 import { Button } from '../ui/button';
+import { useCreateUser } from '@/hooks/useUsers';
+import { toast } from 'react-toastify';
 
 export default function UsersForm({ userType }: { userType: z.infer<typeof userCreateForm>['user_type'] }) {
 
+  const createUserMutation = useCreateUser();
   
   const methods = useForm<createUserFormValues>({
     resolver: zodResolver(userCreateForm),
@@ -18,8 +21,17 @@ export default function UsersForm({ userType }: { userType: z.infer<typeof userC
   })
 
 
-  const onSubmit = (data: createUserFormValues) => {
-    console.log("user:",data);
+  const onSubmit = async (data: createUserFormValues) => {
+    try {
+      await createUserMutation.mutateAsync({ body: data })
+      methods.reset();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred'
+      );
+    }
   }
 
   return (
@@ -47,8 +59,12 @@ export default function UsersForm({ userType }: { userType: z.infer<typeof userC
             <InputField required name='gender' type='radio' label='Gender' options={[{label: "Male", value: "male"}, {label: "Female", value:"female"}]} />
             
           </div>
-          <Button className='mt-4 rounded-none' type="submit">
-              create {userType}
+          <Button className='mt-4 rounded-none' type="submit" disabled={createUserMutation.isPending}>
+            {
+              createUserMutation.isPending
+                ? `creating ${userType}...`
+                : `create ${userType}`
+            }
           </Button>
         </form>
       </div>

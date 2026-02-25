@@ -15,4 +15,4 @@ import type { ClientOptions as ClientOptions2 } from './types.gen';
  */
 export type CreateClientConfig<T extends ClientOptions = ClientOptions2> = (override?: Config<ClientOptions & T>) => Config<Required<ClientOptions> & T>;
 
-export const client = createClient(createClientConfig(createConfig<ClientOptions2>({ baseURL: 'https://api.smartattendance.local:8080/v1' })));
+export const client = createClient(createClientConfig(createConfig<ClientOptions2>({ baseURL: 'http://smartattendance.fastwebcm.local/api/v1' })));

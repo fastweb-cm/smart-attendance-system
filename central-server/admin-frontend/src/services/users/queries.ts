@@ -5,4 +5,4 @@ import { listUsersQueryKey, listUsersOptions } from "@/client/@tanstack/react-qu
 export const getUsersQuery = () => 
     listUsersOptions();
 
-export const userQuery = listUsersQueryKey;
+export const userQueryKey = listUsersQueryKey;

@@ -24,7 +24,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const listUsers = <ThrowOnError extends boolean = false>(options?: Options<ListUsersData, ThrowOnError>) => (options?.client ?? client).get<ListUsersResponses, ListUsersErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users',
+    url: '/api/v1/users',
     ...options
 });
 
@@ -34,7 +34,7 @@ export const listUsers = <ThrowOnError extends boolean = false>(options?: Option
 export const createUser = <ThrowOnError extends boolean = false>(options: Options<CreateUserData, ThrowOnError>) => (options.client ?? client).post<CreateUserResponses, CreateUserErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users',
+    url: '/api/v1/users',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export const createUser = <ThrowOnError extends boolean = false>(options: Option
  */
 export const deleteUser = <ThrowOnError extends boolean = false>(options: Options<DeleteUserData, ThrowOnError>) => (options.client ?? client).delete<DeleteUserResponses, DeleteUserErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/{id}',
+    url: '/api/v1/users/{id}',
     ...options
 });
 
@@ -57,7 +57,7 @@ export const deleteUser = <ThrowOnError extends boolean = false>(options: Option
 export const getUserById = <ThrowOnError extends boolean = false>(options: Options<GetUserByIdData, ThrowOnError>) => (options.client ?? client).get<GetUserByIdResponses, GetUserByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/{id}',
+    url: '/api/v1/users/{id}',
     ...options
 });
 
@@ -67,7 +67,7 @@ export const getUserById = <ThrowOnError extends boolean = false>(options: Optio
 export const updateUser = <ThrowOnError extends boolean = false>(options: Options<UpdateUserData, ThrowOnError>) => (options.client ?? client).put<UpdateUserResponses, UpdateUserErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/{id}',
+    url: '/api/v1/users/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export const updateUser = <ThrowOnError extends boolean = false>(options: Option
 export const listRoles = <ThrowOnError extends boolean = false>(options?: Options<ListRolesData, ThrowOnError>) => (options?.client ?? client).get<ListRolesResponses, ListRolesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/roles',
+    url: '/api/v1/roles',
     ...options
 });
 
@@ -91,7 +91,7 @@ export const listRoles = <ThrowOnError extends boolean = false>(options?: Option
 export const listBranches = <ThrowOnError extends boolean = false>(options?: Options<ListBranchesData, ThrowOnError>) => (options?.client ?? client).get<ListBranchesResponses, ListBranchesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/branches',
+    url: '/api/v1/branches',
     ...options
 });
 
@@ -103,7 +103,7 @@ export const listBranches = <ThrowOnError extends boolean = false>(options?: Opt
 export const createBranch = <ThrowOnError extends boolean = false>(options: Options<CreateBranchData, ThrowOnError>) => (options.client ?? client).post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/branches',
+    url: '/api/v1/branches',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export const createBranch = <ThrowOnError extends boolean = false>(options: Opti
  */
 export const updateBranch = <ThrowOnError extends boolean = false>(options: Options<UpdateBranchData, ThrowOnError>) => (options.client ?? client).put<UpdateBranchResponses, UpdateBranchErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/branches/{id}',
+    url: '/api/v1/branches/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export const updateBranch = <ThrowOnError extends boolean = false>(options: Opti
  */
 export const createGroupType = <ThrowOnError extends boolean = false>(options: Options<CreateGroupTypeData, ThrowOnError>) => (options.client ?? client).post<CreateGroupTypeResponses, CreateGroupTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups/group_type',
+    url: '/api/v1/groups/group_type',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export const createGroupType = <ThrowOnError extends boolean = false>(options: O
 export const listGroups = <ThrowOnError extends boolean = false>(options?: Options<ListGroupsData, ThrowOnError>) => (options?.client ?? client).get<ListGroupsResponses, ListGroupsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups',
+    url: '/api/v1/groups',
     ...options
 });
 
@@ -152,7 +152,7 @@ export const listGroups = <ThrowOnError extends boolean = false>(options?: Optio
  */
 export const createGroup = <ThrowOnError extends boolean = false>(options: Options<CreateGroupData, ThrowOnError>) => (options.client ?? client).post<CreateGroupResponses, CreateGroupErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups',
+    url: '/api/v1/groups',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ export const createGroup = <ThrowOnError extends boolean = false>(options: Optio
  */
 export const assignUsersToGroup = <ThrowOnError extends boolean = false>(options?: Options<AssignUsersToGroupData, ThrowOnError>) => (options?.client ?? client).post<AssignUsersToGroupResponses, AssignUsersToGroupErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups/members',
+    url: '/api/v1/groups/members',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export const assignUsersToGroup = <ThrowOnError extends boolean = false>(options
  */
 export const listSubgroups = <ThrowOnError extends boolean = false>(options: Options<ListSubgroupsData, ThrowOnError>) => (options.client ?? client).get<ListSubgroupsResponses, ListSubgroupsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups/{groupId}/subgroups',
+    url: '/api/v1/groups/{groupId}/subgroups',
     ...options
 });
 
@@ -187,7 +187,7 @@ export const listSubgroups = <ThrowOnError extends boolean = false>(options: Opt
  */
 export const createSubgroup = <ThrowOnError extends boolean = false>(options: Options<CreateSubgroupData, ThrowOnError>) => (options.client ?? client).post<CreateSubgroupResponses, CreateSubgroupErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/groups/{groupId}/subgroups',
+    url: '/api/v1/groups/{groupId}/subgroups',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ export const createSubgroup = <ThrowOnError extends boolean = false>(options: Op
  */
 export const assignUsersToSubgroup = <ThrowOnError extends boolean = false>(options?: Options<AssignUsersToSubgroupData, ThrowOnError>) => (options?.client ?? client).post<AssignUsersToSubgroupResponses, AssignUsersToSubgroupErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/subgroups/member',
+    url: '/api/v1/subgroups/member',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ export const assignUsersToSubgroup = <ThrowOnError extends boolean = false>(opti
  */
 export const createPermissionRequest = <ThrowOnError extends boolean = false>(options: Options<CreatePermissionRequestData, ThrowOnError>) => (options.client ?? client).post<CreatePermissionRequestResponses, CreatePermissionRequestErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/permissions',
+    url: '/api/v1/permissions',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export const createPermissionRequest = <ThrowOnError extends boolean = false>(op
  */
 export const decidePermissionRequest = <ThrowOnError extends boolean = false>(options: Options<DecidePermissionRequestData, ThrowOnError>) => (options.client ?? client).post<DecidePermissionRequestResponses, DecidePermissionRequestErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/permissions/decision',
+    url: '/api/v1/permissions/decision',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -240,7 +240,7 @@ export const decidePermissionRequest = <ThrowOnError extends boolean = false>(op
 export const listAnnouncements = <ThrowOnError extends boolean = false>(options?: Options<ListAnnouncementsData, ThrowOnError>) => (options?.client ?? client).get<ListAnnouncementsResponses, ListAnnouncementsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/announcement',
+    url: '/api/v1/announcement',
     ...options
 });
 
@@ -249,7 +249,7 @@ export const listAnnouncements = <ThrowOnError extends boolean = false>(options?
  */
 export const createAnnouncement = <ThrowOnError extends boolean = false>(options: Options<CreateAnnouncementData, ThrowOnError>) => (options.client ?? client).post<CreateAnnouncementResponses, CreateAnnouncementErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/announcement',
+    url: '/api/v1/announcement',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ export const createAnnouncement = <ThrowOnError extends boolean = false>(options
 export const listEvents = <ThrowOnError extends boolean = false>(options?: Options<ListEventsData, ThrowOnError>) => (options?.client ?? client).get<ListEventsResponses, ListEventsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/events',
+    url: '/api/v1/events',
     ...options
 });
 
@@ -272,7 +272,7 @@ export const listEvents = <ThrowOnError extends boolean = false>(options?: Optio
  */
 export const createEvent = <ThrowOnError extends boolean = false>(options: Options<CreateEventData, ThrowOnError>) => (options.client ?? client).post<CreateEventResponses, CreateEventErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/events',
+    url: '/api/v1/events',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ export const createEvent = <ThrowOnError extends boolean = false>(options: Optio
 export const listExceptions = <ThrowOnError extends boolean = false>(options?: Options<ListExceptionsData, ThrowOnError>) => (options?.client ?? client).get<ListExceptionsResponses, ListExceptionsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/exceptions',
+    url: '/api/v1/exceptions',
     ...options
 });
 
@@ -295,7 +295,7 @@ export const listExceptions = <ThrowOnError extends boolean = false>(options?: O
  */
 export const createException = <ThrowOnError extends boolean = false>(options: Options<CreateExceptionData, ThrowOnError>) => (options.client ?? client).post<CreateExceptionResponses, CreateExceptionErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/exceptions',
+    url: '/api/v1/exceptions',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ export const createException = <ThrowOnError extends boolean = false>(options: O
  */
 export const createTerminal = <ThrowOnError extends boolean = false>(options: Options<CreateTerminalData, ThrowOnError>) => (options.client ?? client).post<CreateTerminalResponses, CreateTerminalErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/terminals',
+    url: '/api/v1/terminals',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -322,7 +322,7 @@ export const createTerminal = <ThrowOnError extends boolean = false>(options: Op
 export const listTerminals = <ThrowOnError extends boolean = false>(options: Options<ListTerminalsData, ThrowOnError>) => (options.client ?? client).get<ListTerminalsResponses, ListTerminalsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/terminals/${branchid}',
+    url: '/api/v1/terminals/${branchid}',
     ...options
 });
 
@@ -332,7 +332,7 @@ export const listTerminals = <ThrowOnError extends boolean = false>(options: Opt
 export const terminalCapabilities = <ThrowOnError extends boolean = false>(options: Options<TerminalCapabilitiesData, ThrowOnError>) => (options.client ?? client).get<TerminalCapabilitiesResponses, TerminalCapabilitiesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/terminals/{terminalId}',
+    url: '/api/v1/terminals/{terminalId}',
     ...options
 });
 
@@ -342,7 +342,7 @@ export const terminalCapabilities = <ThrowOnError extends boolean = false>(optio
 export const terminalAuth = <ThrowOnError extends boolean = false>(options: Options<TerminalAuthData, ThrowOnError>) => (options.client ?? client).post<TerminalAuthResponses, TerminalAuthErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/terminals/auth',
+    url: '/api/v1/terminals/auth',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ export const terminalAuth = <ThrowOnError extends boolean = false>(options: Opti
 export const syncAttendanceSummary = <ThrowOnError extends boolean = false>(options: Options<SyncAttendanceSummaryData, ThrowOnError>) => (options.client ?? client).post<SyncAttendanceSummaryResponses, SyncAttendanceSummaryErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/attendance/sync',
+    url: '/api/v1/attendance/sync',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ export const syncAttendanceSummary = <ThrowOnError extends boolean = false>(opti
 export const faceEnrollment = <ThrowOnError extends boolean = false>(options: Options<FaceEnrollmentData, ThrowOnError>) => (options.client ?? client).post<FaceEnrollmentResponses, FaceEnrollmentErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/biometric/face/enroll',
+    url: '/api/v1/biometric/face/enroll',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -384,7 +384,7 @@ export const faceEnrollment = <ThrowOnError extends boolean = false>(options: Op
 export const faceVerification = <ThrowOnError extends boolean = false>(options: Options<FaceVerificationData, ThrowOnError>) => (options.client ?? client).post<FaceVerificationResponses, FaceVerificationErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/biometric/face/verify',
+    url: '/api/v1/biometric/face/verify',
     ...options,
     headers: {
         'Content-Type': 'application/json',
