@@ -55,6 +55,8 @@ components:
         - email
         - user_type
       properties:
+        id:
+          type: integer
         fname:
           type: string
           example: Ichami
@@ -64,39 +66,31 @@ components:
         email:
           type: string
           example: brandon@example.com
+        gender:
+          type: string
+          enum: [male, female]
         user_type:
           $ref: "#/components/schemas/UserType"
         status:
           $ref: "#/components/schemas/UserStatus"
         biometric_enrollment_status:
           $ref: "#/components/schemas/BiometricEnrollmentStatus"
+        role_id:
+          type: integer
+          description: role id for privileged staff
+        class_id:
+          type: integer
+          description: current class of the student
+        regno:
+          type: string
 
     UserCreate:
       allOf:
         - $ref: "#/components/schemas/User"
-        - type: object
-          properties:
-            role_id:
-              type: integer
-              description: role id for privileged staff
-            class_id:
-              type: integer
-              description: current class of the student
-            regno:
-              type: string
 
     UserResponse:
       allOf:
         - $ref: "#/components/schemas/UserCreate"
-        - type: object
-          properties:
-            id:
-              type: integer
-              example: 1
-            created_at:
-              type: string
-              format: date-time
-              example: "2026-01-30T00:00:00Z"
 
     # Role Schema
     Role:

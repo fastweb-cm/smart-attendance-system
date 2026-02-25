@@ -11,15 +11,14 @@ export type UserStatus = 'active' | 'inactive' | 'dismissed';
 export type BiometricEnrollmentStatus = 'pending' | 'completed';
 
 export type User = {
+    id?: number;
     fname: string;
     lname: string;
     email: string;
+    gender?: 'male' | 'female';
     user_type: UserType;
     status?: UserStatus;
     biometric_enrollment_status?: BiometricEnrollmentStatus;
-};
-
-export type UserCreate = User & {
     /**
      * role id for privileged staff
      */
@@ -31,10 +30,9 @@ export type UserCreate = User & {
     regno?: string;
 };
 
-export type UserResponse = UserCreate & {
-    id?: number;
-    created_at?: string;
-};
+export type UserCreate = User;
+
+export type UserResponse = UserCreate;
 
 export type Role = {
     role_name: string;
