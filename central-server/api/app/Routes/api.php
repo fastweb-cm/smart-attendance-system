@@ -7,8 +7,7 @@ use App\Modules\Users\Controllers\UserRegistrationController;
 |--------------------------
 */
 
-$router->get('/api/users', [UserRegistrationController::class, 'index']); //create an instance of controller and call the index method
-$router->post('/api/users', [UserRegistrationController::class, 'store']);
-$router->get('/api/users/{id}', [UserRegistrationController::class, 'show']);
+$router->get('/', [UserRegistrationController::class, 'index']); 
+$router->post('/users', [UserRegistrationController::class, 'register']);
+// $router->get('/api/users/{id}', [UserRegistrationController::class, 'show']);
 
-?>
