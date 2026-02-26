@@ -2,10 +2,10 @@ import React from 'react'
 import { SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { ChevronsUpDown, User2, LogOut, CircleUser} from 'lucide-react'
-import { useUser } from '@/context/UserContext'
+import { useAuth } from '@/context/AuthContext'
 
 export default function SidebarFoot() {
-  const user = useUser();
+  const { user } = useAuth();
   return (
     <SidebarFooter>
           <SidebarMenu>
@@ -15,7 +15,7 @@ export default function SidebarFoot() {
                   <SidebarMenuButton>
                     <User2 /> <div className="flex flex-col">
                         <p className="text-md font-extrabold">{user?.username}</p>
-                        <p className="text-xs">{user?.email}</p>
+                        <p className="text-xs">brandonichami@gmail.com</p>
                     </div>
                     <ChevronsUpDown className="ml-auto" />
                   </SidebarMenuButton>

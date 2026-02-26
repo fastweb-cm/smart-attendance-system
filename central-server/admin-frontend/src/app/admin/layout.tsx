@@ -6,9 +6,24 @@ import { DashboardBreadcrumb } from "@/components/dashboardBreadcrumb";
 import { queryClient } from "@/lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+const { user, loading } = useAuth();
+const router = useRouter();
+
+useEffect(() => {
+  if (!loading && !user) {
+    router.push("/login");
+  }
+}, [user, loading, router]);
+
+if (loading) return null; // wait until auth check finishes
+if (!user) return null;   // prevent flash
+
   return (
     <QueryClientProvider client={queryClient}>
       <SidebarProvider>

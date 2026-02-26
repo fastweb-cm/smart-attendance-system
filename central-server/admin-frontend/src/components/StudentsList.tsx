@@ -1,6 +1,6 @@
 "use client";
 
-import { StudentsTable } from "@/app/(protected)/admin/users/students/students-table"
+import { StudentsTable } from "@/app/admin/users/students/students-table"
 import { useUsers } from "@/hooks/useUsers"
 
 export default function StudentsList() {

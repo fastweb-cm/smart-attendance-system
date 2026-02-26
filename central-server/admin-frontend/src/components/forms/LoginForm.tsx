@@ -8,25 +8,19 @@ import { Button } from "../ui/button"
 import Link from "next/link"
 import { InputGroup, RHFInputField } from "../ui/forminput"
 import { usePasswordToggle } from "@/hooks/use-password-toggle"
-import { useRouter } from "next/navigation"
-import { toast } from 'react-toastify';
 import Image from "next/image"
+import { useAuth } from "@/context/AuthContext"
 
 export default function LoginForm() {
-  const router = useRouter()
+  const { login } = useAuth();
+
   const methods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   })
 
   const onSubmit = (data: LoginFormValues) => {
     const { username, password } = data;
-    const user = { id: 1, email: "brandonichami@gmail.com", username: "ichami"}
-    if(username === 'test' && password === '123456'){
-      localStorage.setItem("user",JSON.stringify(user))
-      router.push("/admin")
-    }else{
-      toast.error("Invalid username or password")
-    }
+    login(username, password);//auth the user
   }
 
   const password = usePasswordToggle();
