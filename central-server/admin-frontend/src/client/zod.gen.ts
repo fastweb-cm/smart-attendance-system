@@ -39,7 +39,7 @@ export const zUserResponse = z.object({
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role: z.optional(z.string()),
     class: z.optional(z.string()),
-    regno: z.optional(z.string()),
+    studentregno: z.optional(z.string()),
     username: z.optional(z.string())
 });
 

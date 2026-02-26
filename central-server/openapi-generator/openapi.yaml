@@ -113,7 +113,7 @@ components:
           type: string
         class:
           type: string
-        regno:
+        studentregno:
           type: string
         username:
           type: string

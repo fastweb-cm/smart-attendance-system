@@ -43,7 +43,7 @@ export type UserResponse = {
     biometric_enrollment_status?: BiometricEnrollmentStatus;
     role?: string;
     class?: string;
-    regno?: string;
+    studentregno?: string;
     username?: string;
 };
 

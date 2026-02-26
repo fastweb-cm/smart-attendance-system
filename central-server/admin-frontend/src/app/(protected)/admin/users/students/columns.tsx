@@ -7,9 +7,9 @@ import type { UserResponseType } from "@/schema/user.schema";
 
 export const studentColumns: ColumnDef <UserResponseType>[] = [
     {
-        accessorKey: "RegNumber",
+        accessorKey: "studentregno",
         header: () => <div className="flex flex-start">Registration Number</div>,
-        cell: ( { row } ) => <div className="text-center capitalize">{row.getValue("regno")}</div>
+        cell: ( { row } ) => <div className="text-left capitalize">{row.getValue("studentregno")}</div>
     },
     {
         accessorKey: "name",
@@ -22,12 +22,12 @@ export const studentColumns: ColumnDef <UserResponseType>[] = [
         cell: ({row}) => <div className="text-center capitalize">{row.getValue("gender")}</div>
     },
     {
-        accessorKey: "studentClass",
+        accessorKey: "class",
         header: () => <div className="text-center">Student Class</div>,
         cell: ({row}) => <div className="text-center text-capitalize">{row.getValue("class")}</div>
     },
     {
-        accessorKey: "biometricStatus",
+        accessorKey: "biometric_enrollment_status",
         header: () => <div className="text-center">Biometric Status</div>,
         cell: ({row}) => {
             const status = row.getValue("biometric_enrollment_status") as string
@@ -36,11 +36,9 @@ export const studentColumns: ColumnDef <UserResponseType>[] = [
                 <div className="text-center">
                     <Badge
                         variant={
-                            status === "active"
+                            status === "pending"
                             ? "default"
-                            : status === "inactive"
-                            ? "secondary"
-                            : "destructive"
+                            : "secondary"
                         }
                     >
                     {status}

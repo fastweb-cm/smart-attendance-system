@@ -181,10 +181,16 @@ class Users
 
     public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array
     {
-        $sql = "SELECT u.*, s.regno, s.class_id AS student_class_id, st.role_id
-                FROM tbl_user u
-                LEFT JOIN tbl_student s ON u.id = s.user_id
-                LEFT JOIN tbl_staff st ON u.id = st.user_id";
+        $sql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status,
+               CONCAT(u.fname, ' ', u.lname) AS name,
+               c.class_name AS class,
+               r.role_name AS role,
+               s.regno AS studentregno
+        FROM tbl_user u
+        LEFT JOIN tbl_student s ON u.id = s.user_id
+        LEFT JOIN tbl_class c ON u.class_id = c.id
+        LEFT JOIN tbl_staff st ON u.id = st.user_id
+        LEFT JOIN lkup_role r ON st.role_id = r.id";
         
         $conditions = [];
         $params = [];
@@ -202,9 +208,9 @@ class Users
             $sql .= " WHERE " . implode(" AND ", $conditions);
         }
 
-        $sql .= " ORDER BY u.id DESC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
+        // $sql .= " ORDER BY u.id DESC LIMIT ? OFFSET ?";
+        // $params[] = $limit;
+        // $params[] = $offset;
 
         $result = $this->db->query($sql, $params);
         $users = [];
