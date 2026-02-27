@@ -13,24 +13,35 @@ export const zUserStatus = z.enum([
 export const zBiometricEnrollmentStatus = z.enum(['pending', 'completed']);
 
 export const zUser = z.object({
+    id: z.optional(z.int()),
     fname: z.string(),
     lname: z.string(),
     email: z.string(),
+    gender: z.optional(z.enum(['male', 'female'])),
     user_type: zUserType,
     status: z.optional(zUserStatus),
-    biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus)
-});
-
-export const zUserCreate = zUser.and(z.object({
+    biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role_id: z.optional(z.int()),
     class_id: z.optional(z.int()),
-    regno: z.optional(z.string())
-}));
+    regno: z.optional(z.string()),
+    username: z.optional(z.string()),
+    password: z.optional(z.string())
+});
 
-export const zUserResponse = zUserCreate.and(z.object({
+export const zUserCreate = zUser;
+
+export const zUserResponse = z.object({
     id: z.optional(z.int()),
-    created_at: z.optional(z.iso.datetime())
-}));
+    name: z.optional(z.string()),
+    email: z.optional(z.string()),
+    gender: z.optional(z.enum(['male', 'female'])),
+    status: z.optional(zUserStatus),
+    biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
+    role: z.optional(z.string()),
+    class: z.optional(z.string()),
+    studentregno: z.optional(z.string()),
+    username: z.optional(z.string())
+});
 
 export const zRole = z.object({
     role_name: z.string(),

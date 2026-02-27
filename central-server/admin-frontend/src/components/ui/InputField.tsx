@@ -11,10 +11,16 @@ const InputField = ({
   options,
   defaultValue,
   inputProps,
+  valueType,
 }: InputFieldProps) => {
   const { register, formState: { errors } } = useFormContext(); // access the form global state
   
   const error = errors[name]?.message as string | undefined;
+
+  const registerOptions =
+    valueType === "number"
+      ? { valueAsNumber: true }
+      : undefined
 
   return (
     <div className="flex flex-col gap-2 w-full">
@@ -26,7 +32,7 @@ const InputField = ({
 
       {type === "select" ? (
         <select
-          {...register(name)}
+          {...register(name, registerOptions)}
           {...(inputProps as React.SelectHTMLAttributes<HTMLSelectElement>)}
           className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full outline-none focus:ring-blue-500"
           defaultValue={defaultValue}
@@ -47,6 +53,21 @@ const InputField = ({
             {...inputProps}
           />
           <span className="text-sm text-gray-600">{label}</span>
+        </div>
+      ) : type === "radio" ? (
+        <div className="flex flex-row items-center gap-2">
+          {options?.map((opt) => (
+            <label key={opt.value} className="flex items-center gap-1">
+              <input 
+                type="radio"
+                value={opt.value} 
+                {...register(name)} 
+                {...inputProps}
+                defaultValue={defaultValue} 
+              />
+              <span className="text-xs text-gray-600">{opt.label}</span>
+            </label>
+          ))}
         </div>
       ) : (
         <input

@@ -11,5 +11,13 @@ class controller {
     protected function getJsonInput(): array {
         return json_decode(file_get_contents('php://input'), true) ?? [];
     }
+
+    /**
+     * Get query parameters from the current request
+     * Returns an associative array
+    */
+    protected function getQueryParams(): array {
+        return  $_GET ?? [];
+    }
 }
 ?>

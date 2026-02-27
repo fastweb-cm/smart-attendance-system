@@ -8,7 +8,7 @@ info:
   #   url: https://www.apache.org/licenses/LICENSE-2.0.html
 
 servers:
-  - url: https://api.smartattendance.local:8080/v1
+  - url: http://smartattendance.fastwebcm.local/api/v1
     description: Core Business Logic Endpoint
 
 security:
@@ -55,6 +55,8 @@ components:
         - email
         - user_type
       properties:
+        id:
+          type: integer
         fname:
           type: string
           example: Ichami
@@ -64,39 +66,57 @@ components:
         email:
           type: string
           example: brandon@example.com
+        gender:
+          type: string
+          enum: [male, female]
         user_type:
           $ref: "#/components/schemas/UserType"
         status:
           $ref: "#/components/schemas/UserStatus"
         biometric_enrollment_status:
           $ref: "#/components/schemas/BiometricEnrollmentStatus"
+        role_id:
+          type: integer
+          description: role id for privileged staff
+        class_id:
+          type: integer
+          description: current class of the student
+        regno:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
 
     UserCreate:
       allOf:
         - $ref: "#/components/schemas/User"
-        - type: object
-          properties:
-            role_id:
-              type: integer
-              description: role id for privileged staff
-            class_id:
-              type: integer
-              description: current class of the student
-            regno:
-              type: string
 
     UserResponse:
-      allOf:
-        - $ref: "#/components/schemas/UserCreate"
-        - type: object
-          properties:
-            id:
-              type: integer
-              example: 1
-            created_at:
-              type: string
-              format: date-time
-              example: "2026-01-30T00:00:00Z"
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          example: brandon@example.com
+        gender:
+          type: string
+          enum: [male, female]
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        biometric_enrollment_status:
+          $ref: "#/components/schemas/BiometricEnrollmentStatus"
+        role:
+          type: string
+        class:
+          type: string
+        studentregno:
+          type: string
+        username:
+          type: string
 
     # Role Schema
     Role:
@@ -717,7 +737,7 @@ components:
           type: integer
 
 paths:
-  /users:
+  /api/v1/users:
     post:
       operationId: createUser
       summary: Create a new user
@@ -778,7 +798,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /users/{id}:
+  /api/v1/users/{id}:
     get:
       operationId: getUserById
       summary: Get a user by ID
@@ -861,7 +881,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /roles:
+  /api/v1/roles:
     get:
       operationId: listRoles
       summary: List all roles
@@ -884,7 +904,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /branches:
+  /api/v1/branches:
     post:
       operationId: createBranch
       summary: Create a new branch
@@ -940,7 +960,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /branches/{id}:
+  /api/v1/branches/{id}:
     put:
       operationId: updateBranch
       summary: Update branch details
@@ -973,7 +993,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /groups/group_type:
+  /api/v1/groups/group_type:
     post:
       operationId: createGroupType
       summary: Create a group type
@@ -1005,7 +1025,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /groups:
+  /api/v1/groups:
     post:
       operationId: createGroup
       summary: Create a group (class / department)
@@ -1050,7 +1070,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /groups/members:
+  /api/v1/groups/members:
     post:
       operationId: assignUsersToGroup
       summary: Assign users to a group
@@ -1081,7 +1101,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /groups/{groupId}/subgroups:
+  /api/v1/groups/{groupId}/subgroups:
     post:
       operationId: createSubgroup
       summary: Create a subgroup
@@ -1131,7 +1151,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /subgroups/member:
+  /api/v1/subgroups/member:
     post:
       operationId: assignUsersToSubgroup
       summary: Assign users to a subgroup
@@ -1162,7 +1182,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /permissions:
+  /api/v1/permissions:
     post:
       operationId: createPermissionRequest
       summary: Create permission request for a user
@@ -1192,7 +1212,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /permissions/decision:
+  /api/v1/permissions/decision:
     post:
       operationId: decidePermissionRequest
       summary: Approve or reject a permission request
@@ -1218,7 +1238,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /announcement:
+  /api/v1/announcement:
     post:
       operationId: createAnnouncement
       summary: Create an announcement
@@ -1297,7 +1317,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /events:
+  /api/v1/events:
     post:
       operationId: createEvent
       summary: Create an event
@@ -1355,7 +1375,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /exceptions:
+  /api/v1/exceptions:
     post:
       operationId: createException
       summary: Create an exception
@@ -1399,7 +1419,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /terminals:
+  /api/v1/terminals:
     post:
       operationId: createTerminal
       summary: create a terminal
@@ -1422,7 +1442,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /terminals/${branchid}:
+  /api/v1/terminals/${branchid}:
     get:
       operationId: listTerminals
       summary: List all terminals at a particular branch
@@ -1451,7 +1471,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /terminals/{terminalId}:
+  /api/v1/terminals/{terminalId}:
     get:
       operationId: terminalCapabilities
       summary: Get the auth types,policy supported by the terminal
@@ -1480,7 +1500,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /terminals/auth:
+  /api/v1/terminals/auth:
     post:
       operationId: terminalAuth
       summary: Authenticate at a terminal
@@ -1510,7 +1530,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /attendance/sync:
+  /api/v1/attendance/sync:
     post:
       operationId: syncAttendanceSummary
       summary: Sync attendance summary to central database
@@ -1567,7 +1587,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /biometric/face/enroll:
+  /api/v1/biometric/face/enroll:
     post:
       operationId: faceEnrollment
       summary: Enroll face biometric profile
@@ -1594,7 +1614,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /biometric/face/verify:
+  /api/v1/biometric/face/verify:
     post:
       operationId: faceVerification
       summary: Authenticate user via face recognition

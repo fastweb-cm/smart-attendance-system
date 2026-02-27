@@ -1,15 +1,18 @@
+import { ColumnDef } from "@tanstack/react-table";
+
 interface Option {
   label: string
-  value: string
+  value: string | number
 }
 export interface InputFieldProps {
   label?: string;
-  type?: "text" | "email" | "password" | "select" | "checkbox";
+  type?: "text" | "email" | "password" | "select" | "checkbox" | "radio";
   name: string;
   required?: boolean;
   options?: Option[];
   defaultValue?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement>;
+  valueType?: string | number;
 }
 export interface InputGroupProps {
   name: string
@@ -43,3 +46,27 @@ export interface User {
   username: string;
   email?: string;
 }
+
+export interface DataTableProps<TData, TValue> {
+    columns: ColumnDef<TData, TValue>[];
+    data: TData[];
+}
+
+export interface ExtendedDataTableProps<TData, TValue> extends DataTableProps<TData, TValue> {
+  showSearchBar?: boolean;
+  emptyText?: string;
+  label?: string;
+
+  // custom filters
+  filtersComponent?: React.ReactNode;
+
+  //enable or disable global filtering
+  enableGlobalFilter?: boolean;
+
+  //allow server side filtering
+  manualFiltering?: boolean;
+
+  //external search control
+  onGlobalSearchChange?: (value: string) => void;
+}
+
