@@ -12,9 +12,9 @@ use App\Middleware\AuthMiddleware;
 */
 
 $router->get('/', [UserRegistrationController::class, 'index']);
-$router->post('/api/v1/login', [AuthController::class, 'login']);
-$router->post('/api/v1/logout', [AuthController::class, 'logout']);
-$router->post('/api/v1/refresh', [AuthMiddleware::class, 'attempRefresh']);
+$router->post('/api/v1/auth/login', [AuthController::class, 'login']);
+$router->post('/api/v1/auth/logout', [AuthController::class, 'logout']);
+$router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 
 
 /*

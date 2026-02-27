@@ -45,7 +45,7 @@ class AuthController extends controller
                     $refreshToken,
                     [
                         'expires' => time() + 86400 * 30, //30 days
-                        'path' => '/api/v1/refresh', //only send cookie to this endpoint
+                        'path' => '/api/v1/auth', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
                         // 'secure' => true, HTTPS only
                         'samesite' => 'Strict'
