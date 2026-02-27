@@ -109,6 +109,17 @@ class Users
         return $this->getUserById($this->id);
     }
 
+    public function storeRefresh($userid, $hash)
+    {
+        $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 30); // 30 days
+        
+        $sql = "INSERT INTO tbl_refreshtokens(user_id,token_hash,expires_at)
+            VALUES(?,?,?)";
+        $params = [$userid, $hash, $expiresAt];
+
+        $this->db->query($sql, $params);
+    }
+
     public function updateUser(): ?array
     {
         if (!$this->id) return null;
@@ -177,6 +188,54 @@ class Users
                 WHERE u.id = ?";
         $result = $this->db->query($sql, [$id]);
         return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+    }
+
+    public function findByUsername(string $username): ?array
+    {
+        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
+                JOIN tbl_staff st ON u.id = st.user_id
+                JOIN lkup_role r ON r.id = st.role_id
+                WHERE u.username = ?";
+        $result = $this->db->query($sql, [$username]);
+        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+    }
+
+    public function findAdmin(int $userId)
+    {
+        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
+                JOIN tbl_staff st ON u.id = st.user_id
+                JOIN lkup_role r ON r.id = st.role_id
+                WHERE u.id = ?";
+        $result = $this->db->query($sql, [$userId]);
+        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+    }
+
+    public function findValidByUserToken(string $hashedToken): ?array
+    {
+        $sql = "SELECT * FROM tbl_refreshtokens 
+            WHERE revoked = 0 AND hash_token = ? AND expires_at > NOW()
+            LIMIT 1";
+        $result = $this->db->query($sql, [$hashedToken]);
+
+        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+    }
+
+    public function revokeToken(int $id): bool {
+        $sql = 'UPDATE tbl_refreshtokens
+            SET  revoked = 1, revoked_at = NOW()
+            WHERE id = ?';
+        $result = $this->db->query($sql, [$id]);
+
+        return $result ? true : false;
+    }
+
+    public function revokeByToken(string $tokenHash)
+    {
+        $sql = 'UPDATE tbl_refreshtokens
+            SET  revoked = 1, revoked_at = NOW()
+            WHERE token_hash = ?';
+        $this->db->query($sql, [$tokenHash]);
+
     }
 
     public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array
