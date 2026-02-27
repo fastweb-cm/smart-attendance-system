@@ -2,10 +2,11 @@
 namespace App\Core;
 
 class controller {
-    protected static function json($data, int $statusCode = 200): void {
+    protected static function json($data, int $statusCode = 200, bool $exit = true): void {
         http_response_code($statusCode);
         header('Content-Type: application/json');
-        echo json_encode($data);exit;
+        echo json_encode($data);
+        if($exit) exit;
     }
 
     protected function request(): string

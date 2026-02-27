@@ -21,7 +21,7 @@ class AuthController extends controller
                 $this->json([
                     'success' => false,
                     'message' => 'Invalid Username or Password' 
-                ],401); //authorised
+                ]); //authorised
             }
 
             $jwtService = new JWTService();
@@ -45,7 +45,7 @@ class AuthController extends controller
                     $refreshToken,
                     [
                         'expires' => time() + 86400 * 30, //30 days
-                        'path' => '/', //only send cookie to this endpoint
+                        'path' => '/api/v1/refresh', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
                         // 'secure' => true, HTTPS only
                         'samesite' => 'Strict'

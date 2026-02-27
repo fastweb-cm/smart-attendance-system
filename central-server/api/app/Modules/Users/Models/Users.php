@@ -210,26 +210,19 @@ class Users
         return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
     }
 
-    public function findValidByUserToken(string $token): ?array
+    public function findValidByUserToken(string $hashedToken): ?array
     {
         $sql = "SELECT * FROM tbl_refreshtokens 
-            WHERE revoked 0 AND expires_at > NOW()
+            WHERE revoked = 0 AND hash_token = ? AND expires_at > NOW()
             LIMIT 1";
-        $result = $this->db->query($sql);
-        if ($result){
-            $row = $result->fetch_assoc();
-            // lets verify the token against the stored hashed token
-            if(password_verify($token, $row['token_hash'])){
-                return $row;
-            }
-        }
+        $result = $this->db->query($sql, [$hashedToken]);
 
-        return null; // no match
+        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
     }
 
     public function revokeToken(int $id): bool {
         $sql = 'UPDATE tbl_refreshtokens
-            SET  revoked = 1
+            SET  revoked = 1, revoked_at = NOW()
             WHERE id = ?';
         $result = $this->db->query($sql, [$id]);
 
@@ -239,7 +232,7 @@ class Users
     public function revokeByToken(string $tokenHash)
     {
         $sql = 'UPDATE tbl_refreshtokens
-            SET  revoked = 1
+            SET  revoked = 1, revoked_at = NOW()
             WHERE token_hash = ?';
         $this->db->query($sql, [$tokenHash]);
 
