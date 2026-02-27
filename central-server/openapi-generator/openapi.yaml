@@ -47,6 +47,20 @@ components:
       type: string
       enum: [pending, completed]
 
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        stayloggedin:
+          type: string
+      required:
+        - username
+        - password
+
     LoginResponse:
       type: object
       properties:
@@ -767,17 +781,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
-                stayloggedin:
-                  type: boolean
-              required:
-                - username
-                - password
+              $ref: "#/components/schemas/Login"
       responses:
         "200":
           description: successful login
