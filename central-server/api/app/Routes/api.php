@@ -2,13 +2,31 @@
 
 use App\Modules\Users\Controllers\UserRegistrationController;
 use App\Modules\Users\Controllers\UserController;
+use App\Modules\Users\Controllers\AuthController;
+use App\Middleware\AuthMiddleware;
+
 /*
 |--------------------------
-|  API Routes
+|  Public Routes
 |--------------------------
 */
 
 $router->get('/', [UserRegistrationController::class, 'index']);
-$router->post('/api/v1/users', [UserRegistrationController::class, 'register']);
-$router->get('/api/v1/users', [UserController::class, 'index']);
-// $router->get('/api/users/{id}', [UserRegistrationController::class, 'show']);
+$router->post('/api/v1/auth/login', [AuthController::class, 'login']);
+$router->post('/api/v1/auth/logout', [AuthController::class, 'logout']);
+$router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
+$router->post('/api/v1/auth', [AuthController::class, 'me']);
+
+
+/*
+|--------------------------
+|  Protected Routes
+|--------------------------
+*/
+
+$router->group(['middleware' => [AuthMiddleware::class]], function($router) {
+
+    $router->get('/api/v1/users', [UserController::class, 'index']);
+    $router->post('/api/v1/users', [UserRegistrationController::class, 'register']);
+
+});

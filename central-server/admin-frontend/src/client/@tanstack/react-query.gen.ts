@@ -4,8 +4,76 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteUser, faceEnrollment, faceVerification, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, type Options, syncAttendanceSummary, terminalAuth, terminalCapabilities, updateBranch, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, TerminalAuthData, TerminalAuthResponse, TerminalCapabilitiesData, TerminalCapabilitiesResponse, UpdateBranchData, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, authCheck, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteUser, faceEnrollment, faceVerification, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, terminalAuth, terminalCapabilities, updateBranch, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, AuthCheckData, AuthCheckResponse, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, TerminalAuthData, TerminalAuthResponse, TerminalCapabilitiesData, TerminalCapabilitiesResponse, UpdateBranchData, UpdateUserData, UpdateUserResponse } from '../types.gen';
+
+/**
+ * login admin users
+ */
+export const loginMutation = (options?: Partial<Options<LoginData>>): UseMutationOptions<LoginResponse2, AxiosError<DefaultError>, Options<LoginData>> => {
+    const mutationOptions: UseMutationOptions<LoginResponse2, AxiosError<DefaultError>, Options<LoginData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await login({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * logou admin users
+ */
+export const logoutMutation = (options?: Partial<Options<LogoutData>>): UseMutationOptions<LogoutResponse, AxiosError<DefaultError>, Options<LogoutData>> => {
+    const mutationOptions: UseMutationOptions<LogoutResponse, AxiosError<DefaultError>, Options<LogoutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await logout({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * refresh access token
+ */
+export const refreshMutation = (options?: Partial<Options<RefreshData>>): UseMutationOptions<RefreshResponse, AxiosError<DefaultError>, Options<RefreshData>> => {
+    const mutationOptions: UseMutationOptions<RefreshResponse, AxiosError<DefaultError>, Options<RefreshData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await refresh({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * authentication check
+ */
+export const authCheckMutation = (options?: Partial<Options<AuthCheckData>>): UseMutationOptions<AuthCheckResponse, AxiosError<DefaultError>, Options<AuthCheckData>> => {
+    const mutationOptions: UseMutationOptions<AuthCheckResponse, AxiosError<DefaultError>, Options<AuthCheckData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await authCheck({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseURL' | 'body' | 'headers' | 'path' | 'query'> & {

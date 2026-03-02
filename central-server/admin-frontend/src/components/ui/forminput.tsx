@@ -57,7 +57,7 @@ export function InputGroup({
       )}
 
       {error && (
-        <p className="text-xs text-danger">{error}</p>
+        <p className="text-xs text-destructive">{error}</p>
       )}
     </Field>
   )
@@ -95,7 +95,7 @@ export function RHFInputField({
       )}
 
       {error && (
-        <p className="text-xs text-danger">{error}</p>
+        <p className="text-xs text-destructive">{error}</p>
       )}
     </Field>
   )
@@ -144,7 +144,7 @@ export function FieldSelect({
       )}
 
       {error && (
-        <p className="text-sm text-danger">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       )}
     </Field>
   )

@@ -30,8 +30,8 @@ export default function TerminalPage() {
             >Record Attendance</div>
             {/* <div className="w-1/4 h-18 bg-warning rounded-md animate-pulse text-center py-6 px-2">Event Attendance</div> */}
         </div>
-        {/* <Annoucements announcements={AnnouncementsData} />
-        <EventsList events={EventsData} /> */}
+        <Annoucements announcements={AnnouncementsData} />
+        <EventsList events={EventsData} />
 
         {/* Webcam Section */}
         {showWebcam && (
