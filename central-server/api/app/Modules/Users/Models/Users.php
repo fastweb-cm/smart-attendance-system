@@ -3,6 +3,7 @@
 namespace App\Modules\Users\Models;
 
 use App\Core\Database;
+use App\Services\TokenService;
 
 class Users
 {
@@ -210,32 +211,53 @@ class Users
         return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
     }
 
-    public function findValidByUserToken(string $hashedToken): ?array
+    public function findValidByUserToken(string $refreshToken): ?array
     {
         $sql = "SELECT * FROM tbl_refreshtokens 
-            WHERE revoked = 0 AND hash_token = ? AND expires_at > NOW()
-            LIMIT 1";
-        $result = $this->db->query($sql, [$hashedToken]);
+                WHERE revoked = 0 AND expires_at > NOW()";
+        $result = $this->db->query($sql);
 
-        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+        if (!$result || $result->num_rows === 0) return null;
+
+        while ($row = $result->fetch_assoc()) {
+            if (TokenService::verifyToken($refreshToken, $row['token_hash'])) {
+                return $row;
+            }
+        }
+
+        return null;
     }
 
     public function revokeToken(int $id): bool {
         $sql = 'UPDATE tbl_refreshtokens
             SET  revoked = 1, revoked_at = NOW()
             WHERE id = ?';
-        $result = $this->db->query($sql, [$id]);
+        $this->db->query($sql, [$id]);
 
-        return $result ? true : false;
+        return $this->db->affectedRows() > 0;
     }
 
-    public function revokeByToken(string $tokenHash)
+    public function revokeByToken(string $refreshToken): bool
     {
-        $sql = 'UPDATE tbl_refreshtokens
-            SET  revoked = 1, revoked_at = NOW()
-            WHERE token_hash = ?';
-        $this->db->query($sql, [$tokenHash]);
+        // Step 1: Get all valid, non-revoked refresh tokens
+        $sql = "SELECT * FROM tbl_refreshtokens WHERE revoked = 0 AND expires_at > NOW()";
+        $result = $this->db->query($sql);
 
+        if (!$result || $result->num_rows === 0) {
+            return false; // nothing to revoke
+        }
+
+        // Step 2: Loop through and find the matching token
+        while ($row = $result->fetch_assoc()) {
+            if (TokenService::verifyToken($refreshToken, $row['token_hash'])) {
+                // Step 3: Revoke this token
+                $updateSql = "UPDATE tbl_refreshtokens SET revoked = 1, revoked_at = NOW() WHERE id = ?";
+                $this->db->query($updateSql, [$row['id']]);
+                return true; // token found and revoked
+            }
+        }
+
+        return false; // token not found
     }
 
     public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array

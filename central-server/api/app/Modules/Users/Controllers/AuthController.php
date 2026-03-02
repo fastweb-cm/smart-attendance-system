@@ -5,6 +5,7 @@ use App\Core\Controller;
 use App\Modules\Users\Models\Users;
 use App\Services\JWTService;
 use App\Services\TokenService;
+use App\Middleware\AuthMiddleware;
 
 class AuthController extends controller
 {
@@ -21,7 +22,7 @@ class AuthController extends controller
                 $this->json([
                     'success' => false,
                     'message' => 'Invalid Username or Password' 
-                ]); //authorised
+                ],401); //authorised
             }
 
             $jwtService = new JWTService();
@@ -30,8 +31,10 @@ class AuthController extends controller
             //generate the access token
             $accessToken = $jwtService->generateAccessToken($user);
 
+            $stayloggedin = $data['stayloggedin'] ?? false;
+
             //if the user wants to remain logged in
-            if(isset($data['stayloggedin'])){
+            if($stayloggedin){
                 //generate the refresh token
                 $refreshToken = $tokenService->generateRefreshToken();
                 $hashedRefresh = $tokenService->hashToken($refreshToken);
@@ -45,10 +48,11 @@ class AuthController extends controller
                     $refreshToken,
                     [
                         'expires' => time() + 86400 * 30, //30 days
-                        'path' => '/api/v1/auth', //only send cookie to this endpoint
+                        'path' => '/', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
                         // 'secure' => true, HTTPS only
-                        'samesite' => 'Strict'
+                        'samesite' => 'Strict',
+                        'secure' => false
                     ]
                     );
             }
@@ -74,9 +78,8 @@ class AuthController extends controller
     public static function logout()
     {
         $users = new Users();
-        if (isset($_COOKIE['refresh_token'])) {
-            //let hash the toke using same algo with used for the stored hash
-            $token = Tokenservice::hashToken($_COOKIE['refresh_token']);
+        $token = $_COOKIE['refresh_token'];
+        if (isset($token)) {
             $users->revokeByToken($token);
         }
 
@@ -85,6 +88,31 @@ class AuthController extends controller
         self::json([
             'success' => true,
             'message' => 'logout successfully'
+        ]);
+    }
+
+    public function me()
+    {
+        $token = self::getAuthHeader();
+        $payload = AuthMiddleware::handle();
+        error_log(json_encode($payload));
+
+        if (!$payload) {
+            $this->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $this->json([
+            'success' => true,
+            'accessToken' => $token,
+            'user' => [
+                'id' => $payload['sub'],
+                'role' => $payload['role'],
+                'username' => $payload['username'],
+                'email' => $payload['email'],
+            ]
         ]);
     }
 }

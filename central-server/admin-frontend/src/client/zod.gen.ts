@@ -15,7 +15,7 @@ export const zBiometricEnrollmentStatus = z.enum(['pending', 'completed']);
 export const zLogin = z.object({
     username: z.string(),
     password: z.string().min(6),
-    stayloggedin: z.optional(z.string())
+    stayloggedin: z.optional(z.boolean())
 });
 
 export const zLoginResponse = z.object({
@@ -403,6 +403,17 @@ export const zRefreshData = z.object({
  * refresh access token
  */
 export const zRefreshResponse = zLoginResponse;
+
+export const zAuthCheckData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * successful login
+ */
+export const zAuthCheckResponse = zLoginResponse;
 
 export const zListUsersData = z.object({
     body: z.optional(z.never()),

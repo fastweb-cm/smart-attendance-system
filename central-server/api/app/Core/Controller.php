@@ -24,5 +24,21 @@ class controller {
     protected function getQueryParams(): array {
         return  $_GET ?? [];
     }
+
+    protected static function getAuthHeader(): string
+    {
+        // $headers = getallheaders(); //fetches all headers sent from this request
+        $headers = getallheaders();
+        // error_log(json_encode($headers));
+
+        if (!isset($headers["Authorization"])) {
+            self::json([
+                "status" => 'error',
+                "message" => "Access Denied"
+            ],401);
+        }
+
+        return str_replace("Bearer ", '', $headers['Authorization']);   //return the bearer token
+    }
 }
 ?>

@@ -56,7 +56,7 @@ components:
           type: string
           minLength: 6
         stayloggedin:
-          type: string
+          type: boolean
       required:
         - username
         - password
@@ -823,6 +823,24 @@ paths:
       responses:
         "200":
           description: refresh access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/auth:
+    post:
+      operationId: authCheck
+      security: []
+      summary: authentication check
+      tags: [Authentication]
+      responses:
+        "200":
+          description: successful login
           content:
             application/json:
               schema:
