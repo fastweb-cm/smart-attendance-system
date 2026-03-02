@@ -1,23 +1,11 @@
-"use client";
-
+import React from 'react'
 import { SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { ChevronsUpDown, User2, LogOut, CircleUser} from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { toast } from 'react-toastify';
 
 export default function SidebarFoot() {
-  const { user, logout } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Logout Successfully");
-    } catch (error) {
-      console.error(error)
-      toast.error("An Unexpected error occurred")
-    }
-  }
+  const { user } = useAuth();
   return (
     <SidebarFooter>
           <SidebarMenu>
@@ -27,7 +15,7 @@ export default function SidebarFoot() {
                   <SidebarMenuButton>
                     <User2 /> <div className="flex flex-col">
                         <p className="text-md font-extrabold">{user?.username}</p>
-                        <p className="text-xs">{user?.email}</p>
+                        <p className="text-xs">brandonichami@gmail.com</p>
                     </div>
                     <ChevronsUpDown className="ml-auto" />
                   </SidebarMenuButton>
@@ -43,8 +31,8 @@ export default function SidebarFoot() {
                   {/* <DropdownMenuItem>
                     <CreditCard /> <span>Billing</span>
                   </DropdownMenuItem> */}
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut/> <span>Sign out</span>
+                  <DropdownMenuItem>
+                    <LogOut /> <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

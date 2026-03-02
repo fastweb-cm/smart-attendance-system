@@ -3,7 +3,6 @@
 namespace App\Modules\Users\Models;
 
 use App\Core\Database;
-use App\Services\TokenService;
 
 class Users
 {
@@ -110,17 +109,6 @@ class Users
         return $this->getUserById($this->id);
     }
 
-    public function storeRefresh($userid, $hash)
-    {
-        $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 30); // 30 days
-        
-        $sql = "INSERT INTO tbl_refreshtokens(user_id,token_hash,expires_at)
-            VALUES(?,?,?)";
-        $params = [$userid, $hash, $expiresAt];
-
-        $this->db->query($sql, $params);
-    }
-
     public function updateUser(): ?array
     {
         if (!$this->id) return null;
@@ -189,75 +177,6 @@ class Users
                 WHERE u.id = ?";
         $result = $this->db->query($sql, [$id]);
         return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
-    }
-
-    public function findByUsername(string $username): ?array
-    {
-        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
-                JOIN tbl_staff st ON u.id = st.user_id
-                JOIN lkup_role r ON r.id = st.role_id
-                WHERE u.username = ?";
-        $result = $this->db->query($sql, [$username]);
-        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
-    }
-
-    public function findAdmin(int $userId)
-    {
-        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
-                JOIN tbl_staff st ON u.id = st.user_id
-                JOIN lkup_role r ON r.id = st.role_id
-                WHERE u.id = ?";
-        $result = $this->db->query($sql, [$userId]);
-        return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
-    }
-
-    public function findValidByUserToken(string $refreshToken): ?array
-    {
-        $sql = "SELECT * FROM tbl_refreshtokens 
-                WHERE revoked = 0 AND expires_at > NOW()";
-        $result = $this->db->query($sql);
-
-        if (!$result || $result->num_rows === 0) return null;
-
-        while ($row = $result->fetch_assoc()) {
-            if (TokenService::verifyToken($refreshToken, $row['token_hash'])) {
-                return $row;
-            }
-        }
-
-        return null;
-    }
-
-    public function revokeToken(int $id): bool {
-        $sql = 'UPDATE tbl_refreshtokens
-            SET  revoked = 1, revoked_at = NOW()
-            WHERE id = ?';
-        $this->db->query($sql, [$id]);
-
-        return $this->db->affectedRows() > 0;
-    }
-
-    public function revokeByToken(string $refreshToken): bool
-    {
-        // Step 1: Get all valid, non-revoked refresh tokens
-        $sql = "SELECT * FROM tbl_refreshtokens WHERE revoked = 0 AND expires_at > NOW()";
-        $result = $this->db->query($sql);
-
-        if (!$result || $result->num_rows === 0) {
-            return false; // nothing to revoke
-        }
-
-        // Step 2: Loop through and find the matching token
-        while ($row = $result->fetch_assoc()) {
-            if (TokenService::verifyToken($refreshToken, $row['token_hash'])) {
-                // Step 3: Revoke this token
-                $updateSql = "UPDATE tbl_refreshtokens SET revoked = 1, revoked_at = NOW() WHERE id = ?";
-                $this->db->query($updateSql, [$row['id']]);
-                return true; // token found and revoked
-            }
-        }
-
-        return false; // token not found
     }
 
     public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array

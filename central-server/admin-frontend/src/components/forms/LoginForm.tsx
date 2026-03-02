@@ -10,31 +10,17 @@ import { InputGroup, RHFInputField } from "../ui/forminput"
 import { usePasswordToggle } from "@/hooks/use-password-toggle"
 import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
-import { Login } from "@/client"
-import InputField from "../ui/InputField"
-import { useRouter } from "next/navigation"
-import { toast } from "react-toastify"
 
 export default function LoginForm() {
-  const { login, isLoading } = useAuth();
-  const router = useRouter();
+  const { login } = useAuth();
 
   const methods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (data: Login) => {
-    try {
-      await login(data);//auth the user
-
-      //redirect to admin
-      router.push("/admin");
-
-      toast.success("Login successfully");
-
-    } catch (error) {
-      console.error(error)
-    }
+  const onSubmit = (data: LoginFormValues) => {
+    const { username, password } = data;
+    login(username, password);//auth the user
   }
 
   const password = usePasswordToggle();
@@ -76,16 +62,14 @@ export default function LoginForm() {
             </button>
           }/>
 
-          <InputField type="checkbox" name="stayloggedin" label="Remember Me" defaultValue="stayloggedin"  />
-
           <div className="flex justify-end">
             <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
               Forgot password?
             </Link>
           </div>
 
-          <Button type="submit" disabled={isLoading} className="w-full rounded-none bg-primary hover:bg-primary/80 cursor-pointer">
-            {isLoading ? 'please wait...':'login'}
+          <Button type="submit" className="w-full rounded-none bg-primary hover:bg-primary/80 cursor-pointer">
+            Login
           </Button>
         </form>
       </div>

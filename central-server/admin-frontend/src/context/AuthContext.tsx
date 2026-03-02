@@ -1,134 +1,57 @@
 'use client';
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import { Login } from '@/client';
-import { useMutation } from '@tanstack/react-query';
-import { loginMutation, logoutMutation } from '@/client/@tanstack/react-query.gen';
-import { tokenStore } from '@/lib/token-store';
-import { client } from '@/client/client.gen';
-
-export type User = {
-  id?: number;
-  role?: string;
-  username?: string;
-  email?: string;
-}
 
 interface AuthContextType {
-  user: User | null;
-  login: (data: Login) => Promise<void>;
-  logout: () => Promise<void>;
-  isLoading: boolean;
-  isHydrating: boolean;
+  user: any | null;
+  loading: boolean;
+  login: (username: string, password: string) => void;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isHydrating, setIsHydrating] = useState(true);
+  const [user, setUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const loginMutationInstance = useMutation({
-    ...loginMutation(),
-  });
-
-  const logoutMutationInstance = useMutation({
-    ...logoutMutation(),
-  })
-
-  // useEffect(()=> {
-  //   const bootstrap = async () => {
-  //     try {
-  //       const res = await client.instance.post(
-  //         "/api/v1/auth/refresh"
-  //       );
-
-  //       const token = res.data.accessToken;
-  //       const user = res.data.user;
-
-  //       if (!token || !user){
-  //         throw new Error("Missing user or access token");
-  //       }
-  //       tokenStore.set(token);
-  //       setUser(user);
-  //     } catch (error) {
-  //       setUser(null);
-  //     }finally{
-  //       setIsHydrating(false)
-  //     }
-  //   }
-
-  //   bootstrap();
-  // },[])
-
-  // const authCheckInstance = useMutation({
-  //   ...authCheckMutation(),
-  // })
-
-  //restore user on app load
+  // Load user from storage on mount
   useEffect(() => {
-    const restoreUser = async () => {
-      const token = tokenStore.get();
+    const storedUser = localStorage.getItem("user");
 
-      if(!token){
-        setIsHydrating(false);
-        return
-      }
-
-      try {
-        const res = await client.instance.post(
-          "/api/v1/auth/refresh"
-        );
-
-        const token = res.data.accessToken;
-        const user = res.data.user;
-        if (!token || !user) {
-          throw new Error("Missing User or Token");
-        }
-        tokenStore.set(token)
-        setUser(user)
-      } catch (error) {
-        tokenStore.clear();
-        setUser(null);
-      }finally{
-        setIsHydrating(false);
-      }
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-    restoreUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
 
-  const login = async (data: Login) => {
-    try {
-      const res = await loginMutationInstance.mutateAsync({
-        body: data,
-      })
-      const token = res.accessToken;
-      const user = res.user;
-      if (!token || !user) {
-        throw new Error("Missing User or Token");
-      }
-      tokenStore.set(token)
-      setUser(user)
-    } catch (error) {
-      toast.error("invalid username or password")
-      throw error
-    }
-  }
+    setLoading(false); // finished checking storage
+  }, []);
 
-  const logout = async () => {
-    try {
-      await logoutMutationInstance.mutateAsync({});
-    } finally {
-      tokenStore.clear();
-      setUser(null);
-      window.location.href = "/login";
+  const login = (username: string, password: string) => {
+    const mockUser = {
+      id: 1,
+      email: "brandonichami@gmail.com",
+      username: "ichami"
+    };
+
+    if (username === 'test' && password === '123456') {
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      setUser(mockUser);
+      router.push("/admin");
+    } else {
+      toast.error("Invalid username or password");
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push('/login');
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading: loginMutationInstance.isPending, isHydrating }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

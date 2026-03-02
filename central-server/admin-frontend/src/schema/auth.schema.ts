@@ -1,8 +1,7 @@
 import { z } from "zod"
-import { zLogin } from "@/client/zod.gen";
 
-export const loginSchema = zLogin.extend({
-    username: z.string().min(3, "Username is required"),
+export const loginSchema = z.object({
+    username: z.string().min(3, "Username must be atleast 3 characters minimum"),
     password: z.string().min(6, "Password must be at least 6 characters")
 });
 

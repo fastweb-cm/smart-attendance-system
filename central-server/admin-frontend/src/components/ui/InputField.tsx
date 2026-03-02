@@ -24,7 +24,7 @@ const InputField = ({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {label && type !== 'checkbox' && (
+      {label && (
         <label className="text-xs text-gray-500">
           {label} {required && <span className="text-red-700">*</span>}
         </label>
@@ -79,7 +79,7 @@ const InputField = ({
         />
       )}
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 };

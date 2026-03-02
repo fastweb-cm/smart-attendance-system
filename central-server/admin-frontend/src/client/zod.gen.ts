@@ -12,23 +12,6 @@ export const zUserStatus = z.enum([
 
 export const zBiometricEnrollmentStatus = z.enum(['pending', 'completed']);
 
-export const zLogin = z.object({
-    username: z.string(),
-    password: z.string().min(6),
-    stayloggedin: z.optional(z.boolean())
-});
-
-export const zLoginResponse = z.object({
-    success: z.optional(z.boolean()),
-    accessToken: z.optional(z.string()),
-    user: z.optional(z.object({
-        id: z.optional(z.int()),
-        role: z.optional(z.string()),
-        username: z.optional(z.string()),
-        email: z.optional(z.string())
-    }))
-});
-
 export const zUser = z.object({
     id: z.optional(z.int()),
     fname: z.string(),
@@ -368,52 +351,6 @@ export const zLogs = z.object({
     description: z.optional(z.string()),
     user_id: z.optional(z.int())
 });
-
-export const zLoginData = z.object({
-    body: zLogin,
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * successful login
- */
-export const zLoginResponse2 = zLoginResponse;
-
-export const zLogoutData = z.object({
-    body: z.optional(z.never()),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * logout successful
- */
-export const zLogoutResponse = z.object({
-    success: z.optional(z.boolean())
-});
-
-export const zRefreshData = z.object({
-    body: z.optional(z.never()),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * refresh access token
- */
-export const zRefreshResponse = zLoginResponse;
-
-export const zAuthCheckData = z.object({
-    body: z.optional(z.never()),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * successful login
- */
-export const zAuthCheckResponse = zLoginResponse;
 
 export const zListUsersData = z.object({
     body: z.optional(z.never()),

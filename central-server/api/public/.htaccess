@@ -1,14 +1,6 @@
-CGIPassAuth On
-
 RewriteEngine On
 
-# Forward Authorization header to PHP
-
-RewriteCond %{HTTP:Authorization} ^(._)
-RewriteRule ._ - [e=HTTP_AUTHORIZATION:%1]
-
 # Redirect all requests to index.php
-
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]

@@ -4,20 +4,17 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function AuthCheck() {
-const { user, isHydrating } = useAuth();
+export default function Page() {
+const { user, loading } = useAuth();
 const router = useRouter();
 
 useEffect(() => {
-  if (!user && !isHydrating) {
+  if (!loading && !user) {
     router.push("/login");
   }
-  if(user && !isHydrating) {
-    router.push('/admin');
-  }
-}, [user, router,isHydrating]);
+}, [user, loading, router]);
 
-if(isHydrating) return <div className="text-center">loading...</div>
-if (!user) return null;
+if (loading) return null; // wait until auth check finishes
+if (!user) return null;   // prevent flash
 
 }
