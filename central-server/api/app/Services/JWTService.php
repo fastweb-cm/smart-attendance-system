@@ -23,9 +23,11 @@ class JWTService
         $payload = [
             'iss' => $this->issuer, //issuer
             'iat' => time(), // the time when the token was generated
-            'exp' => time() + 1800, // 30 minutes 
+            'exp' => time() + 60, // 30 minutes 
             'sub' => $user['id'],
-            'role' => $user['role']
+            'role' => $user['role'],
+            'username' => $user['username'],
+            'email' => $user['email'],
         ];
 
         return JWT::encode($payload, $this->secret, 'HS256');
@@ -33,6 +35,7 @@ class JWTService
 
     public function validateAccessToken(string $token)
     {
-        return JWT::decode($token, new Key($this->secret, 'HS256'));
+        $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
+        return (array)$decoded;
     }
 }

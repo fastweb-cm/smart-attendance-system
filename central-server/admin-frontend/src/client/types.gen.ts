@@ -10,6 +10,23 @@ export type UserStatus = 'active' | 'inactive' | 'dismissed';
 
 export type BiometricEnrollmentStatus = 'pending' | 'completed';
 
+export type Login = {
+    username: string;
+    password: string;
+    stayloggedin?: boolean;
+};
+
+export type LoginResponse = {
+    success?: boolean;
+    accessToken?: string;
+    user?: {
+        id?: number;
+        role?: string;
+        username?: string;
+        email?: string;
+    };
+};
+
 export type User = {
     id?: number;
     fname: string;
@@ -371,6 +388,116 @@ export type Logs = {
     description?: string;
     user_id?: number;
 };
+
+export type LoginData = {
+    body: Login;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/login';
+};
+
+export type LoginErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type LoginResponses = {
+    /**
+     * successful login
+     */
+    200: LoginResponse;
+};
+
+export type LoginResponse2 = LoginResponses[keyof LoginResponses];
+
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/logout';
+};
+
+export type LogoutErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type LogoutResponses = {
+    /**
+     * logout successful
+     */
+    200: {
+        success?: boolean;
+    };
+};
+
+export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type RefreshData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/refresh';
+};
+
+export type RefreshErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type RefreshResponses = {
+    /**
+     * refresh access token
+     */
+    200: LoginResponse;
+};
+
+export type RefreshResponse = RefreshResponses[keyof RefreshResponses];
+
+export type AuthCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth';
+};
+
+export type AuthCheckErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type AuthCheckResponses = {
+    /**
+     * successful login
+     */
+    200: LoginResponse;
+};
+
+export type AuthCheckResponse = AuthCheckResponses[keyof AuthCheckResponses];
 
 export type ListUsersData = {
     body?: never;

@@ -20,7 +20,7 @@ terminal-dev:
 
 .PHONY: central-run,terminal-run
 central-run:
-	cd $(CENTRALSERVER_DIR) && npm run dev
+	cd $(CENTRALSERVER_DIR) && npm run dev -- -H smartattendance.fastwebcm.local -p 3000
 
 terminal-run:
 	cd $(TERMINALAPP_DIR) && npm run dev

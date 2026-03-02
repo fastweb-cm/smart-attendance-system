@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, TerminalCapabilitiesData, TerminalCapabilitiesErrors, TerminalCapabilitiesResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
+import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, AuthCheckData, AuthCheckErrors, AuthCheckResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, RefreshData, RefreshErrors, RefreshResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, TerminalCapabilitiesData, TerminalCapabilitiesErrors, TerminalCapabilitiesResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -17,6 +17,46 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+/**
+ * login admin users
+ */
+export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>) => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/v1/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * logou admin users
+ */
+export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>) => (options?.client ?? client).post<LogoutResponses, LogoutErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/v1/auth/logout',
+    ...options
+});
+
+/**
+ * refresh access token
+ */
+export const refresh = <ThrowOnError extends boolean = false>(options?: Options<RefreshData, ThrowOnError>) => (options?.client ?? client).post<RefreshResponses, RefreshErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/v1/auth/refresh',
+    ...options
+});
+
+/**
+ * authentication check
+ */
+export const authCheck = <ThrowOnError extends boolean = false>(options?: Options<AuthCheckData, ThrowOnError>) => (options?.client ?? client).post<AuthCheckResponses, AuthCheckErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/v1/auth',
+    ...options
+});
 
 /**
  * List all users

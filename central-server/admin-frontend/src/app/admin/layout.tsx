@@ -1,31 +1,31 @@
 'use client';
+
+import "@/lib/interceptors"; // <- ensures interceptors are attached
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardBreadcrumb } from "@/components/dashboardBreadcrumb";
-
-import { queryClient } from "@/lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-const { user, loading } = useAuth();
-const router = useRouter();
-
-useEffect(() => {
-  if (!loading && !user) {
-    router.push("/login");
-  }
-}, [user, loading, router]);
-
-if (loading) return null; // wait until auth check finishes
-if (!user) return null;   // prevent flash
-
+    const { user, isHydrating } = useAuth();
+    const router = useRouter();
+    
+    useEffect(() => {
+      if (!user && !isHydrating) {
+        router.push("/login");
+      }
+      if(user && !isHydrating) {
+        router.push('/admin');
+      }
+    }, [user, router,isHydrating]);
+    
+    if(isHydrating) return <div className="text-center">loading...</div>
+    if (!user) return null;
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <SidebarProvider>
         <div className="flex h-screen w-full">
           <AppSidebar />
@@ -48,7 +48,6 @@ if (!user) return null;   // prevent flash
           </div>
         </div>
       </SidebarProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </>
   )
 }

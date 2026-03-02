@@ -16,6 +16,6 @@ class TokenService
 
     public static function verifyToken(string $token, string $tokenHash): bool
     {
-        return password_verify($tokenHash, $token);
+        return password_verify($token, $tokenHash);
     }
 }

@@ -10,16 +10,8 @@ use Exception;
 class AuthMiddleware extends controller {
     public static function handle()
     {
-        $headers = getallheaders(); //fetches all headers sent from this request
 
-        if (!isset($headers["Authorization"])) {
-            self::json([
-                "status" => 'error',
-                "message" => "Access Denied"
-            ],401);
-        }
-
-        $token = str_replace("Bearer ", '', $headers['Authorization']);
+        $token = self::getAuthHeader();
 
         try{
             $jwtService = new JWTService();
@@ -44,9 +36,7 @@ class AuthMiddleware extends controller {
 
         try{
             $refreshToken = $_COOKIE['refresh_token']; //extract the refresh token from cookie
-            //let hash the token using same algo we used to store the hash
-            $hash = TokenService::hashToken($refreshToken);
-            $stored = $users->findValidByUserToken($hash);
+            $stored = $users->findValidByUserToken($refreshToken);
 
             if (!$stored) {
                 self::json([
@@ -73,16 +63,18 @@ class AuthMiddleware extends controller {
                     $newRefresh,
                     [
                         'expires' => time() + 86400 * 30, //30 days
-                        'path' => '/api/v1/refresh', //only send cookie to this endpoint
+                        'path' => '/', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
                         // 'secure' => true, HTTPS only
-                        'samesite' => 'Strict'
+                        'samesite' => 'Strict',
+                        'secure' => false
                     ]
                     );
                 $newAccess = $jwtService->generateAccessToken($user);
             
                 // send the new access token to the frontend
                 self::json([
+                    'success' => true,
                     'accessToken' => $newAccess,
                     'user' => [
                         'id' => $user['id'],
