@@ -1,3 +1,4 @@
+import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface Option {
@@ -45,6 +46,19 @@ export interface User {
   id?: number;
   username: string;
   email?: string;
+}
+
+export type AuthMode = 'face' | 'fingerprint' | 'card';
+
+export type AuthType = {
+  id: number;
+  name: AuthMode;
+}
+
+export type WizardStep = 1 | 2;
+export interface WizardState {
+  currentStep: WizardStep;
+  values: TerminalCreateFormValues;
 }
 
 export interface DataTableProps<TData, TValue> {
