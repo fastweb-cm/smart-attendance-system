@@ -8,6 +8,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from app.db.base import Base
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -47,3 +48,6 @@ class User(Base):
         Enum("pending", "completed", name="biometric_status_enum"),
         default="pending"
     )
+
+    biometric_profile = relationship(
+        "BiometricProfile", uselist=False, back_populates="user")

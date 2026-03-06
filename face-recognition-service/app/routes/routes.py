@@ -23,6 +23,14 @@ def get_db():
         db.close()
 
 
+@router.get("/health")
+def health_check():
+    """
+    Health check
+    """
+    return {"status": "ok"}
+
+
 @router.get("/users/{id}")
 def get_user(id: int, db: Session = Depends(get_db)):
     return get_user_by_id(db, id)
