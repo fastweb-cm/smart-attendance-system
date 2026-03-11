@@ -5,7 +5,7 @@ export default defineConfig({
     './openapi.json', // add other openapi specs here
   ],
   output: {
-    path:'../admin-frontend/src/client/facerecognition', // where generated code will live
+    path:'../terminal-frontend/src/client/facerecognition', // where generated code will live
     postProcess: ['prettier', 'eslint']
   },
   plugins: [
