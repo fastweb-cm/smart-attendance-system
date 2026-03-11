@@ -1,0 +1,10 @@
+{
+  "name": "openapi-client-generator",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.92.3"
+  },
+  "scripts": {
+    "openapi-ts": "openapi-ts"
+  }
+}
