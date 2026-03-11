@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.schemas.user_schema import UserResponse
-from app.crud.user_crud import *
+from app.schemas.user_schema import *
+from app.utils.image_utils import base64_to_image
+from app.services.face_service import extract_embedding
+from app.services.embedding_service import *
+from app.services.attendance_service import find_best_match
+from app.db.models.biometric_profile import BiometricProfile
+
 
 # Creates a router object that will hold all routes in this file
 router = APIRouter()
@@ -31,6 +36,43 @@ def health_check():
     return {"status": "ok"}
 
 
-@router.get("/users/{id}")
-def get_user(id: int, db: Session = Depends(get_db)):
-    return get_user_by_id(db, id)
+@router.post("/enroll-face")
+def enroll_face(data: FaceEnrollRequest, db: Session = Depends(get_db)):
+
+    image = base64_to_image(data.image)
+
+    embedding = extract_embedding(image)
+
+    blob = to_blob(embedding)
+
+    user = db.query(BiometricProfile).filter(
+        BiometricProfile.user_id == data.user_id
+    ).first()
+
+    user.face_template = blob
+
+    db.commit()
+
+    return {"message": "Face enrolled successfully"}
+
+
+@router.post("/verify")
+def verify_face(data: VerifyRequest):
+    # convert base64 to image
+    image = base64_to_image(data.image)
+
+    embedding = extract_embedding(image)
+
+    best_user, best_score = find_best_match(embedding)
+    if best_score < 0.7:
+        return {
+            "verified": False,
+            "user_id": best_user,
+            "score": float(best_score)
+        }
+
+    return {
+        "verified": True,
+        "user_id": best_user,
+        "score": float(best_score)
+    }
