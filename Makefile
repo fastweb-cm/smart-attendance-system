@@ -40,8 +40,8 @@ generate-central-client:
 generate-facerecognition-client:
 	@echo "Generating face recongition TypeScript Client..."
 	@mkdir -p terminal-app/terminal-frontend/src/client/facerecognition
-	@docker build -t openapi-generator ./face-recognition-service/openapi-generator
-	@docker run --rm -v $(PWD):/workspace -w /workspace/face-recognition-service/openapi-generator openapi-generator
+	@docker build -t openapi-generator ./terminal-app/openapi-generator
+	@docker run --rm -v $(PWD)/terminal-app:/workspace -w /workspace/openapi-generator openapi-generator
 	@echo "Face recognition Client Generated Successfully."
 
 
