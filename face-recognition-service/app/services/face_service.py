@@ -19,7 +19,7 @@ def extract_embedding(image):
 
     result = DeepFace.represent(
         img_path=image,
-        model_name=model,
+        model_name="VGG-Face",
         detector_backend="retinaface"
     )
 

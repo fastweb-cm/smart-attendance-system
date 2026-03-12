@@ -5,27 +5,13 @@ export type ClientOptions = {
 };
 
 /**
- * FaceEnrollRequest
+ * Body_enroll_face_enroll_face_post
  */
-export type FaceEnrollRequest = {
+export type BodyEnrollFaceEnrollFacePost = {
     /**
      * User Id
      */
     user_id: number;
-    /**
-     * Image
-     */
-    image: string;
-};
-
-/**
- * VerifyRequest
- */
-export type VerifyRequest = {
-    /**
-     * User Id
-     */
-    user_id?: number | null;
     /**
      * Image
      */
@@ -70,6 +56,20 @@ export type ValidationError = {
     };
 };
 
+/**
+ * VerifyRequest
+ */
+export type VerifyRequest = {
+    /**
+     * User Id
+     */
+    user_id?: number | null;
+    /**
+     * Image
+     */
+    image: string;
+};
+
 export type HealthCheckHealthGetData = {
     body?: never;
     path?: never;
@@ -85,7 +85,7 @@ export type HealthCheckHealthGetResponses = {
 };
 
 export type EnrollFaceEnrollFacePostData = {
-    body: FaceEnrollRequest;
+    body: BodyEnrollFaceEnrollFacePost;
     path?: never;
     query?: never;
     url: '/enroll-face';

@@ -3,21 +3,10 @@
 import * as z from 'zod';
 
 /**
- * FaceEnrollRequest
+ * Body_enroll_face_enroll_face_post
  */
-export const zFaceEnrollRequest = z.object({
+export const zBodyEnrollFaceEnrollFacePost = z.object({
     user_id: z.int(),
-    image: z.string()
-});
-
-/**
- * VerifyRequest
- */
-export const zVerifyRequest = z.object({
-    user_id: z.optional(z.union([
-        z.int(),
-        z.null()
-    ])),
     image: z.string()
 });
 
@@ -39,6 +28,17 @@ export const zHttpValidationError = z.object({
     detail: z.optional(z.array(zValidationError))
 });
 
+/**
+ * VerifyRequest
+ */
+export const zVerifyRequest = z.object({
+    user_id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
+    image: z.string()
+});
+
 export const zHealthCheckHealthGetData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -46,7 +46,7 @@ export const zHealthCheckHealthGetData = z.object({
 });
 
 export const zEnrollFaceEnrollFacePostData = z.object({
-    body: zFaceEnrollRequest,
+    body: zBodyEnrollFaceEnrollFacePost,
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
