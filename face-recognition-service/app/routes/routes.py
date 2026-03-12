@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import numpy as np
+import cv2
+from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.schemas.user_schema import *
@@ -37,17 +39,30 @@ def health_check():
 
 
 @router.post("/enroll-face")
-def enroll_face(data: FaceEnrollRequest, db: Session = Depends(get_db)):
+async def enroll_face(
+    user_id: int = Form(...),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
 
-    image = base64_to_image(data.image)
+    contents = await image.read()
 
-    embedding = extract_embedding(image)
+    np_img = np.frombuffer(contents, np.uint8)
+    img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+    if img is None:
+        raise HTTPException(status_code=400, detail="Invalid image")
+
+    embedding = extract_embedding(img)
 
     blob = to_blob(embedding)
 
     user = db.query(BiometricProfile).filter(
-        BiometricProfile.user_id == data.user_id
+        BiometricProfile.user_id == user_id
     ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="This user does not exist")
 
     user.face_template = blob
 
