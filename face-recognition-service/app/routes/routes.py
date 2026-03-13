@@ -9,6 +9,7 @@ from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 from app.services.attendance_service import find_best_match
 from app.db.models.biometric_profile import BiometricProfile
+from app.db.models.users import User
 
 
 # Creates a router object that will hold all routes in this file
@@ -41,10 +42,73 @@ def health_check():
 @router.post("/enroll-face")
 async def enroll_face(
     user_id: int = Form(...),
-    image: UploadFile = File(...),
+    images: list[UploadFile] = File(...),
     db: Session = Depends(get_db)
 ):
+    if len(images) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="At least 3 images required for enrollment"
+        )
 
+    embeddings = []
+
+    for image in images:
+
+        contents = await image.read()
+
+        np_img = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+        if img is None:
+            continue
+
+        # resize image
+        img = cv2.resize(img, (224, 224))
+
+        embedding = extract_embedding(img)
+
+        embeddings.append(embedding)
+
+    if len(embeddings) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No valid face embeddings extracted"
+        )
+
+    # average embeddings
+    final_embedding = np.mean(embeddings, axis=0)
+
+    blob = to_blob(final_embedding)
+
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Invalid user")
+
+    profile = db.query(BiometricProfile).filter(
+        BiometricProfile.user_id == user_id
+    ).first()
+
+    if not profile:
+        profile = BiometricProfile(
+            user_id=user_id,
+            face_template=blob
+        )
+        db.add(profile)
+    else:
+        profile.face_template = blob
+
+    db.commit()
+
+    return {"message": "Face enrolled successfully"}
+
+
+@router.post("/verify")
+async def verify_face(
+    user_id: int = Form(...),
+    image: UploadFile = File(...)
+):
     contents = await image.read()
 
     np_img = np.frombuffer(contents, np.uint8)
@@ -53,33 +117,11 @@ async def enroll_face(
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image")
 
+    img = cv2.resize(img, (224, 224))
     embedding = extract_embedding(img)
 
-    blob = to_blob(embedding)
-
-    user = db.query(BiometricProfile).filter(
-        BiometricProfile.user_id == user_id
-    ).first()
-
-    if not user:
-        raise HTTPException(status_code=400, detail="This user does not exist")
-
-    user.face_template = blob
-
-    db.commit()
-
-    return {"message": "Face enrolled successfully"}
-
-
-@router.post("/verify")
-def verify_face(data: VerifyRequest):
-    # convert base64 to image
-    image = base64_to_image(data.image)
-
-    embedding = extract_embedding(image)
-
     best_user, best_score = find_best_match(embedding)
-    if best_score < 0.7:
+    if best_score < 0.5:
         return {
             "verified": False,
             "user_id": best_user,

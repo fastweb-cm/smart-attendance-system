@@ -8,6 +8,7 @@ import WebcamCapture from '@/components/WebcamCapture';
 import { AnnouncementsData, EventsData } from '@/lib/data'
 import StatusModal from '@/components/StatusModal'
 import { useState } from 'react'
+import WebcamCaptureModal from '@/components/WebcamVerify';
 
 export default function TerminalPage() {
   const [showWebcam, setShowWebcam] = useState(false);
@@ -35,8 +36,11 @@ export default function TerminalPage() {
 
         {/* Webcam Section */}
         {showWebcam && (
+          // <div className="my-4 flex justify-center">
+          //   <WebcamCapture open={showWebcam} onClose={() => setShowWebcam(false)}/>
+          // </div>
           <div className="my-4 flex justify-center">
-            <WebcamCapture open={showWebcam} onClose={() => setShowWebcam(false)}/>
+            <WebcamCaptureModal open={showWebcam} onClose={() => setShowWebcam(false)}/>
           </div>
         )}
 

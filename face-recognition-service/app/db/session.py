@@ -14,7 +14,7 @@ engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Checks if connection is still alive
     pool_recycle=True,  # recycle old connections so MySQL does not kill them
-    echo=True  # Print SQL queries in terminal
+    echo=False  # Print SQL queries in terminal
 )
 
 SessionLocal = sessionmaker(

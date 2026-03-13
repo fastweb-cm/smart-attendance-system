@@ -15,13 +15,17 @@ def load_model_info():
 
 
 def extract_embedding(image):
-    global model
 
     result = DeepFace.represent(
         img_path=image,
         model_name="VGG-Face",
-        detector_backend="retinaface"
+        detector_backend="retinaface",
+        enforce_detection=True
     )
 
+    if len(result) != 1:
+        raise Exception("Exactly one face required")
+
     vector = result[0]["embedding"]
+
     return np.array(vector, dtype=np.float32)
