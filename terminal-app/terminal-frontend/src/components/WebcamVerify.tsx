@@ -12,16 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
 import apiClient from "@/lib/axiosClient";
+import { WebcamCaptureModalProps } from "@/types";
 
-interface WebcamCaptureModalProps {
-  open: boolean;
-  onClose: () => void;
-  userId: number;
-}
+
 
 export default function WebcamCaptureModal({
   open,
   onClose,
+  onCaptureStart,
+  onResult,
   userId,
 }: WebcamCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -149,22 +148,27 @@ export default function WebcamCaptureModal({
         formData.append("user_id", String(1));
         formData.append("image", blob, "face.jpg");
 
+        stopWebcam()
+        onClose()
+        onCaptureStart()
+
         try {
           const res = await apiClient.post("verify", formData);
           if (res.data.verified){
-            toast.success("Verification was successfully")
+            onResult(
+              "success",
+              "Welcome Ichami, you have successfully checked in."
+            );
           }
           console.log(res.data)
           capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) { 
-          const message = error.response?.data?.detail || "An unexpected error occured";
-          toast.error(message)
-          toast.error(error.response?.data)
+          onResult(
+            "error",
+            error.response?.data?.detail || "Verification failed"
+          );
           capturedRef.current = false;
-        }finally{
-          stopWebcam();
-          onClose();
         }
       },
       "image/jpeg",

@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 
 // const Loading = lazy(() => import("../shared/Loading"));
 // const Button = lazy(() => import('./Button'));
-import {Button} from '../ui/button';
+import {Button} from './button';
+import { ModalProps } from '@/types';
 
-const Modal = ({ isOpen = false, btnx= true, btn = true, onClose, title, children }) => {
+const Modal = ({ isOpen = false, btnx= true, btn = true, onClose, title, children }:ModalProps) => {
   // Close modal on ESC key
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) onClose();
     };
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);

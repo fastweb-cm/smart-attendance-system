@@ -12,15 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
 import apiClient from "@/lib/axiosClient";
-
-interface WebcamCaptureModalProps {
-  open: boolean;
-  onClose: () => void;
-}
+import { WebcamCaptureModalProps } from "@/types";
 
 export default function WebcamCaptureModal({
   open,
   onClose,
+  onCaptureStart,
+  onResult,
+  userId,
 }: WebcamCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -157,19 +156,23 @@ export default function WebcamCaptureModal({
     formData.append("images", img);
   });
 
-  try {
-    const res = await apiClient.post("enroll-face", formData);
+  stopWebcam()
+  onClose()
+  onCaptureStart()
 
-    toast.success(res.data.message || "Face enrolled successfully");
+  try {
+    await apiClient.post("enroll-face", formData);
+
+    onResult(
+      "success",
+      "Face template successfully registered."
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    const message =
-      error.response?.data?.detail || "Unexpected error occurred";
-    toast.error(message);
-  } finally {
-    console.log(formData);
-    stopWebcam();
-    onClose();
+    onResult(
+      "error",
+      error.response?.data?.detail || "Face Registration failed"
+    );
   }
 };
 

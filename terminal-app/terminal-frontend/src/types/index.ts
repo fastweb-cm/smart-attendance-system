@@ -1,4 +1,33 @@
+import React from "react";
 
+export type AttendanceState = 
+  | "idle"
+  | "capturing"
+  | "verifying"
+  | "success"
+  | "error"
+
+export interface WebcamCaptureModalProps {
+  open: boolean;
+  onClose: () => void;
+  onCaptureStart: () => void;
+  onResult: (status: "success" | "error",message: string) => void;
+  userId?: number;
+}
+
+export interface ModalProps {
+  isOpen: boolean;
+  btnx?: boolean;
+  btn?: boolean;
+  onClose?: () => void;
+  title?: string;
+  children: React.ReactNode;
+}
+
+export interface StatusModalProps extends Partial<ModalProps> {
+  status: AttendanceState;
+  message: string;
+}
 interface Option {
   label: string
   value: string
