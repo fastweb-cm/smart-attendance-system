@@ -227,7 +227,10 @@ export type Terminal = {
     status?: 'pending' | 'active' | 'revoked';
 };
 
-export type TerminalAuthTypes = 'face' | 'card' | 'fingerprint';
+export type AuthTypes = {
+    id?: number;
+    name?: 'face' | 'fingerprint' | 'card';
+};
 
 /**
  * This defines the type of auth supported by the terminal
