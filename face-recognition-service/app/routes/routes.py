@@ -117,7 +117,7 @@ async def verify_face(
     embedding = extract_embedding([img])  # single embedding
 
     best_user, best_score = find_best_match(embedding[0])
-    threshold = 0.6  # ArcFace typical threshold
+    threshold = 0.7  # ArcFace typical threshold
     verified = best_score >= threshold
 
     return {

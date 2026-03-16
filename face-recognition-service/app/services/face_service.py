@@ -19,7 +19,7 @@ def extract_embedding(images):
     results = DeepFace.represent(
         img_path=images,
         model_name="ArcFace",
-        detector_backend="skip",
+        # detector_backend="skip",
         enforce_detection=False
     )
 
