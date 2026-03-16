@@ -157,7 +157,12 @@ export default function WebcamCaptureModal({
           if (res.data.verified){
             onResult(
               "success",
-              "Welcome Ichami, you have successfully checked in."
+              "Verification successfull."
+            );
+          }else{
+            onResult(
+              "error",
+              "Verification failed."
             );
           }
           console.log(res.data)

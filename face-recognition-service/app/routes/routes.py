@@ -45,16 +45,16 @@ async def enroll_face(
     images: list[UploadFile] = File(...),
     db: Session = Depends(get_db)
 ):
+
     if len(images) < 3:
         raise HTTPException(
             status_code=400,
             detail="At least 3 images required for enrollment"
         )
 
-    embeddings = []
+    imgs = []
 
     for image in images:
-
         contents = await image.read()
 
         np_img = np.frombuffer(contents, np.uint8)
@@ -63,20 +63,17 @@ async def enroll_face(
         if img is None:
             continue
 
-        # resize image
-        img = cv2.resize(img, (224, 224))
+        img = cv2.resize(img, (160, 160))
+        imgs.append(img)
 
-        embedding = extract_embedding(img)
-
-        embeddings.append(embedding)
+    embeddings = extract_embedding(imgs)
 
     if len(embeddings) == 0:
         raise HTTPException(
             status_code=400,
-            detail="No valid face embeddings extracted"
+            detail="No embeddings extracted"
         )
 
-    # average embeddings
     final_embedding = np.mean(embeddings, axis=0)
 
     blob = to_blob(final_embedding)
@@ -110,26 +107,21 @@ async def verify_face(
     image: UploadFile = File(...)
 ):
     contents = await image.read()
-
     np_img = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image")
 
-    img = cv2.resize(img, (224, 224))
-    embedding = extract_embedding(img)
+    img = cv2.resize(img, (160, 160))
+    embedding = extract_embedding([img])  # single embedding
 
-    best_user, best_score = find_best_match(embedding)
-    if best_score < 0.5:
-        return {
-            "verified": False,
-            "user_id": best_user,
-            "score": float(best_score)
-        }
+    best_user, best_score = find_best_match(embedding[0])
+    threshold = 0.6  # ArcFace typical threshold
+    verified = best_score >= threshold
 
     return {
-        "verified": True,
+        "verified": verified,
         "user_id": best_user,
-        "score": float(best_score)
+        "score": best_score
     }

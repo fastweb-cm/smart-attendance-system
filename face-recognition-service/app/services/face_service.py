@@ -11,21 +11,29 @@ def load_model_info():
     """
 
     global model
-    model = DeepFace.build_model("VGG-Face")
+    model = DeepFace.build_model("ArcFace")
 
 
-def extract_embedding(image):
+def extract_embedding(images):
 
-    result = DeepFace.represent(
-        img_path=image,
-        model_name="VGG-Face",
-        detector_backend="retinaface",
-        enforce_detection=True
+    results = DeepFace.represent(
+        img_path=images,
+        model_name="ArcFace",
+        detector_backend="skip",
+        enforce_detection=False
     )
 
-    if len(result) != 1:
-        raise Exception("Exactly one face required")
+    if not isinstance(images, list):
+        results = [results]
 
-    vector = result[0]["embedding"]
+    embeddings = []
 
-    return np.array(vector, dtype=np.float32)
+    for r in results:
+        if isinstance(r, list):
+            r = r[0]
+
+        embeddings.append(
+            np.array(r["embedding"], dtype=np.float32)
+        )
+
+    return embeddings

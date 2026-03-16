@@ -5,44 +5,37 @@ from app.services.embedding_service import from_blob
 from app.db.models.biometric_profile import BiometricProfile
 from app.db.session import SessionLocal
 
-user_biometric_cache = {}
+# Prepare a global cache
+user_ids = []
+# 512 = ArcFace embedding size
+user_embeddings = np.empty((0, 512), dtype=np.float32)
 
 
 def load_users_into_memory():
-    """
-    Load all students embeddings from the database into memeoty
-    Call this once at startup
-    """
-    global user_biometric_cache
+    global user_ids, user_embeddings
     db = SessionLocal()
-
     try:
         face_templates = db.query(BiometricProfile).all()
+        embeddings_list = []
+        user_ids = []
         for s in face_templates:
             if s.face_template is not None:
-                user_biometric_cache[s.user_id] = from_blob(s.face_template)
+                emb = from_blob(s.face_template)
+                embeddings_list.append(emb)
+                user_ids.append(s.user_id)
+        if embeddings_list:
+            # shape: (num_users, 512)
+            user_embeddings = np.stack(embeddings_list)
     finally:
         db.close()
 
 
 def find_best_match(new_embedding: np.ndarray):
-    """
-    Compare new face embedding with all cached embeddings
-    and return the user_id and similarity score of the best match.
-    """
+    if user_embeddings.shape[0] == 0:
+        return None, 0.0
 
-    best_score = -1
-    best_user = None
+    # Cosine similarity between new_embedding and all stored embeddings
+    sims = cosine_similarity(new_embedding.reshape(1, -1), user_embeddings)[0]
 
-    for user_id, face_template in user_biometric_cache.items():
-        # reshape for cosine similarity (1,n)
-        score = cosine_similarity(
-            new_embedding.reshape(1, -1),
-            face_template.reshape(1, -1)
-        )[0][0]
-
-        if score > best_score:
-            best_score = score
-            best_user = user_id
-
-    return best_user, best_score
+    best_idx = np.argmax(sims)
+    return user_ids[best_idx], float(sims[best_idx])

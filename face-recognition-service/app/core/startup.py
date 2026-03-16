@@ -7,7 +7,7 @@ from app.db.models.users import User
 from app.db.models.biometric_profile import BiometricProfile
 
 # Global cache
-user_biometric_cache: dict[int, np.ndarray] = {}
+# user_biometric_cache: dict[int, np.ndarray] = {}
 model_info: dict[str, str] = {}
 
 
