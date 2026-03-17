@@ -485,9 +485,15 @@ components:
           type: string
           enum: ["pending", "active", "revoked"]
 
-    TerminalAuthTypes:
-      type: string
-      enum: ["face", "card", "fingerprint"]
+    AuthTypes:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum: [face, fingerprint, card]
+
     TerminalCapabilities:
       description: This defines the type of auth supported by the terminal
       type: object
@@ -517,7 +523,6 @@ components:
         - type: object
           required:
             - name
-            - activation_code
             - branch_id
           properties:
             auth_capabilities:

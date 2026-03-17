@@ -212,11 +212,14 @@ export const zTerminal = z.object({
     ]))
 });
 
-export const zTerminalAuthTypes = z.enum([
-    'face',
-    'card',
-    'fingerprint'
-]);
+export const zAuthTypes = z.object({
+    id: z.optional(z.int()),
+    name: z.optional(z.enum([
+        'face',
+        'fingerprint',
+        'card'
+    ]))
+});
 
 /**
  * This defines the type of auth supported by the terminal
