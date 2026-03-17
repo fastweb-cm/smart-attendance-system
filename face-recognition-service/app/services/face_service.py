@@ -1,39 +1,49 @@
 from deepface import DeepFace
 import numpy as np
-from app.services.embedding_service import to_blob
 
 model = None
 
 
 def load_model_info():
     """
-    Load model info
+    Load model once at startup
     """
-
     global model
     model = DeepFace.build_model("ArcFace")
 
 
 def extract_embedding(images):
-
-    results = DeepFace.represent(
-        img_path=images,
-        model_name="ArcFace",
-        # detector_backend="skip",
-        enforce_detection=False
-    )
-
-    if not isinstance(images, list):
-        results = [results]
+    """
+    Extract embeddings from already cropped face images
+    """
 
     embeddings = []
 
-    for r in results:
-        if isinstance(r, list):
-            r = r[0]
+    for img in images:
+        try:
+            result = DeepFace.represent(
+                img_path=img,
+                model_name="ArcFace",
+                # VERY IMPORTANT (we already cropped)
+                detector_backend="skip",
+                enforce_detection=False
+            )
 
-        embeddings.append(
-            np.array(r["embedding"], dtype=np.float32)
-        )
+            if isinstance(result, list):
+                result = result[0]
+
+            embedding = np.array(result["embedding"], dtype=np.float32)
+
+            # normalize embedding (critical for cosine similarity)
+            norm = np.linalg.norm(embedding)
+            if norm == 0:
+                continue
+
+            embedding = embedding / norm
+
+            embeddings.append(embedding)
+
+        except Exception as e:
+            print("Skipping image (embedding failed):", str(e))
 
     return embeddings

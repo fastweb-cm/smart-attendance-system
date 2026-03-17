@@ -154,6 +154,7 @@ export default function WebcamCaptureModal({
 
         try {
           const res = await apiClient.post("verify", formData);
+          console.log(res)
           if (res.data.verified){
             onResult(
               "success",
@@ -162,13 +163,13 @@ export default function WebcamCaptureModal({
           }else{
             onResult(
               "error",
-              "Verification failed."
+              `Verification failed.`
             );
           }
           console.log(res.data)
           capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) { 
+        } catch (error: any) {
           onResult(
             "error",
             error.response?.data?.detail || "Verification failed"

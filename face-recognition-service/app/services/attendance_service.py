@@ -37,5 +37,7 @@ def find_best_match(new_embedding: np.ndarray):
     # Cosine similarity between new_embedding and all stored embeddings
     sims = cosine_similarity(new_embedding.reshape(1, -1), user_embeddings)[0]
 
+    print("similarity:", sims)
+
     best_idx = np.argmax(sims)
     return user_ids[best_idx], float(sims[best_idx])

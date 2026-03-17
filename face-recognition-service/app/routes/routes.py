@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from deepface import DeepFace
 from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
@@ -10,6 +11,7 @@ from app.services.embedding_service import *
 from app.services.attendance_service import find_best_match
 from app.db.models.biometric_profile import BiometricProfile
 from app.db.models.users import User
+from app.core.startup import load_users_into_memory
 
 
 # Creates a router object that will hold all routes in this file
@@ -49,32 +51,58 @@ async def enroll_face(
     if len(images) < 3:
         raise HTTPException(
             status_code=400,
-            detail="At least 3 images required for enrollment"
+            detail="At least 3 images required"
         )
 
     imgs = []
 
     for image in images:
         contents = await image.read()
-
         np_img = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
         if img is None:
             continue
 
-        img = cv2.resize(img, (160, 160))
-        imgs.append(img)
+        try:
+            faces = DeepFace.extract_faces(
+                img,
+                detector_backend="opencv",
+                enforce_detection=True
+            )
+
+            if len(faces) == 0:
+                continue
+
+            face = faces[0]["face"]
+
+            # resize face to model input size
+            face = cv2.resize(face, (160, 160))
+
+            imgs.append(face)
+
+        except Exception:
+            print("Skipping frame (no face detected)")
+
+    if len(imgs) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Not enough valid face images. Try again."
+        )
 
     embeddings = extract_embedding(imgs)
 
-    if len(embeddings) == 0:
+    if len(embeddings) < 3:
         raise HTTPException(
             status_code=400,
-            detail="No embeddings extracted"
+            detail="Failed to extract enough embeddings"
         )
 
+    # average embeddings
     final_embedding = np.mean(embeddings, axis=0)
+
+    # normalize again after averaging
+    final_embedding = final_embedding / np.linalg.norm(final_embedding)
 
     blob = to_blob(final_embedding)
 
@@ -98,6 +126,9 @@ async def enroll_face(
 
     db.commit()
 
+    # refresh in-memory embeddings
+    load_users_into_memory()
+
     return {"message": "Face enrolled successfully"}
 
 
@@ -113,15 +144,38 @@ async def verify_face(
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image")
 
-    img = cv2.resize(img, (160, 160))
-    embedding = extract_embedding([img])  # single embedding
+    try:
+        faces = DeepFace.extract_faces(
+            img,
+            detector_backend="opencv",
+            enforce_detection=True
+        )
 
-    best_user, best_score = find_best_match(embedding[0])
-    threshold = 0.7  # ArcFace typical threshold
+        if len(faces) == 0:
+            raise HTTPException(status_code=400, detail="No face detected")
+
+        face = faces[0]["face"]
+        face = cv2.resize(face, (160, 160))
+
+    except Exception:
+        raise HTTPException(
+            status_code=400, detail="Face detection failed. Please ensure you are not sending a blurry or dark image")
+
+    embeddings = extract_embedding([face])
+
+    if len(embeddings) == 0:
+        raise HTTPException(status_code=400, detail="Embedding failed")
+
+    new_embedding = embeddings[0]
+
+    best_user, best_score = find_best_match(new_embedding)
+
+    threshold = 0.6  # stricter threshold
+
     verified = best_score >= threshold
 
     return {
         "verified": verified,
-        "user_id": best_user,
+        "user_id": best_user if verified else None,
         "score": best_score
     }
