@@ -1,2 +1,31 @@
-venv
+
 openapi-generator/node_modules
+# Byte-code files
+*.pyc
+__pycache__
+
+
+# Virtual environment
+.venv
+env
+venv
+
+
+# Editor/IDE-specific files
+.idea/  # For PyCharm or other JetBrains IDEs
+.vscode/ # For VS Code
+.DS_Store # For macOS
+
+# SQLite database files
+*.db
+*.sqlite3
+test_db.db
+
+# Environment variables and secrets
+.env
+.flaskenv
+secrets.ini
+
+# Operating System files
+.Trash-* # Linux trash folder
+*~ # temporary files
