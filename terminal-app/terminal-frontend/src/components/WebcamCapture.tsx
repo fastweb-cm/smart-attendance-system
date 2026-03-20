@@ -150,7 +150,7 @@ export default function WebcamCaptureModal({
   }
 
   const formData = new FormData();
-  formData.append("user_id", String(1));
+  formData.append("user_id", String(17));
 
   embeddingsImages.forEach((img) => {
     formData.append("images", img);
