@@ -13,6 +13,7 @@ import { AttendanceState } from '@/types';
 export default function TerminalPage() {
   const [attendanceState, setAttendanceState] = useState<AttendanceState>("idle"); //default the terminal is in idle state
   const [message, setMessage] = useState("");
+  const [feedback, setFeedback] = useState("Capturing...");
 
   return (
     <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg py-2 px-8">
@@ -25,6 +26,7 @@ export default function TerminalPage() {
             >Record Attendance</div>
             {/* <div className="w-1/4 h-18 bg-warning rounded-md animate-pulse text-center py-6 px-2">Event Attendance</div> */}
         </div>
+        {attendanceState === "capturing" && <div className="text-center text-yellow-600">{feedback}</div>}
         <Annoucements announcements={AnnouncementsData} />
         <EventsList events={EventsData} />
 
@@ -34,6 +36,7 @@ export default function TerminalPage() {
             open={attendanceState === "capturing"} 
             onClose={() => setAttendanceState("idle")}
             onCaptureStart={() => setAttendanceState("verifying")}
+            onFeedback={(msg) => setFeedback(msg)}
             onResult={(status,msg) => {
               setMessage(msg);
               setAttendanceState(status);

@@ -2,16 +2,17 @@ import numpy as np
 import cv2
 from deepface import DeepFace
 from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException
+import time
+import faiss
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.schemas.user_schema import *
 from app.utils.image_utils import base64_to_image
 from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
-from app.services.attendance_service import find_best_match
+import app.services.attendance_service as attendance_service
 from app.db.models.biometric_profile import BiometricProfile
 from app.db.models.users import User
-from app.core.startup import load_users_into_memory
 
 
 # Creates a router object that will hold all routes in this file
@@ -126,8 +127,15 @@ async def enroll_face(
 
     db.commit()
 
-    # refresh in-memory embeddings
-    load_users_into_memory()
+    # append newly enrolled embedding in faise vector db
+    new_embedding = final_embedding.astype("float32").reshape(1, -1)
+    faiss.normalize_L2(new_embedding)
+    if attendance_service.faiss_index is None:
+        dimension = new_embedding.shape[1]
+        attendance_service.faiss_index = faiss.IndexFlatIP(dimension)
+
+    attendance_service.faiss_index.add(new_embedding)
+    attendance_service.user_ids.append(user_id)
 
     return {"message": "Face enrolled successfully"}
 
@@ -137,6 +145,7 @@ async def verify_face(
     user_id: int = Form(...),
     image: UploadFile = File(...)
 ):
+    start = time.time()
     contents = await image.read()
     np_img = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
@@ -168,11 +177,15 @@ async def verify_face(
 
     new_embedding = embeddings[0]
 
-    best_user, best_score = find_best_match(new_embedding)
+    for _ in range(10000):
+        best_user, best_score = attendance_service.find_best_match(
+            new_embedding)
 
     threshold = 0.6  # stricter threshold
 
     verified = best_score >= threshold
+
+    print("avg time:", (time.time() - start))
 
     return {
         "verified": verified,
