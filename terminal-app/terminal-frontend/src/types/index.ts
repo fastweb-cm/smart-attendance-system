@@ -12,6 +12,7 @@ export interface WebcamCaptureModalProps {
   onClose: () => void;
   onCaptureStart: () => void;
   onResult: (status: "success" | "error",message: string) => void;
+  onFeedback: (msg: string) => void;
   userId?: number;
 }
 

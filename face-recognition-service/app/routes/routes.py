@@ -177,7 +177,7 @@ async def verify_face(
 
     new_embedding = embeddings[0]
 
-    for _ in range(1):
+    for _ in range(10000):
         best_user, best_score = attendance_service.find_best_match(
             new_embedding)
 
