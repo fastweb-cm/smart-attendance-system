@@ -21,10 +21,11 @@ def extract_embedding(images):
 
     for img in images:
         try:
+            # convert face to embedding vector
             result = DeepFace.represent(
                 img_path=img,
                 model_name="ArcFace",
-                # VERY IMPORTANT (we already cropped)
+                # VERY IMPORTANT (we already cropped and detected face)
                 detector_backend="skip",
                 enforce_detection=False
             )
@@ -32,13 +33,15 @@ def extract_embedding(images):
             if isinstance(result, list):
                 result = result[0]
 
+            # extract embedding from result and convert to numpy array
             embedding = np.array(result["embedding"], dtype=np.float32)
 
             # normalize embedding (critical for cosine similarity)
-            norm = np.linalg.norm(embedding)
+            norm = np.linalg.norm(embedding)  # computes vector length
             if norm == 0:
                 continue
 
+            # convert vector to unit vector (length = 1)
             embedding = embedding / norm
 
             embeddings.append(embedding)

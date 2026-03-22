@@ -58,8 +58,10 @@ async def enroll_face(
     imgs = []
 
     for image in images:
-        contents = await image.read()
+        contents = await image.read()  # reads the uploaded file and returns raw byte
+        # converts raw bytes to numpy array
         np_img = np.frombuffer(contents, np.uint8)
+        # converts the bytes array into actual image
         img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
         if img is None:
@@ -70,7 +72,7 @@ async def enroll_face(
                 img,
                 detector_backend="opencv",
                 enforce_detection=True
-            )
+            )  # attempt to detect face from the extracted image
 
             if len(faces) == 0:
                 continue
@@ -80,7 +82,7 @@ async def enroll_face(
             # resize face to model input size
             face = cv2.resize(face, (160, 160))
 
-            imgs.append(face)
+            imgs.append(face)  # append the face to the list(array)
 
         except Exception:
             print("Skipping frame (no face detected)")
