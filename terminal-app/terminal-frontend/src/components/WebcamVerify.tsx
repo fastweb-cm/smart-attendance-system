@@ -74,22 +74,29 @@ export default function WebcamCaptureModal({
   /*
    Blur Detection
   */
-  const isBlurry = (canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return true;
+const isBlurry = (canvas: HTMLCanvasElement) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return true;
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let sum = 0;
+  let sumSq = 0;
 
-    let sum = 0;
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const gray =
+      0.299 * imageData.data[i] +
+      0.587 * imageData.data[i + 1] +
+      0.114 * imageData.data[i + 2];
 
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      sum += imageData.data[i];
-    }
+    sum += gray;
+    sumSq += gray * gray;
+  }
 
-    const avg = sum / (imageData.data.length / 4);
+  const n = imageData.data.length / 4;
+  const variance = sumSq / n - (sum / n) ** 2;
 
-    return avg < 50;
-  };
+  return variance < 500; // tweak threshold
+};
 
   /*
    Lighting Check
@@ -216,32 +223,38 @@ export default function WebcamCaptureModal({
 
   const box = detection.detection.box;
 
-  const centerX = video.videoWidth / 2;
-  const centerY = video.videoHeight / 2;
+  // const centerX = video.videoWidth / 2;
+  // const centerY = video.videoHeight / 2;
 
-  const faceX = box.x + box.width / 2;
-  const faceY = box.y + box.height / 2;
+  // const faceX = box.x + box.width / 2;
+  // const faceY = box.y + box.height / 2;
 
-  const offsetX = Math.abs(centerX - faceX);
-  const offsetY = Math.abs(centerY - faceY);
+  // const offsetX = Math.abs(centerX - faceX);
+  // const offsetY = Math.abs(centerY - faceY);
 
-  const threshold = video.videoWidth * 0.15;
+  // const threshold = video.videoWidth * 0.15;
 
-  if (offsetX > threshold || offsetY > threshold) {
-    // setFeedback("Center your face.");
-    onFeedback("Center your face")
-    setTimeout(() => {
-      animationRef.current = requestAnimationFrame(detect);
-    }, DETECTION_INTERVAL);
+  // if (offsetX > threshold || offsetY > threshold) {
+  //   // setFeedback("Center your face.");
+  //   onFeedback("Center your face")
+  //   setTimeout(() => {
+  //     animationRef.current = requestAnimationFrame(detect);
+  //   }, DETECTION_INTERVAL);
 
+  //   return;
+  // }
+
+  // setFeedback("Hold still... capturing");
+  if (box.width < video.videoWidth * 0.2) {
+    onFeedback("Move closer to the camera");
     return;
   }
 
-  // setFeedback("Hold still... capturing");
-
   capturedRef.current = true;
 
-  await capture(video);
+  setTimeout(async ()=>{
+    await capture(video);
+  },500)
 };
 
   /*
