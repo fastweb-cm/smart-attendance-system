@@ -97,6 +97,18 @@ class Database
         return $result;
     }
 
+    public function beginTransaction(): void {
+        $this->conn->begin_transaction();
+    }
+
+    public function commit(): void {
+        $this->conn->commit();
+    }
+
+    public function rollback(): void {
+        $this->conn->rollback();
+    }
+
     //accessors
     public function rows(): int {
         return $this->row;  
