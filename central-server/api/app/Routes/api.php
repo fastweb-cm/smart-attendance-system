@@ -6,6 +6,7 @@ use App\Modules\Users\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 use App\Modules\Branch\Controllers\BranchController;
 use App\Modules\Groups\Controllers\GroupController;
+use App\Modules\Terminals\Controllers\TerminalController;
 
 /*
 |--------------------------
@@ -24,7 +25,8 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |  Protected Routes
 |--------------------------
 */
-$router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);
+$router->post('/api/v1/terminal', [TerminalController::class, 'store']);
+$router->put('/api/v1/terminal', [TerminalController::class, 'edit']);
 
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
