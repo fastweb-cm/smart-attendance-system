@@ -219,6 +219,36 @@ class TerminalModel
         return $terminals;
     }
 
+    /**
+    * Delete a terminal and all its associated relationships
+    * @return bool
+    */
+    public function delete(): bool
+    {
+        if (!$this->id) {
+            throw new \Exception("Terminal ID is required for deletion.");
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Delete Child Records First
+            $this->db->query("DELETE FROM tbl_terminal_auth_capability WHERE terminal_id = ?", [$this->id]);
+            $this->db->query("DELETE FROM tbl_terminal_access_policy WHERE terminal_id = ?", [$this->id]);
+
+            // 2. Delete the Main Terminal Record
+            $sql = "DELETE FROM tbl_terminal WHERE id = ?";
+            $this->db->query($sql, [$this->id]);
+
+            $this->db->commit();
+            return true;
+
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
     // Helper to generate a slug from the name
     private function generateSlug(string $text): string {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $text)));

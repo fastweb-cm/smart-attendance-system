@@ -99,4 +99,33 @@ class TerminalController extends Controller {
         }
     }
 
+    public function delete(int $id)
+    {
+        $id = (int)($id ?? 0);
+
+        if ($id < 0) {
+            $this->json([
+                "success"=> false,
+                "message"=> "Invalid request"
+            ]);
+        }
+
+        $this->t->setId($id);
+
+        try {
+            if ($this->t->delete()) { 
+                $this->json([
+                    "success"=> true,
+                    "message"=> "Group ID ".$id." was successfully deleted"
+                ]);
+            }
+        } catch (Throwable $e) {
+            $this->json([
+                "success" => false,
+                "message"=> $e->getMessage(),
+                "type" => get_class($e) // helpful for debugging
+            ], $e->getCode() ? : 500);
+        }
+    }
+
 }
