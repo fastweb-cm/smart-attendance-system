@@ -65,10 +65,13 @@ class TerminalModel
             $sqlTerm = "INSERT INTO tbl_terminal (name,slug,activation_code,branch_id,status)
             VALUES(?,?,?,?,?)";
 
+            $activationCode = $this->generateSecureCode();
+            $this->setActivationCode($activationCode);
+
             $paramsTerm = [
                 $this->name,
                 $this->slug,
-                $this->generateSecureCode(),
+                password_hash($activationCode, PASSWORD_DEFAULT),
                 $this->branch_id,
                 $this->status
             ];
@@ -137,6 +140,85 @@ class TerminalModel
         }
     }
 
+    /**
+    * Fetch terminals with their capabilities and access policies
+    */
+    public function fetch(int $branchId = 0, int $terminalId = 0, string $status = ''): array
+    {
+        // Build the main Terminal query dynamically
+        $sqlTerminals = "SELECT * FROM tbl_terminal";
+        $where = [];
+        $params = [];
+
+        if ($branchId > 0) {
+            $where[] = "branch_id = ?";
+            $params[] = $branchId;
+        }
+
+        if ($terminalId > 0) {
+            $where[] = "id = ?";
+            $params[] = $terminalId;
+        }
+
+        if (!empty($status)) {
+            $where[] = "status = ?";
+            $params[] = $status;
+        }
+
+        if (!empty($where)) {
+            $sqlTerminals .= " WHERE " . implode(" AND ", $where);
+        }
+
+        $terminalResult = $this->db->query($sqlTerminals, $params);
+
+        if (!$terminalResult || $terminalResult->num_rows === 0) {
+            return [];
+        }
+
+        $terminals = $terminalResult->fetch_all(MYSQLI_ASSOC);
+        $terminalIds = array_column($terminals, 'id');
+        $placeholders = implode(',', array_fill(0, count($terminalIds), '?'));
+
+        // Fetch all Auth Capabilities for these terminals
+        // JOINing with a hypothetical tbl_auth_type to get the human-readable name
+        $sqlCaps = "SELECT tc.*, at.name as auth_type_name 
+                    FROM tbl_terminal_auth_capability tc
+                    LEFT JOIN lkup_auth_type at ON tc.auth_type_id = at.id
+                    WHERE tc.terminal_id IN ($placeholders)";
+    
+        $capResult = $this->db->query($sqlCaps, $terminalIds);
+        $capsByTerminal = [];
+        if ($capResult && $capResult->num_rows > 0) {
+            foreach ($capResult->fetch_all(MYSQLI_ASSOC) as $cap) {
+                $capsByTerminal[$cap['terminal_id']][] = $cap;
+            }
+        }
+
+        // 3. Fetch all Access Policies for these terminals
+        // JOINing with tbl_group to show which group the policy applies to
+        $sqlPolicies = "SELECT tp.*, g.name as group_name, at.name as auth_type_name
+                        FROM tbl_terminal_access_policy tp
+                        LEFT JOIN tbl_group g ON tp.group_id = g.id
+                        LEFT JOIN lkup_auth_type at ON tp.auth_type_id = at.id
+                        WHERE tp.terminal_id IN ($placeholders)";
+    
+        $polResult = $this->db->query($sqlPolicies, $terminalIds);
+        $polsByTerminal = [];
+        if ($polResult && $polResult->num_rows > 0) {
+            foreach ($polResult->fetch_all(MYSQLI_ASSOC) as $pol) {
+                $polsByTerminal[$pol['terminal_id']][] = $pol;
+            }
+        }
+
+        // 4. Map relationships back to the terminals
+        foreach ($terminals as &$terminal) {
+            $terminal['auth_capabilities'] = $capsByTerminal[$terminal['id']] ?? [];
+            $terminal['access_policy'] = $polsByTerminal[$terminal['id']] ?? [];
+        }
+
+        return $terminals;
+    }
+
     // Helper to generate a slug from the name
     private function generateSlug(string $text): string {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $text)));
@@ -158,7 +240,7 @@ class TerminalModel
             $code .= $chars[random_int(0, $max)];
         }
 
-        return password_hash($code,PASSWORD_DEFAULT);
+        return $code;
     }
 
     /**

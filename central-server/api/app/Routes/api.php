@@ -27,6 +27,7 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 */
 $router->post('/api/v1/terminal', [TerminalController::class, 'store']);
 $router->put('/api/v1/terminal', [TerminalController::class, 'edit']);
+$router->get('/api/v1/terminal', [TerminalController::class, 'index']);
 
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
