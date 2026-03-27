@@ -92,4 +92,31 @@ class GroupController extends Controller {
             ], $e->getCode() ? : 500);
         }
     }
+
+    public function delete(int $groupId)
+    {
+        $groupdId = (int)($groupId ?? 0);
+
+        if ($groupdId < 0) {
+            $this->json([
+                "success"=> false,
+                "message"=> "Invalid request"
+            ]);
+        }
+
+        try {
+            if ($this->g->delete($groupId)) { 
+                $this->json([
+                    "success"=> true,
+                    "message"=> "Group ID ".$groupId." was successfully deleted"
+                ]);
+            }
+        } catch (Throwable $e) {
+            $this->json([
+                "success" => false,
+                "message"=> $e->getMessage(),
+                "type" => get_class($e) // helpful for debugging
+            ], $e->getCode() ? : 500);
+        }
+    }
 }

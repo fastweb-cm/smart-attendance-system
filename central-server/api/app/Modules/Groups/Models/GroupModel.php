@@ -155,6 +155,13 @@ class GroupModel extends Database {
         return $groups;
     }
 
+    /**
+     * update groups
+     * @param array $supervisors
+     * @param array $members
+     * @throws \RuntimeException
+     * @return bool
+     */
     public function update(array $supervisors, array $members): bool
     {
         if (is_null($this->id)){
@@ -206,6 +213,31 @@ class GroupModel extends Database {
         } catch(\Throwable $e) {
             $this->db->rollback();
             throw $e;
+        }
+    }
+
+    /**
+     * Delete group by id including it assoc members and supervisors
+     * @param int $groupId
+     * @return bool
+     */
+    public function delete(int $groupId): bool {
+        try {
+            $this->db->beginTransaction();
+
+            // delete old relationships
+            $this->db->query("DELETE FROM tbl_group_member WHERE group_id = ?", [$groupId]);
+            $this->db->query("DELETE FROM tbl_group_supervisor WHERE group_id = ?", [$groupId]);
+
+            // now delete the parant table
+            $this->db->query("DELETE FROM tbl_group WHERE id = ?", [$groupId]);
+
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+
+            return false;
         }
     }
 

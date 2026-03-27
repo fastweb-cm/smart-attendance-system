@@ -40,7 +40,8 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->put('/api/v1/branch/{branchId}', [BranchController::class, 'edit']);
 
     //groups routes
-    $router->post('/api/v1/group', [GroupController::class, 'store']);
     $router->get('/api/v1/group', [GroupController::class, 'index']);
+    $router->post('/api/v1/group', [GroupController::class, 'store']);
     $router->put('/api/v1/group', [GroupController::class, 'edit']);
+    $router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);
 });
