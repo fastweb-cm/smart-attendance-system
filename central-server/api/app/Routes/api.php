@@ -24,7 +24,7 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |  Protected Routes
 |--------------------------
 */
-$router->get('/api/v1/group', [GroupController::class, 'index']);
+$router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);
 
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
@@ -41,4 +41,6 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 
     //groups routes
     $router->post('/api/v1/group', [GroupController::class, 'store']);
+    $router->get('/api/v1/group', [GroupController::class, 'index']);
+    $router->put('/api/v1/group', [GroupController::class, 'edit']);
 });

@@ -58,4 +58,38 @@ class GroupController extends Controller {
             ]);
         }
     }
+
+    public function edit() {
+        $data = $this->getJsonInput();
+        $id = (int)($data["id"] ?? 0);
+
+        if ($id < 0){
+            $this->json([
+                "success"=> false,
+                "message"=> "Invalid group"
+            ]);
+        }
+
+        $this->g->setBranchId($data["branch_id"]);
+        $this->g->setGroupTypeId($data["grouptype_id"]);
+        $this->g->setName($data["name"]);
+        $this->g->setExpectedWeeklyHours($data["expected_weekly_hours"] ?? 40);
+        $this->g->setAbsenseThreshold($data["absence_threshold"] ?? 0);
+        $this->g->setId($id);
+
+        try{
+            $this->g->update($data["supervisors"], $data["members"]);
+
+            $this->json([
+                "success" => true,
+                "message" => "Update was successfull"
+            ]);
+        }catch(Throwable $e){
+            $this->json([
+                "success" => false,
+                "message"=> $e->getMessage(),
+                "type" => get_class($e) // helpful for debugging
+            ], $e->getCode() ? : 500);
+        }
+    }
 }
