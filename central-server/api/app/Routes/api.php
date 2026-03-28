@@ -30,6 +30,9 @@ $router->put('/api/v1/terminal', [TerminalController::class, 'edit']);
 $router->get('/api/v1/terminal', [TerminalController::class, 'index']);
 $router->delete('/api/v1/terminal/{id}', [TerminalController::class, 'delete']);
 
+$router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
+
+
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 

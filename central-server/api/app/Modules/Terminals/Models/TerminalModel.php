@@ -249,6 +249,165 @@ class TerminalModel
         }
     }
 
+    /**
+     * Verifies a plain text code against the hashed code in DB
+     * Returns terminal ID on success, 0 on failre
+     * @param string $activationCode
+     * @return int
+     */
+    public function verifyActivationcode(string $activationCode): int {
+        // only fetch terminal that are still pending
+        $result = $this->db->query("SELECT * FROM tbl_terminal WHERE status = ?",['pending']);
+
+        if($result && $result->num_rows > 0) {
+            while($row = $result->fetch_assoc()) {
+                // verify the plain code again stored hash
+                if (password_verify($activationCode, $row["activation_code"])) {
+                    return (int)$row["id"];
+                }
+            }
+        }
+
+        return 0; // no match found
+    }
+
+    /**
+     * Get full terminal configuration by ID
+     * Reuses the existing fetch method
+     * @param int $id
+     * @return array|null
+     */
+    public function getTerminalData(int $id): ?array
+    {
+        try {
+        //begin transaction
+        $this->db->beginTransaction();
+
+        // update the terminal status to active
+        $this->updateStatus('active', (int)$id);
+
+        $result = $this->fetch(0, $id);
+        
+        if (empty($result)) return null;
+
+        $groupIds = [];
+        $subGroupIds = [];
+
+        $terminal = $result[0];
+
+        foreach ($terminal["access_policy"] as $policy) {
+            if (!empty($policy["subgroup_id"])) {
+                $subGroupIds[] = $policy["subgroup_id"];
+            } else if (!empty($policy["group_id"])) {
+                $groupIds[] = $policy["group_id"];
+            }
+        }
+
+
+        // fetch from both sources
+        $groupUsers = $this->getUsersByGroups(array_unique($groupIds)) ?? [];
+        $subGroupUsers = $this->getUsersBySubGroups(array_unique($subGroupIds)) ?? [];
+
+
+        //merge and remove duplicate (in case a user is in both result)
+        $allUsers = array_merge($groupUsers, $subGroupUsers);
+        $uniqueUsers = [];
+        foreach ($allUsers as $user) {
+            $uniqueUsers[$user["id"]] = $user; // keying by ID removes duplicate
+        }
+
+        $terminal["members"] = array_values($uniqueUsers);
+
+        $this->db->commit();
+
+        return $terminal;
+        } catch (\Throwable $e) { 
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Get active users by an array of group ids
+     * @param array $groups
+     * @return void
+     */
+    public function getUsersByGroups(array $groupIds): array
+    {
+        if (empty($groupIds)) return [];
+
+        $cleanIds = array_values(array_unique($groupIds));
+        $placeholders = implode(",", array_fill(0, count($cleanIds), "?"));
+
+        $sql = "SELECT gm.group_id, NULL AS subgroup_id, u.id, u.fname, u.lname,
+                    u.gender, u.user_type, b.face_template,
+                    b.fingerprint_template, b.card_serial_code
+                FROM tbl_group_member gm
+                JOIN tbl_user u ON gm.user_id = u.id
+                LEFT JOIN tbl_biometricprofile b ON u.id = b.user_id
+                WHERE gm.group_id IN ($placeholders) AND u.status = 'active'";
+
+        $result = $this->db->query($sql, $cleanIds);
+        $users = ($result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Transform BLOBs to JSON-safe Strings
+        foreach ($users as &$user) {
+            $user['face_template'] = $user['face_template'] ? base64_encode($user['face_template']) : null;
+            $user['fingerprint_template'] = $user['fingerprint_template'] ? base64_encode($user['fingerprint_template']) : null;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Get active users by an array of sub group ids
+     * @param array $subgroups
+     * @return void
+     */
+    public function getUsersBySubGroups(array $subGroupIds): array
+    {
+        if (empty($subGroupIds)) return [];
+
+        // Clean IDs (unique and reset keys)
+        $cleanIds = array_values(array_unique($subGroupIds));
+        $placeholders = implode(",", array_fill(0, count($cleanIds), "?"));
+
+        // 3. The Query (Fixed JOIN to LEFT JOIN and corrected 'group_id' typo)
+        $sql = "SELECT sgm.subgroup_id, NULL AS group_id, u.id, u.fname, u.lname,
+                    u.gender, u.user_type, b.face_template,
+                    b.fingerprint_template, b.card_serial_code
+                FROM tbl_subgroup_member sgm
+                JOIN tbl_user u ON sgm.user_id = u.id
+                LEFT JOIN tbl_biometricprofile b ON u.id = b.user_id
+                WHERE sgm.subgroup_id IN ($placeholders) AND u.status = 'active'";
+
+        $result = $this->db->query($sql, $cleanIds);
+        $users = ($result && $result instanceof \mysqli_result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Transform BLOBs to JSON-safe Strings
+        foreach ($users as &$user) {
+            $user['face_template'] = $user['face_template'] ? base64_encode($user['face_template']) : null;
+            $user['fingerprint_template'] = $user['fingerprint_template'] ? base64_encode($user['fingerprint_template']) : null;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Update terminal status
+     * returns true if update was successfull, otherwose false
+     */
+    public function updateStatus(string $status, int $id): bool
+    {
+        $this->db->query("UPDATE tbl_terminal SET status = ? WHERE id = ?", [$status, $id]);
+
+        if ($this->db->affectedRows() > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
     // Helper to generate a slug from the name
     private function generateSlug(string $text): string {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $text)));
