@@ -146,22 +146,23 @@ class TerminalModel
     public function fetch(int $branchId = 0, int $terminalId = 0, string $status = ''): array
     {
         // Build the main Terminal query dynamically
-        $sqlTerminals = "SELECT * FROM tbl_terminal";
+        $sqlTerminals = "SELECT t.id,t.name,t.slug,t.branch_id,t.status,t.date_created,b.name AS branch FROM tbl_terminal t
+                            JOIN tbl_branch b ON t.branch_id = b.id";
         $where = [];
         $params = [];
 
         if ($branchId > 0) {
-            $where[] = "branch_id = ?";
+            $where[] = "t.branch_id = ?";
             $params[] = $branchId;
         }
 
         if ($terminalId > 0) {
-            $where[] = "id = ?";
+            $where[] = "t.id = ?";
             $params[] = $terminalId;
         }
 
         if (!empty($status)) {
-            $where[] = "status = ?";
+            $where[] = "t.status = ?";
             $params[] = $status;
         }
 
