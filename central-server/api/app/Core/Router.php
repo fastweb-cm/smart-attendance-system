@@ -29,6 +29,21 @@ class Router
         $this->addRoute('POST', $uri, $action);
     }
 
+    public function put(string $uri, array $action): void
+    {
+        $this->addRoute('PUT', $uri, $action);
+    }
+
+    public function patch(string $uri, array $action): void
+    {
+        $this->addRoute('PATCH', $uri, $action);
+    }
+
+    public function delete(string $uri, array $action): void
+    {
+        $this->addRoute('DELETE', $uri, $action);
+    }
+
     private function addRoute(string $method, string $uri, array $action): void
     {
         $uri = $this->normalize($uri);
@@ -92,9 +107,13 @@ class Router
                 $instance = new $controller;
 
                 // Pass authenticated user to controller
+                // call_user_func_array(
+                //     [$instance, $methodName],
+                //     array_merge([$user], $matches)
+                // );
                 call_user_func_array(
                     [$instance, $methodName],
-                    array_merge([$user], $matches)
+                    $matches
                 );
 
                 return;

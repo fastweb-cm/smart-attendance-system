@@ -3,6 +3,7 @@ import { defineConfig, defaultPlugins } from '@hey-api/openapi-ts';
 export default defineConfig({
   input: [
     './openapi.json', // add other openapi specs here
+    './central-openapi.json',
   ],
   output: {
     path:'../terminal-frontend/src/client/facerecognition', // where generated code will live

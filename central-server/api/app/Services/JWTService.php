@@ -23,7 +23,7 @@ class JWTService
         $payload = [
             'iss' => $this->issuer, //issuer
             'iat' => time(), // the time when the token was generated
-            'exp' => time() + 60, // 30 minutes 
+            'exp' => time() + 1800, // 30 minutes 
             'sub' => $user['id'],
             'role' => $user['role'],
             'username' => $user['username'],

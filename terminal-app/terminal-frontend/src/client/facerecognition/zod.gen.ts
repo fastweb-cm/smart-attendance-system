@@ -5,7 +5,7 @@ import * as z from 'zod';
 /**
  * Body_enroll_face_enroll_face_post
  */
-export const zBodyEnrollFaceEnrollFacePost = z.object({
+export const zOpenapiBodyEnrollFaceEnrollFacePost = z.object({
     user_id: z.int(),
     image: z.string()
 });
@@ -13,7 +13,7 @@ export const zBodyEnrollFaceEnrollFacePost = z.object({
 /**
  * ValidationError
  */
-export const zValidationError = z.object({
+export const zOpenapiValidationError = z.object({
     loc: z.array(z.union([z.string(), z.int()])),
     msg: z.string(),
     type: z.string(),
@@ -24,14 +24,14 @@ export const zValidationError = z.object({
 /**
  * HTTPValidationError
  */
-export const zHttpValidationError = z.object({
-    detail: z.optional(z.array(zValidationError))
+export const zOpenapiHttpValidationError = z.object({
+    detail: z.optional(z.array(zOpenapiValidationError))
 });
 
 /**
  * VerifyRequest
  */
-export const zVerifyRequest = z.object({
+export const zOpenapiVerifyRequest = z.object({
     user_id: z.optional(z.union([
         z.int(),
         z.null()
@@ -39,20 +39,68 @@ export const zVerifyRequest = z.object({
     image: z.string()
 });
 
-export const zHealthCheckHealthGetData = z.object({
+export const zCentralOpenapiAuthCapability = z.object({
+    auth_type_name: z.optional(z.string()),
+    auth_step: z.optional(z.int())
+});
+
+export const zCentralOpenapiAccessPolicy = z.object({
+    group_name: z.optional(z.string()),
+    auth_type_name: z.optional(z.string())
+});
+
+export const zCentralOpenapiMember = z.object({
+    id: z.optional(z.int()),
+    fname: z.optional(z.string()),
+    lname: z.optional(z.string()),
+    face_template: z.optional(z.string()),
+    fingerprint_template: z.optional(z.string())
+});
+
+export const zCentralOpenapiTerminalData = z.object({
+    id: z.optional(z.int()),
+    name: z.optional(z.string()),
+    slug: z.optional(z.string()),
+    branch_id: z.optional(z.int()),
+    branch: z.optional(z.string()),
+    status: z.optional(z.string()),
+    auth_capabilities: z.optional(z.array(zCentralOpenapiAuthCapability)),
+    access_policy: z.optional(z.array(zCentralOpenapiAccessPolicy)),
+    members: z.optional(z.array(zCentralOpenapiMember))
+});
+
+export const zCentralOpenapiActivationResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(zCentralOpenapiTerminalData)
+});
+
+export const zOpenapiHealthCheckHealthGetData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-export const zEnrollFaceEnrollFacePostData = z.object({
-    body: zBodyEnrollFaceEnrollFacePost,
+export const zOpenapiEnrollFaceEnrollFacePostData = z.object({
+    body: zOpenapiBodyEnrollFaceEnrollFacePost,
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-export const zVerifyFaceVerifyPostData = z.object({
-    body: zVerifyRequest,
+export const zOpenapiVerifyFaceVerifyPostData = z.object({
+    body: zOpenapiVerifyRequest,
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
+
+export const zCentralOpenapiActivateTerminalData = z.object({
+    body: z.object({
+        code: z.string()
+    }),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Successful Activation
+ */
+export const zCentralOpenapiActivateTerminalResponse = zCentralOpenapiActivationResponse;

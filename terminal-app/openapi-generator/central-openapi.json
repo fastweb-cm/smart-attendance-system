@@ -1,0 +1,98 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Central Management Service",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/central/terminal/activate": {
+      "post": {
+        "tags": ["Activation"],
+        "summary": "Activate Terminal",
+        "operationId": "activateTerminal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string", "example": "JURYWFBH" }
+                },
+                "required": ["code"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Activation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ActivationResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActivationResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/TerminalData" }
+        }
+      },
+      "TerminalData": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "branch_id": { "type": "integer" },
+          "branch": { "type": "string" },
+          "status": { "type": "string" },
+          "auth_capabilities": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AuthCapability" }
+          },
+          "access_policy": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AccessPolicy" }
+          },
+          "members": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Member" }
+          }
+        }
+      },
+      "AuthCapability": {
+        "type": "object",
+        "properties": {
+          "auth_type_name": { "type": "string" },
+          "auth_step": { "type": "integer" }
+        }
+      },
+      "AccessPolicy": {
+        "type": "object",
+        "properties": {
+          "group_name": { "type": "string" },
+          "auth_type_name": { "type": "string" }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "fname": { "type": "string" },
+          "lname": { "type": "string" },
+          "face_template": { "type": "string", "nullable": true },
+          "fingerprint_template": { "type": "string", "nullable": true }
+        }
+      }
+    }
+  }
+}
