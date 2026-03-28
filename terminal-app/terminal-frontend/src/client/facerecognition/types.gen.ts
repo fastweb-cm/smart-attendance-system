@@ -78,6 +78,8 @@ export type CentralOpenapiActivationResponse = {
 export type CentralOpenapiTerminalData = {
     id?: number;
     name?: string;
+    slug?: string;
+    branch_id?: number;
     branch?: string;
     status?: string;
     auth_capabilities?: Array<CentralOpenapiAuthCapability>;

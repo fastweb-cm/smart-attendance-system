@@ -60,6 +60,8 @@ export const zCentralOpenapiMember = z.object({
 export const zCentralOpenapiTerminalData = z.object({
     id: z.optional(z.int()),
     name: z.optional(z.string()),
+    slug: z.optional(z.string()),
+    branch_id: z.optional(z.int()),
     branch: z.optional(z.string()),
     status: z.optional(z.string()),
     auth_capabilities: z.optional(z.array(zCentralOpenapiAuthCapability)),

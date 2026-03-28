@@ -80,3 +80,6 @@ export interface TerminalConfig {
     auth_step: number;
   }[];
 }
+
+export type { CentralOpenapiTerminalData as terminalConfiguration } from "@/client/facerecognition";
+

@@ -51,6 +51,8 @@
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "branch_id": { "type": "integer" },
           "branch": { "type": "string" },
           "status": { "type": "string" },
           "auth_capabilities": {

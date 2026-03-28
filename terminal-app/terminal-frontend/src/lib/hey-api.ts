@@ -1,21 +1,37 @@
-import type { CreateClientConfig } from "@/client/facerecognition/client"
+import axios from 'axios';
+import type { CreateClientConfig } from "@/client/facerecognition/client";
 
 export const createClientConfig: CreateClientConfig = (config) => {
-    const isCentral = config?.url?.startsWith('/central/');
-    
-    let finalUrl = config?.url;
-    let finalBaseUrl = process.env.NEXT_PUBLIC_LOCAL_SERVICE_URL;
+    // Create the instance. We cast 'config' to any here because 
+    // Hey API's config object and Axios's config object have 
+    // slight internal naming conflicts (like 'auth' or 'headers').
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const instance = axios.create(config as any);
 
-    if (isCentral) {
-        finalBaseUrl = process.env.NEXT_PUBLIC_CENTRAL_API_URL;
-        // Remove the virtual '/central' prefix before sending to the real server
-        finalUrl = config?.url?.replace('/central', '');
-    }
+    // Attach the Interceptor for Dynamic Routing
+    instance.interceptors.request.use((requestConfig) => {
+        const url = requestConfig.url || '';
+        const isCentral = url.startsWith('/central/');
+
+        const centralBase = process.env.NEXT_PUBLIC_CENTRAL_API_URL;
+        const localBase = process.env.NEXT_PUBLIC_LOCAL_SERVICE_URL;
+
+        if (isCentral) {
+            requestConfig.baseURL = centralBase;
+            // Strip /central so PHP gets /terminal/activate
+            requestConfig.url = url.replace(/^\/central/, '');
+        } else {
+            requestConfig.baseURL = localBase;
+        }
+
+        return requestConfig;
+    });
+
+    // Set global defaults on the instance
+    instance.defaults.withCredentials = true;
 
     return {
         ...config,
-        url: finalUrl,
-        baseURL: finalBaseUrl,
-        withCredentials: true,
+        axios: instance,
     };
-}
+};

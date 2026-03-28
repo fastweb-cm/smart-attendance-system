@@ -1,9 +1,9 @@
 
-import { TerminalConfig } from "@/types";
+import { terminalConfiguration } from "@/types";
 import fs from "fs"
 import path from "path";
 
-export function loadTerminalConfig(): TerminalConfig | null {
+export function loadTerminalConfig(): terminalConfiguration | null {
     const configPath = path.join(process.cwd(),"terminal-configs","config.json");
 
     if(!fs.existsSync(configPath)){
@@ -21,4 +21,9 @@ export function base64ToBlob(base64: string, type = "image/png") {
   const array = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
   return new Blob([array], { type });
+}
+
+export function base64ToBuffer(base64: string | null) {
+  if (!base64) return null;
+  return Buffer.from(base64, "base64");
 }
