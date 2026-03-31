@@ -168,7 +168,8 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
           if (res.data.verified){
             onResult(
               "success",
-              "Verification successfull."
+              "Verification successfull.",
+              res.data?.user_id
             );
           }else{
             onResult(

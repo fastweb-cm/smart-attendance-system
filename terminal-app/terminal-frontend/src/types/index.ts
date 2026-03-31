@@ -11,7 +11,7 @@ export interface WebcamCaptureModalProps {
   open: boolean;
   onClose: () => void;
   onCaptureStart: () => void;
-  onResult: (status: "success" | "error",message: string) => void;
+  onResult: (status: "success" | "error",message: string, userId?: number) => void;
   onFeedback: (msg: string) => void;
   userId?: number;
 }
@@ -80,6 +80,16 @@ export interface TerminalConfig {
     auth_step: number;
   }[];
 }
+
+export interface AuthStep {
+  step: number;
+  type: string;
+}
+export interface AuthCapabilities {
+  auth_step: number;
+  auth_type_name: string;
+}
+
 
 export type { CentralOpenapiTerminalData as terminalConfiguration } from "@/client/facerecognition";
 
