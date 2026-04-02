@@ -67,31 +67,73 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { buildAuthFlow } from "@/lib/authFlow";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import AuthStepRenderer from "@/components/AuthStepRendere";
 import { useTerminalConfig } from "@/context/TerminalConfigContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, SkipForward, Play } from "lucide-react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
-  const steps = buildAuthFlow(config?.auth_capabilities ?? []);
+
+
+  //memoized steps to avoid rebuilding on every render, only when config changes
+  const steps = useMemo(
+    () => buildAuthFlow(config?.auth_capabilities ?? []),
+    [config]
+  );
 
   const {
     currentStep,
     next,
     skip,
     setUser,
-    shouldAllowStep,
-    currentStepIndex
+    currentStepIndex,
+    isComplete,
+    reset,
   } = useAuthFlow(steps);
 
   const [started, setStarted] = useState(false);
   const [message, setMessage] = useState("");
+  const hasMounted = useHasMounted();
+
+  //set mounted to true once component hits the browser
 
   const isLastStep = currentStepIndex === steps.length - 1;
+
+  // CRITICAL: Prevent hydration error by returning null 
+  // until the component is mounted on the client.
+  if (!hasMounted) return null;
+
+  // show success screen when complete
+  if (isComplete) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center p-12 bg-white rounded-[2.5rem] shadow-2xl"
+      >
+        <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <ChevronRight className="w-10 h-10 rotate-90" />
+        </div>
+        <h2 className="text-3xl font-bold text-slate-900">Attendance Recorded</h2>
+        <p className="text-slate-500 mt-2 font-medium text-lg">Thank you for verifying!</p>
+        <button 
+          onClick={() => {
+            reset();
+            setStarted(false);
+          }} 
+          className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-blue-700 transition-colors"
+        >
+          Done
+        </button>
+      </motion.div>
+    );
+  }
+  
 
   if (!started) {
     return (
@@ -111,11 +153,6 @@ export default function TerminalPage() {
     );
   }
 
-  // Automatic skip logic if step is not allowed
-  if (!shouldAllowStep(currentStep.type)) {
-    next();
-    return null;
-  }
 
   return (
     <div className="w-2xl mx-auto py-8">
@@ -153,12 +190,14 @@ export default function TerminalPage() {
             </h2>
           </div>
 
-          <div className="min-h-[300px] flex flex-col items-center justify-center bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 overflow-hidden relative">
+          <div className="min-h-75 flex flex-col items-center justify-center bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 overflow-hidden relative">
             <AuthStepRenderer
               step={currentStep}
               onSuccess={(userId: number) => {
+                const userObject = { id: userId, group_id: 2 }; // Mock user object with group_id
+
                 // If we don't have a user yet, set context
-                setUser(userId, config?.access_policy ?? []);
+                setUser(userObject, config?.access_policy ?? []);
                 next();
               }}
               onFailure={(msg: string) => setMessage(msg)}
@@ -183,7 +222,11 @@ export default function TerminalPage() {
       </AnimatePresence>
 
       <button 
-        onClick={() => setStarted(false)}
+        onClick={() => {
+          reset();
+          setStarted(false);
+        }
+        }
         className="mt-4 mx-auto block text-slate-400 font-medium hover:text-red-500 text-sm transition-colors"
       >
         Cancel & Return to Home

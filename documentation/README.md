@@ -242,3 +242,85 @@ e.g., for N=100: ~100ms; for N=1000: ~1s.
 
 the optimized vector search reduces time complexity approximately to O(log N) or near constant.
 e.g., assuming search takes about 0.01 ms per query.
+
+# Attendance Flow at Each Terminal
+
+## 1. Initialization
+
+- When a terminal page loads, it first fetches the terminal configuration using `useTerminalConfig()`.
+- The configuration includes:
+  - `auth_capabilities` → types of authentication steps required (e.g., Face, Card, OTP).
+  - `access_policy` → mapping of user groups to allowed authentication steps.
+- The authentication steps are built dynamically via `buildAuthFlow(config?.auth_capabilities)`.
+- The `useAuthFlow` hook initializes:
+  - `currentStepIndex` → tracks which step the user is on.
+  - `identifiedUser` → stores the user object after a successful verification.
+  - `allowedSteps` → steps the user is allowed to complete based on their group.
+  - `isComplete` → tracks whether the flow is fully completed.
+
+## 2. Ready to Scan
+
+- Initially, the terminal shows a “Ready to Scan” screen.
+- The user taps **START ATTENDANCE**.
+- `started` is set to true, which triggers rendering of the first authentication step.
+
+## 3. Step Execution
+
+- The current step (`currentStep`) is rendered using `AuthStepRenderer`.
+- The step shows a verification UI for that authentication type.
+- Steps are displayed in order, but conditional logic applies:
+  - `shouldAllowStep(currentStep.type)` checks if the user’s group has permission for the step.
+  - If a step is not allowed, it is automatically skipped.
+
+## 4. User Verification
+
+- When the user completes a step successfully (`onSuccess`):
+  - A mock user object is created (currently `{id: <userId>, group_id: 2}`).
+  - `setUser(userObject, config.access_policy)` stores the user and determines allowed steps.
+  - `next()` is called to move to the next step in the flow.
+- If verification fails (`onFailure`):
+  - The terminal shows an error message (`setMessage(msg)`).
+  - The user can retry the current step.
+
+## 5. Automatic Step Skipping
+
+- After the user is identified, the system automatically skips steps the user is not allowed to access.
+- Logic:
+  - `allowedSteps` is set based on the user's group.
+
+The `useEffect` watching `currentStep` checks:
+
+```jsx
+if (allowedSteps !== null && !shouldAllowStep(currentStep.type)) next();
+default`
+to only show steps included in `allowedSteps`.
+
+## 6. Step Indicators
+At the top of the terminal screen:
+a. Each step has a step indicator circle:
+done with icons:
+| ✅ | Completed |
+| 🔵 | Current |
+and pending steps:
+to be filled later or as per design,
+e.g.,⬜ Pending|
+a progress bar visually connects these steps.
+
+## 7. Flow Completion
+- When the last allowed step is completed:
+'the following occurs:'
+isComplete' is set to true,
+the terminal shows a success screen:
+based on example text:
+e.g., "Attendance recorded" and "Thank you for verifying!"
+the **Done** button resets flow for next user.
+
+## 8. Manual Controls
+- Skip Step button → allows users to skip optional steps.
+- Cancel & Return to Home → exits flow and resets terminal.
+
+## 9. Dynamic Behavior Summary
+| Trigger | Effect |
+|---------|---------|
+since this part contains summarized logic, it can be formatted as above.
+```

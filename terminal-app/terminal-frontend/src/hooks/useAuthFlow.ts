@@ -1,7 +1,7 @@
 "use client";
 
 import { AuthStep } from "@/types";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export function useAuthFlow(steps: AuthStep[]) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -10,34 +10,51 @@ export function useAuthFlow(steps: AuthStep[]) {
   const [allowedSteps, setAllowedSteps] = useState<string[] | null>(null);
   const [isComplete, setIsComplete] = useState(false); // Track if flow is done
 
-  const currentStep = steps[currentStepIndex];
+  const currentStep = steps[currentStepIndex]; // which step are we curently at
 
-  const next = () => {
+  // moves to the next step, or marks flow as complete if on last step
+  const next = useCallback(() => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      setIsComplete(true); // Final step reached
+      setIsComplete(true);
     }
-  };
+  }, [currentStepIndex, steps.length]);
 
   const skip = () => next();
 
+  // Sets the identified user and determines which steps they are allowed to access based on their group_id, and/or subgroup_id(soon) and the provided policy. 
+  // This is critical for the dynamic flow control, as it allows the app to show/hide steps based on user attributes. 
+  // The policy is expected to be an array of objects that link group_ids to auth_type_names, which are then used to set the allowedSteps state.
   // eslint-disable-next-line
-  const setUser = (user: any, policy: any[]) => {
-    setIdentifiedUser(user);
+  const setUser = useCallback((user: any, policy: any[]) => {
+  setIdentifiedUser(prev => {
+    if (prev) return prev;
 
-    // Filter policy by the user's specific group
     const userSteps = policy
       .filter(p => p.group_id === user.group_id)
       .map(p => p.auth_type_name);
 
     setAllowedSteps(userSteps);
-  };
+    return user;
+  });
+}, []);
 
-  const shouldAllowStep = (type: string) => {
+  // controls whether the current step should be shown based on if it's in the allowedSteps array. 
+  // If allowedSteps is null, it means we haven't set permissions yet, so we allow all steps by default. 
+  // Once set, only steps that match the user's group permissions will be allowed to show.
+  // thus it controls the skipping logic
+  const shouldAllowStep = useCallback((type: string) => {
     if (!allowedSteps) return true; 
     return allowedSteps.includes(type);
-  };
+  }, [allowedSteps]);
+
+  const reset = useCallback(() => {
+    setCurrentStepIndex(0);
+    setIdentifiedUser(null);
+    setAllowedSteps(null);
+    setIsComplete(false);
+  }, []);
 
   return {
     currentStep,
@@ -47,5 +64,7 @@ export function useAuthFlow(steps: AuthStep[]) {
     setUser,
     shouldAllowStep,
     isComplete,      // Useful for showing the final "Thank You" screen
+    reset,
+    allowedSteps,
   };
 }

@@ -172,7 +172,7 @@ async def verify_face(
         best_user, best_score = attendance_service.find_best_match(
             new_embedding)
 
-    threshold = 0.6  # stricter threshold
+    threshold = 0.5  # stricter threshold
 
     verified = best_score >= threshold
 
