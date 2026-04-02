@@ -204,7 +204,17 @@ export default function TerminalPage() {
                 setUser(user, config?.access_policy ?? []);
                 next();
               }}
-              onFailure={(msg: string) => setMessage(msg)}
+              onFailure={(msg: string) => {
+                if(msg === "User not found") {
+                  setMessage("Not allowed.");
+                  setTimeout(()=>{
+                    reset();
+                    setStarted(false);
+                  },2000)
+                } else {
+                  setMessage(msg);
+                }
+              }}
             />
           </div>
 

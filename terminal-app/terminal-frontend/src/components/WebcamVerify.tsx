@@ -155,7 +155,7 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         if (!blob) return;
 
         const formData = new FormData();
-        formData.append("user_id", String(1));
+        formData.append("user_id", String(18));
         formData.append("image", blob, "face.jpg");
 
         stopWebcam()
@@ -181,9 +181,12 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
           capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
+          const status = error.response?.status;
+          const errorMsg = error.response?.data?.detail || "Verification failed";
+
           onResult(
             "error",
-            error.response?.data?.detail || "Verification failed"
+            errorMsg
           );
           capturedRef.current = false;
         }

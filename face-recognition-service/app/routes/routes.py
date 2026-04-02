@@ -12,7 +12,7 @@ from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.crud.user_crud import get_user_details_by_id
+from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id
 
 
 # Creates a router object that will hold all routes in this file
@@ -178,15 +178,34 @@ async def verify_face(
 
     new_embedding = embeddings[0]
 
-    # find the best match from faiss index
+    # stricter threshold if user_id provided
+    threshold = 0.54 if user_id is not None else 0.5
+    verified = False
+    best_user = None
+    best_score = 0.0
 
-    for _ in range(10000):
+    if user_id is not None:
+        # if user_id provided, we directly fetch the stored embedding and compare with the new one (bypassing faiss)
+        stored_template_blob = get_user_face_template_by_id(db, user_id)
+
+        if stored_template_blob is None:
+            raise HTTPException(
+                status_code=404, detail="No face template found, please enroll face first")
+
+        user_embedding = from_blob(stored_template_blob)
+
+        best_score = attendance_service.verify_user_embedding(
+            user_embedding, new_embedding)
+        print("verification score:", best_score)
+        verified = best_score >= threshold
+        best_user = user_id if verified else None
+
+    else:
+        # find the best match from faiss index
         best_user, best_score = attendance_service.find_best_match(
             new_embedding)
-
-    threshold = 0.5  # stricter threshold
-
-    verified = best_score >= threshold
+        print("best match score:", best_score)
+        verified = best_score >= threshold
 
     # if no user_id initially provided, we fetch user details of the best match
     if not user_details and verified and best_user is not None:

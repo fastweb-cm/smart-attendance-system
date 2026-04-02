@@ -63,3 +63,17 @@ def find_best_match(new_embedding: np.ndarray):
         return None, 0.0
 
     return user_ids[best_idx], float(best_score)
+
+
+def verify_user_embedding(user_embedding: np.ndarray, new_embedding: np.ndarray):
+    # reshape and normalize both embeddings
+    user_emb = user_embedding.reshape(1, -1).astype("float32")
+    new_emb = new_embedding.reshape(1, -1).astype("float32")
+
+    faiss.normalize_L2(user_emb)
+    faiss.normalize_L2(new_emb)
+
+    # compute cosine similarity
+    score = np.dot(user_emb, new_emb.T)[0][0]
+
+    return float(score)
