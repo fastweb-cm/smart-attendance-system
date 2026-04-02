@@ -11,7 +11,7 @@ from app.utils.image_utils import base64_to_image
 from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
-from app.db.models.biometric_profile import BiometricProfile
+from app.db.models.users import User
 from app.db.models.users import User
 
 
@@ -110,23 +110,11 @@ async def enroll_face(
     blob = to_blob(final_embedding)
 
     user = db.query(User).filter(User.id == user_id).first()
-
     if not user:
         raise HTTPException(status_code=404, detail="Invalid user")
 
-    profile = db.query(BiometricProfile).filter(
-        BiometricProfile.user_id == user_id
-    ).first()
-
-    if not profile:
-        profile = BiometricProfile(
-            user_id=user_id,
-            face_template=blob
-        )
-        db.add(profile)
-    else:
-        profile.face_template = blob
-
+    # store embedding directly in User (local cache db)
+    user.face_template = blob
     db.commit()
 
     # append newly enrolled embedding in faise vector db
@@ -144,7 +132,8 @@ async def enroll_face(
 
 @router.post("/verify")
 async def verify_face(
-    user_id: int = Form(...),
+    user_id: int | None = Form(None),
+    event_id: int | None = Form(None),
     image: UploadFile = File(...)
 ):
     start = time.time()
