@@ -4,7 +4,13 @@ from app.services.attendance_service import load_users_into_memory
 from app.services.face_service import load_model_info
 
 from app.db.models.users import User
-from app.db.models.biometric_profile import BiometricProfile
+from app.db.models.terminal import Terminal
+from app.db.models.events import Event
+from app.db.models.auth_capabilities import AuthCapability
+from app.db.models.auth_policy import AuthPolicy
+from app.db.models.auth_session import AuthSession
+from app.db.models.attendance_auth_log import AttendanceAuthLog
+from app.db.models.attendance_summary import AttendanceSummary
 
 # Global cache
 # user_biometric_cache: dict[int, np.ndarray] = {}

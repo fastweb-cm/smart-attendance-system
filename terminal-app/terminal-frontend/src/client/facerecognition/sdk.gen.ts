@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { EnrollFaceEnrollFacePostData, EnrollFaceEnrollFacePostErrors, EnrollFaceEnrollFacePostResponses, HealthCheckHealthGetData, HealthCheckHealthGetResponses, VerifyFaceVerifyPostData, VerifyFaceVerifyPostErrors, VerifyFaceVerifyPostResponses } from './types.gen';
+import type { CentralOpenapiActivateTerminalData, CentralOpenapiActivateTerminalResponses, OpenapiEnrollFaceEnrollFacePostData, OpenapiEnrollFaceEnrollFacePostErrors, OpenapiEnrollFaceEnrollFacePostResponses, OpenapiHealthCheckHealthGetData, OpenapiHealthCheckHealthGetResponses, OpenapiVerifyFaceVerifyPostData, OpenapiVerifyFaceVerifyPostErrors, OpenapiVerifyFaceVerifyPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Health check
  */
-export const healthCheckHealthGet = <ThrowOnError extends boolean = false>(options?: Options<HealthCheckHealthGetData, ThrowOnError>) => (options?.client ?? client).get<HealthCheckHealthGetResponses, unknown, ThrowOnError>({
+export const openapiHealthCheckHealthGet = <ThrowOnError extends boolean = false>(options?: Options<OpenapiHealthCheckHealthGetData, ThrowOnError>) => (options?.client ?? client).get<OpenapiHealthCheckHealthGetResponses, unknown, ThrowOnError>({
     responseType: 'json',
     url: '/health',
     ...options
@@ -32,7 +32,7 @@ export const healthCheckHealthGet = <ThrowOnError extends boolean = false>(optio
 /**
  * Enroll Face
  */
-export const enrollFaceEnrollFacePost = <ThrowOnError extends boolean = false>(options: Options<EnrollFaceEnrollFacePostData, ThrowOnError>) => (options.client ?? client).post<EnrollFaceEnrollFacePostResponses, EnrollFaceEnrollFacePostErrors, ThrowOnError>({
+export const openapiEnrollFaceEnrollFacePost = <ThrowOnError extends boolean = false>(options: Options<OpenapiEnrollFaceEnrollFacePostData, ThrowOnError>) => (options.client ?? client).post<OpenapiEnrollFaceEnrollFacePostResponses, OpenapiEnrollFaceEnrollFacePostErrors, ThrowOnError>({
     ...formDataBodySerializer,
     responseType: 'json',
     url: '/enroll-face',
@@ -46,9 +46,22 @@ export const enrollFaceEnrollFacePost = <ThrowOnError extends boolean = false>(o
 /**
  * Verify Face
  */
-export const verifyFaceVerifyPost = <ThrowOnError extends boolean = false>(options: Options<VerifyFaceVerifyPostData, ThrowOnError>) => (options.client ?? client).post<VerifyFaceVerifyPostResponses, VerifyFaceVerifyPostErrors, ThrowOnError>({
+export const openapiVerifyFaceVerifyPost = <ThrowOnError extends boolean = false>(options: Options<OpenapiVerifyFaceVerifyPostData, ThrowOnError>) => (options.client ?? client).post<OpenapiVerifyFaceVerifyPostResponses, OpenapiVerifyFaceVerifyPostErrors, ThrowOnError>({
     responseType: 'json',
     url: '/verify',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Activate Terminal
+ */
+export const centralOpenapiActivateTerminal = <ThrowOnError extends boolean = false>(options: Options<CentralOpenapiActivateTerminalData, ThrowOnError>) => (options.client ?? client).post<CentralOpenapiActivateTerminalResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/central/terminal/activate',
     ...options,
     headers: {
         'Content-Type': 'application/json',

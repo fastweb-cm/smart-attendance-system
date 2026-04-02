@@ -2,11 +2,9 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Enum,
     ForeignKey,
-    DateTime
+    LargeBinary
 )
-from sqlalchemy.sql import func
 from app.db.base import Base
 from sqlalchemy.orm import relationship
 
@@ -14,40 +12,54 @@ from sqlalchemy.orm import relationship
 class User(Base):
     __tablename__ = "tbl_user"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
 
-    class_id = Column(Integer, ForeignKey("tbl_class.id"), index=True)
-
-    fname = Column(String(100), nullable=False)
-    lname = Column(String(100), nullable=False)
-
-    email = Column(String(255), unique=True, index=True)
-
-    gender = Column(
-        Enum("male", "female", name="gender_enum"),
-        nullable=False
-    )
-
-    username = Column(String(100), unique=True, index=True)
-
-    password_hash = Column(String(255))
-
-    user_type = Column(
-        Enum("student", "staff", name="user_type_enum"),
-        nullable=False,
+    group_id = Column(Integer, nullable=True)
+    subgroup_id = Column(Integer, nullable=True)
+    terminal_id = Column(
+        Integer,
+        ForeignKey("tbl_terminal.id", ondelete="CASCADE"),
         index=True
     )
 
-    status = Column(
-        Enum("active", "inactive", "dismissed", name="status_enum"),
-        default="active",
-        index=True
+    fname = Column(String(100), nullable=True)
+    lname = Column(String(100), nullable=True)
+
+    gender = Column(String(10), nullable=True)
+    user_type = Column(String(50), nullable=True)
+
+    face_template = Column(LargeBinary, nullable=True)
+    fingerprint_template = Column(LargeBinary, nullable=True)
+
+    card_serial_code = Column(String(255), nullable=True)
+
+    # Optional relationship (if you have a Terminal model)
+    terminal = relationship("Terminal", back_populates="users")
+
+    # relationship to events
+    events_created = relationship(
+        "Event",
+        back_populates="creator",
+        cascade="all, delete-orphan"
     )
 
-    biometric_enrollment_status = Column(
-        Enum("pending", "completed", name="biometric_status_enum"),
-        default="pending"
+    # relationship to auth sessions
+    auth_sessions = relationship(
+        "AuthSession",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )
 
-    biometric_profile = relationship(
-        "BiometricProfile", uselist=False, back_populates="user")
+    # relationship to attendance logs
+    attendance_logs = relationship(
+        "AttendanceAuthLog",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    # Attendance summaries for this user
+    attendance_summary = relationship(
+        "AttendanceSummary",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

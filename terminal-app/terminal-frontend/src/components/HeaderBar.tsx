@@ -18,7 +18,7 @@ export default function HeaderBar() {
         {/* terminal name */}
         <div className="flex items-start flex-col">
           <div className="text-sm font-medium">
-            Terminal: <span className="text-muted">{config?.terminal_code}</span>
+            Status: <span className="text-muted">{config?.status}</span>
           </div>
           <div className="text-sm font-medium">
             Branch: <span className="text-muted">{config?.branch}</span>

@@ -7,7 +7,7 @@ export type ClientOptions = {
 /**
  * Body_enroll_face_enroll_face_post
  */
-export type BodyEnrollFaceEnrollFacePost = {
+export type OpenapiBodyEnrollFaceEnrollFacePost = {
     /**
      * User Id
      */
@@ -21,17 +21,17 @@ export type BodyEnrollFaceEnrollFacePost = {
 /**
  * HTTPValidationError
  */
-export type HttpValidationError = {
+export type OpenapiHttpValidationError = {
     /**
      * Detail
      */
-    detail?: Array<ValidationError>;
+    detail?: Array<OpenapiValidationError>;
 };
 
 /**
  * ValidationError
  */
-export type ValidationError = {
+export type OpenapiValidationError = {
     /**
      * Location
      */
@@ -59,7 +59,7 @@ export type ValidationError = {
 /**
  * VerifyRequest
  */
-export type VerifyRequest = {
+export type OpenapiVerifyRequest = {
     /**
      * User Id
      */
@@ -70,62 +70,115 @@ export type VerifyRequest = {
     image: string;
 };
 
-export type HealthCheckHealthGetData = {
+export type CentralOpenapiActivationResponse = {
+    success?: boolean;
+    data?: CentralOpenapiTerminalData;
+};
+
+export type CentralOpenapiTerminalData = {
+    id?: number;
+    name?: string;
+    slug?: string;
+    branch_id?: number;
+    branch?: string;
+    status?: string;
+    auth_capabilities?: Array<CentralOpenapiAuthCapability>;
+    access_policy?: Array<CentralOpenapiAccessPolicy>;
+    members?: Array<CentralOpenapiMember>;
+};
+
+export type CentralOpenapiAuthCapability = {
+    auth_type_name?: string;
+    auth_step?: number;
+};
+
+export type CentralOpenapiAccessPolicy = {
+    group_name?: string;
+    auth_type_name?: string;
+};
+
+export type CentralOpenapiMember = {
+    id?: number;
+    fname?: string;
+    lname?: string;
+    face_template?: string;
+    fingerprint_template?: string;
+};
+
+export type OpenapiHealthCheckHealthGetData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/health';
 };
 
-export type HealthCheckHealthGetResponses = {
+export type OpenapiHealthCheckHealthGetResponses = {
     /**
      * Successful Response
      */
     200: unknown;
 };
 
-export type EnrollFaceEnrollFacePostData = {
-    body: BodyEnrollFaceEnrollFacePost;
+export type OpenapiEnrollFaceEnrollFacePostData = {
+    body: OpenapiBodyEnrollFaceEnrollFacePost;
     path?: never;
     query?: never;
     url: '/enroll-face';
 };
 
-export type EnrollFaceEnrollFacePostErrors = {
+export type OpenapiEnrollFaceEnrollFacePostErrors = {
     /**
      * Validation Error
      */
-    422: HttpValidationError;
+    422: OpenapiHttpValidationError;
 };
 
-export type EnrollFaceEnrollFacePostError = EnrollFaceEnrollFacePostErrors[keyof EnrollFaceEnrollFacePostErrors];
+export type OpenapiEnrollFaceEnrollFacePostError = OpenapiEnrollFaceEnrollFacePostErrors[keyof OpenapiEnrollFaceEnrollFacePostErrors];
 
-export type EnrollFaceEnrollFacePostResponses = {
+export type OpenapiEnrollFaceEnrollFacePostResponses = {
     /**
      * Successful Response
      */
     200: unknown;
 };
 
-export type VerifyFaceVerifyPostData = {
-    body: VerifyRequest;
+export type OpenapiVerifyFaceVerifyPostData = {
+    body: OpenapiVerifyRequest;
     path?: never;
     query?: never;
     url: '/verify';
 };
 
-export type VerifyFaceVerifyPostErrors = {
+export type OpenapiVerifyFaceVerifyPostErrors = {
     /**
      * Validation Error
      */
-    422: HttpValidationError;
+    422: OpenapiHttpValidationError;
 };
 
-export type VerifyFaceVerifyPostError = VerifyFaceVerifyPostErrors[keyof VerifyFaceVerifyPostErrors];
+export type OpenapiVerifyFaceVerifyPostError = OpenapiVerifyFaceVerifyPostErrors[keyof OpenapiVerifyFaceVerifyPostErrors];
 
-export type VerifyFaceVerifyPostResponses = {
+export type OpenapiVerifyFaceVerifyPostResponses = {
     /**
      * Successful Response
      */
     200: unknown;
 };
+
+export type CentralOpenapiActivateTerminalData = {
+    body: {
+        code: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/central/terminal/activate';
+};
+
+export type CentralOpenapiActivateTerminalResponses = {
+    /**
+     * Successful Activation
+     */
+    200: CentralOpenapiActivationResponse;
+};
+
+export type CentralOpenapiActivateTerminalResponse = CentralOpenapiActivateTerminalResponses[keyof CentralOpenapiActivateTerminalResponses];

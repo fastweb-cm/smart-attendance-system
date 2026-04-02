@@ -4,8 +4,8 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { enrollFaceEnrollFacePost, healthCheckHealthGet, type Options, verifyFaceVerifyPost } from '../sdk.gen';
-import type { EnrollFaceEnrollFacePostData, EnrollFaceEnrollFacePostError, HealthCheckHealthGetData, VerifyFaceVerifyPostData, VerifyFaceVerifyPostError } from '../types.gen';
+import { centralOpenapiActivateTerminal, openapiEnrollFaceEnrollFacePost, openapiHealthCheckHealthGet, openapiVerifyFaceVerifyPost, type Options } from '../sdk.gen';
+import type { CentralOpenapiActivateTerminalData, CentralOpenapiActivateTerminalResponse, OpenapiEnrollFaceEnrollFacePostData, OpenapiEnrollFaceEnrollFacePostError, OpenapiHealthCheckHealthGetData, OpenapiVerifyFaceVerifyPostData, OpenapiVerifyFaceVerifyPostError } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseURL' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -40,16 +40,16 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
     return [params];
 };
 
-export const healthCheckHealthGetQueryKey = (options?: Options<HealthCheckHealthGetData>) => createQueryKey('healthCheckHealthGet', options);
+export const openapiHealthCheckHealthGetQueryKey = (options?: Options<OpenapiHealthCheckHealthGetData>) => createQueryKey('openapiHealthCheckHealthGet', options);
 
 /**
  * Health Check
  *
  * Health check
  */
-export const healthCheckHealthGetOptions = (options?: Options<HealthCheckHealthGetData>) => queryOptions<unknown, AxiosError<DefaultError>, unknown, ReturnType<typeof healthCheckHealthGetQueryKey>>({
+export const openapiHealthCheckHealthGetOptions = (options?: Options<OpenapiHealthCheckHealthGetData>) => queryOptions<unknown, AxiosError<DefaultError>, unknown, ReturnType<typeof openapiHealthCheckHealthGetQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await healthCheckHealthGet({
+        const { data } = await openapiHealthCheckHealthGet({
             ...options,
             ...queryKey[0],
             signal,
@@ -57,16 +57,16 @@ export const healthCheckHealthGetOptions = (options?: Options<HealthCheckHealthG
         });
         return data;
     },
-    queryKey: healthCheckHealthGetQueryKey(options)
+    queryKey: openapiHealthCheckHealthGetQueryKey(options)
 });
 
 /**
  * Enroll Face
  */
-export const enrollFaceEnrollFacePostMutation = (options?: Partial<Options<EnrollFaceEnrollFacePostData>>): UseMutationOptions<unknown, AxiosError<EnrollFaceEnrollFacePostError>, Options<EnrollFaceEnrollFacePostData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<EnrollFaceEnrollFacePostError>, Options<EnrollFaceEnrollFacePostData>> = {
+export const openapiEnrollFaceEnrollFacePostMutation = (options?: Partial<Options<OpenapiEnrollFaceEnrollFacePostData>>): UseMutationOptions<unknown, AxiosError<OpenapiEnrollFaceEnrollFacePostError>, Options<OpenapiEnrollFaceEnrollFacePostData>> => {
+    const mutationOptions: UseMutationOptions<unknown, AxiosError<OpenapiEnrollFaceEnrollFacePostError>, Options<OpenapiEnrollFaceEnrollFacePostData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await enrollFaceEnrollFacePost({
+            const { data } = await openapiEnrollFaceEnrollFacePost({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -80,10 +80,27 @@ export const enrollFaceEnrollFacePostMutation = (options?: Partial<Options<Enrol
 /**
  * Verify Face
  */
-export const verifyFaceVerifyPostMutation = (options?: Partial<Options<VerifyFaceVerifyPostData>>): UseMutationOptions<unknown, AxiosError<VerifyFaceVerifyPostError>, Options<VerifyFaceVerifyPostData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<VerifyFaceVerifyPostError>, Options<VerifyFaceVerifyPostData>> = {
+export const openapiVerifyFaceVerifyPostMutation = (options?: Partial<Options<OpenapiVerifyFaceVerifyPostData>>): UseMutationOptions<unknown, AxiosError<OpenapiVerifyFaceVerifyPostError>, Options<OpenapiVerifyFaceVerifyPostData>> => {
+    const mutationOptions: UseMutationOptions<unknown, AxiosError<OpenapiVerifyFaceVerifyPostError>, Options<OpenapiVerifyFaceVerifyPostData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await verifyFaceVerifyPost({
+            const { data } = await openapiVerifyFaceVerifyPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Activate Terminal
+ */
+export const centralOpenapiActivateTerminalMutation = (options?: Partial<Options<CentralOpenapiActivateTerminalData>>): UseMutationOptions<CentralOpenapiActivateTerminalResponse, AxiosError<DefaultError>, Options<CentralOpenapiActivateTerminalData>> => {
+    const mutationOptions: UseMutationOptions<CentralOpenapiActivateTerminalResponse, AxiosError<DefaultError>, Options<CentralOpenapiActivateTerminalData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await centralOpenapiActivateTerminal({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

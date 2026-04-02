@@ -8,7 +8,15 @@ class FaceEnrollRequest(BaseModel):
 
 class VerifyRequest(BaseModel):
     user_id: int | None = None
+    event_id: int | None = None
     image: str
+
+
+class VerifyResponse(BaseModel):
+    user_id: int | None
+    fname: str | None
+    lname: str | None
+    score: float
 
 
 class UserResponse(BaseModel):
