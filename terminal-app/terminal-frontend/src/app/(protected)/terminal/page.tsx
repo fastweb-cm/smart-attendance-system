@@ -75,6 +75,7 @@ import { useTerminalConfig } from "@/context/TerminalConfigContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, SkipForward, Play } from "lucide-react";
 import { useHasMounted } from "@/hooks/useHasMounted";
+import { User } from "@/types";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
@@ -94,6 +95,7 @@ export default function TerminalPage() {
     currentStepIndex,
     isComplete,
     reset,
+    identifiedUser,
   } = useAuthFlow(steps);
 
   const [started, setStarted] = useState(false);
@@ -119,8 +121,12 @@ export default function TerminalPage() {
         <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
           <ChevronRight className="w-10 h-10 rotate-90" />
         </div>
-        <h2 className="text-3xl font-bold text-slate-900">Attendance Recorded</h2>
-        <p className="text-slate-500 mt-2 font-medium text-lg">Thank you for verifying!</p>
+        <h2 className="text-3xl font-bold text-slate-900">{identifiedUser ? `Welcome, ${identifiedUser.fName}!` : "Attendance Recorded"}</h2>
+        <p className="text-slate-500 mt-2 font-medium text-lg">
+            {identifiedUser 
+                ? `${identifiedUser.fName} ${identifiedUser.lName}, your attendance has been successfully verified.`
+                : "Thank you for verifying!"}
+        </p>
         <button 
           onClick={() => {
             reset();
@@ -193,11 +199,9 @@ export default function TerminalPage() {
           <div className="min-h-75 flex flex-col items-center justify-center bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 overflow-hidden relative">
             <AuthStepRenderer
               step={currentStep}
-              onSuccess={(userId: number) => {
-                const userObject = { id: userId, group_id: 2 }; // Mock user object with group_id
-
+              onSuccess={(user: User) => {
                 // If we don't have a user yet, set context
-                setUser(userObject, config?.access_policy ?? []);
+                setUser(user, config?.access_policy ?? []);
                 next();
               }}
               onFailure={(msg: string) => setMessage(msg)}

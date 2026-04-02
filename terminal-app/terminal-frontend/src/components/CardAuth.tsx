@@ -1,8 +1,10 @@
 "use client";
 
-export default function CardAuth({ onSuccess }: { onSuccess: (userId: number) => void }) {
+import { User } from "@/types";
+
+export default function CardAuth({ onSuccess }: { onSuccess: (user: User) => void }) {
   return (
-    <button onClick={() => onSuccess(1)}>
+    <button onClick={() => onSuccess({ id: 1, group_id: 2 } as User)}>
       Tap Card
     </button>
   );

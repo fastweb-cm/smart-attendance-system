@@ -169,7 +169,7 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
             onResult(
               "success",
               "Verification successfull.",
-              res.data?.user_id
+              res.data?.user
             );
           }else{
             onResult(

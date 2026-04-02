@@ -1,12 +1,12 @@
 "use client";
 
-import { AuthStep } from "@/types";
+import { AuthStep, User } from "@/types";
 import { useState, useCallback } from "react";
 
 export function useAuthFlow(steps: AuthStep[]) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   // eslint-disable-next-line
-  const [identifiedUser, setIdentifiedUser] = useState<any>(null);
+  const [identifiedUser, setIdentifiedUser] = useState<User | null>(null);
   const [allowedSteps, setAllowedSteps] = useState<string[] | null>(null);
   const [isComplete, setIsComplete] = useState(false); // Track if flow is done
 
@@ -27,12 +27,12 @@ export function useAuthFlow(steps: AuthStep[]) {
   // This is critical for the dynamic flow control, as it allows the app to show/hide steps based on user attributes. 
   // The policy is expected to be an array of objects that link group_ids to auth_type_names, which are then used to set the allowedSteps state.
   // eslint-disable-next-line
-  const setUser = useCallback((user: any, policy: any[]) => {
+  const setUser = useCallback((user: User | null, policy: any[]) => {
   setIdentifiedUser(prev => {
     if (prev) return prev;
 
     const userSteps = policy
-      .filter(p => p.group_id === user.group_id)
+      .filter(p => p.group_id === user?.groupId)
       .map(p => p.auth_type_name);
 
     setAllowedSteps(userSteps);
@@ -66,5 +66,6 @@ export function useAuthFlow(steps: AuthStep[]) {
     isComplete,      // Useful for showing the final "Thank You" screen
     reset,
     allowedSteps,
+    identifiedUser,
   };
 }

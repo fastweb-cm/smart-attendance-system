@@ -11,7 +11,7 @@ export interface WebcamCaptureModalProps {
   open: boolean;
   onClose: () => void;
   onCaptureStart: () => void;
-  onResult: (status: "success" | "error",message: string, userId?: number) => void;
+  onResult: (status: "success" | "error",message: string, user?: User | null) => void;
   onFeedback: (msg: string) => void;
   userId?: number;
 }
@@ -88,6 +88,15 @@ export interface AuthStep {
 export interface AuthCapabilities {
   auth_step: number;
   auth_type_name: string;
+}
+
+export interface User {
+  id: number;
+  fName?: string;
+  lName?: string;
+  groupId?: number;
+  subgroupId?: number | null;
+  email?: string;
 }
 
 

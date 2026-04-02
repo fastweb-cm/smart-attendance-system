@@ -6,13 +6,13 @@ import time
 import faiss
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.schemas.user_schema import *
+from app.schemas.user_schema import VerifyResponse, UserResponse
 from app.utils.image_utils import base64_to_image
 from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.db.models.users import User
+from app.crud.user_crud import get_user_details_by_id
 
 
 # Creates a router object that will hold all routes in this file
@@ -130,13 +130,23 @@ async def enroll_face(
     return {"message": "Face enrolled successfully"}
 
 
-@router.post("/verify")
+@router.post("/verify", response_model=VerifyResponse)
 async def verify_face(
     user_id: int | None = Form(None),
     event_id: int | None = Form(None),
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
 ):
     start = time.time()
+    user_details = None
+    if user_id is not None:
+        # we first check whether is allowed to auth at this terminal
+        user_details = get_user_details_by_id(db, user_id)
+
+        if user_details is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    # process the uploaded image for face recognition
     contents = await image.read()
     np_img = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
@@ -168,6 +178,8 @@ async def verify_face(
 
     new_embedding = embeddings[0]
 
+    # find the best match from faiss index
+
     for _ in range(10000):
         best_user, best_score = attendance_service.find_best_match(
             new_embedding)
@@ -176,10 +188,27 @@ async def verify_face(
 
     verified = best_score >= threshold
 
-    print("avg time:", (time.time() - start))
+    # if no user_id initially provided, we fetch user details of the best match
+    if not user_details and verified and best_user is not None:
+        user_details = get_user_details_by_id(db, best_user)
 
-    return {
-        "verified": verified,
-        "user_id": best_user if verified else None,
-        "score": best_score
-    }
+    print("avg time:", (time.time() - start))
+    # prepare response data
+    if verified and user_details:
+        response = VerifyResponse(
+            verified=True,
+            user=UserResponse(
+                id=user_details.id,
+                groupId=user_details.group_id,
+                subgroupId=user_details.subgroup_id,
+                fName=user_details.fname,
+                lName=user_details.lname
+            )
+        )
+    else:
+        response = VerifyResponse(
+            verified=False,
+            user=None
+        )
+
+    return response

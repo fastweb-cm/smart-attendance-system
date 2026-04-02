@@ -7,4 +7,4 @@ def get_user_by_id(db: Session, id: int):
 
 
 def get_user_details_by_id(db: Session, id: int):
-    return db.query(User.id, User.fname, User.lname).filter(User.id == id).first()
+    return db.query(User.id, User.group_id, User.subgroup_id, User.fname, User.lname).filter(User.id == id).first()
