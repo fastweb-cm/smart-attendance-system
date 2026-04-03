@@ -12,7 +12,8 @@ from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id
+from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy
+from app.crud.attendance_crud import process_attendance_step
 
 
 # Creates a router object that will hold all routes in this file
@@ -134,10 +135,16 @@ async def enroll_face(
 async def verify_face(
     user_id: int | None = Form(None),
     event_id: int | None = Form(None),
+    terminal_id: int = Form(...),
+    auth_type: str = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     start = time.time()
+    # validation check for required fields
+    if auth_type not in ["face", "fingerprint", "card"] and terminal_id is None:
+        raise HTTPException(status_code=400, detail="Missing required fields")
+
     user_details = None
     if user_id is not None:
         # we first check whether is allowed to auth at this terminal
@@ -183,6 +190,7 @@ async def verify_face(
     verified = False
     best_user = None
     best_score = 0.0
+    attendance_status = None
 
     if user_id is not None:
         # if user_id provided, we directly fetch the stored embedding and compare with the new one (bypassing faiss)
@@ -211,11 +219,22 @@ async def verify_face(
     if not user_details and verified and best_user is not None:
         user_details = get_user_details_by_id(db, best_user)
 
+    # get the user's auth policy and process attendance step
+    if verified and user_details:
+        group_policy = get_user_auth_policy(db, user_details.id, terminal_id)
+        result = process_attendance_step(
+            db, user_details.id, terminal_id, auth_type, group_policy)
+
+        attendance_status = result["status"]
+        next_step = result["next_step"]
+
     print("avg time:", (time.time() - start))
     # prepare response data
     if verified and user_details:
         response = VerifyResponse(
             verified=True,
+            attendance_status=attendance_status,
+            next_step=next_step,
             user=UserResponse(
                 id=user_details.id,
                 groupId=user_details.group_id,

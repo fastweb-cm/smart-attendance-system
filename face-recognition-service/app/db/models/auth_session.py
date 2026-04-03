@@ -1,3 +1,4 @@
+from sqlalchemy.orm import relationship
 from sqlalchemy import (
     Column,
     Integer,
@@ -7,7 +8,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from app.db.base import Base
-from sqlalchemy.orm import relationship
 
 
 class AuthSession(Base):
@@ -34,8 +34,6 @@ class AuthSession(Base):
         server_default=func.now()  # pylint: disable=not-callable
     )
 
-    current_step = Column(Integer, default=1)
-
     status = Column(
         Enum("in_progress", "completed", name="auth_session_status_enum"),
         default="in_progress"
@@ -44,3 +42,5 @@ class AuthSession(Base):
     # Relationships
     user = relationship("User", back_populates="auth_sessions")
     terminal = relationship("Terminal", back_populates="auth_sessions")
+    steps = relationship(
+        "AuthSessionStep", back_populates="auth_session", cascade="all, delete-orphan")

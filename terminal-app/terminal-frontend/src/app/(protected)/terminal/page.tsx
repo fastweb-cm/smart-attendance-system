@@ -67,7 +67,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { buildAuthFlow } from "@/lib/authFlow";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import AuthStepRenderer from "@/components/AuthStepRendere";
@@ -75,7 +75,7 @@ import { useTerminalConfig } from "@/context/TerminalConfigContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, SkipForward, Play } from "lucide-react";
 import { useHasMounted } from "@/hooks/useHasMounted";
-import { User } from "@/types";
+import { AuthType, User } from "@/types";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
@@ -94,8 +94,12 @@ export default function TerminalPage() {
     setUser,
     currentStepIndex,
     isComplete,
+    setIsComplete,
     reset,
     identifiedUser,
+    jumpToStep,
+    completedTypes,
+    markStepCompleted,
   } = useAuthFlow(steps);
 
   const [started, setStarted] = useState(false);
@@ -164,18 +168,25 @@ export default function TerminalPage() {
     <div className="w-2xl mx-auto py-8">
       {/* 1. Step Indicator Bar */}
       <div className="flex items-center justify-center gap-4 mb-1">
-        {steps.map((s, idx) => (
+        {steps.map((s, idx) => {
+          const isCurrent = idx === currentStepIndex;
+          const isVerified = completedTypes.includes(s.type);
+          const isPast = idx < currentStepIndex;
+          const isSkipped = isPast && !isVerified;
+          return (
           <div key={idx} className="flex items-center gap-4">
             <div className={`
-              flex items-center justify-center w-10 h-10 rounded-full font-bold border-2 transition-colors
-              ${idx === currentStepIndex ? 'bg-blue-600 border-blue-600 text-white' : 
-                idx < currentStepIndex ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 text-slate-300'}
+              flex items-center justify-center w-10 h-10 rounded-full font-bold border-2 transition-all duration-300
+              ${isCurrent ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-lg' : 
+                isVerified ? 'bg-emerald-500 border-emerald-500 text-white' : 
+                isSkipped ? 'bg-amber-400 border-amber-400 text-white' : // <--- Color for skipped
+                'border-slate-200 text-slate-300'}
             `}>
-              {idx < currentStepIndex ? "✓" : idx + 1}
+              {isVerified ? "✓" : isSkipped ? "!" : idx + 1}
             </div>
             {idx < steps.length - 1 && <div className="h-1 w-8 bg-slate-100 rounded-full" />}
           </div>
-        ))}
+        )})}
       </div>
 
       {/* 2. Main Action Card */}
@@ -199,10 +210,25 @@ export default function TerminalPage() {
           <div className="min-h-75 flex flex-col items-center justify-center bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 overflow-hidden relative">
             <AuthStepRenderer
               step={currentStep}
-              onSuccess={(user: User) => {
+              onSuccess={(user: User, attendance_status: string, next_step: AuthType | null) => {
                 // If we don't have a user yet, set context
                 setUser(user, config?.access_policy ?? []);
-                next();
+
+                // mark this particular step completed
+                markStepCompleted(currentStep.type);
+
+                // clear previous error messages
+                setMessage("");
+
+                if(attendance_status === "completed") {
+                  setIsComplete(true); // flow is complete, show success screen
+                } else if(next_step) {
+                  jumpToStep(next_step); // jump to the next required step based on user group permissions
+                  setMessage(`Step "${next_step}" is required based on your user group. Please complete the next step.`)
+                }else{
+                  // fallback: if for some reason next_step is null but not completed, just move to the next step in the flow.
+                  next(); 
+                }
               }}
               onFailure={(msg: string) => {
                 if(msg === "User not found") {
@@ -215,6 +241,9 @@ export default function TerminalPage() {
                   setMessage(msg);
                 }
               }}
+              userId={identifiedUser?.id ?? null}
+              auth_type={currentStep.type}
+              terminal_id={config?.id ?? null}
             />
           </div>
 

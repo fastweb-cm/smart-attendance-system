@@ -3,9 +3,9 @@
 import StatusModal from '@/components/StatusModal'
 import { useState } from 'react'
 import WebcamCaptureModal from '@/components/WebcamVerify';
-import { AttendanceState, User } from '@/types';
+import { AttendanceState, AuthType, User } from '@/types';
 
-export default function FaceAuth({ onSuccess, onFailure }: { onSuccess: (user: User) => void; onFailure: (msg: string) => void }) {
+export default function FaceAuth({ onSuccess, onFailure, userId, auth_type, terminal_id }: { onSuccess: (user: User, attendance_status: string, next_step: AuthType | null) => void; onFailure: (msg: string) => void; userId: number | null; auth_type: string; terminal_id: number | null }) {
   const [attendanceState, setAttendanceState] = useState<AttendanceState>("idle"); //default the terminal is in idle state
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("Capturing...");
@@ -26,12 +26,12 @@ export default function FaceAuth({ onSuccess, onFailure }: { onSuccess: (user: U
         onClose={() => setAttendanceState("idle")}
         onCaptureStart={() => setAttendanceState("verifying")}
         onFeedback={(msg) => setFeedback(msg)}
-        onResult={(status,msg,user) => {
+        onResult={(status,msg,user, attendance_status, next_step) => {
             setMessage(msg);
             setAttendanceState(status);
 
             if (status === "success" && user) {
-                onSuccess(user);
+                onSuccess(user, attendance_status ?? "in_progress", next_step ?? null);
             }else{
                 onFailure(msg);
             }
@@ -40,6 +40,9 @@ export default function FaceAuth({ onSuccess, onFailure }: { onSuccess: (user: U
             setAttendanceState("idle")
             },2000)
         }}
+        userId={userId}
+        auth_type={auth_type}
+        terminal_id={terminal_id}
     />
 
     {/* verifying loader */}

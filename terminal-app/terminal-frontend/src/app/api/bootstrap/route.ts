@@ -123,13 +123,25 @@ export async function POST(request: Request) {
         user_id int NOT NULL,
         terminal_id int NOT NULL,
         started_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-        current_step int DEFAULT '1',
         status enum('in_progress','completed') DEFAULT 'in_progress',
         PRIMARY KEY (id),
         KEY user_id (user_id),
         KEY terminal_id (terminal_id),
         CONSTRAINT tbl_auth_session_ibfk_1 FOREIGN KEY (user_id) REFERENCES tbl_user (id),
         CONSTRAINT tbl_auth_session_ibfk_2 FOREIGN KEY (terminal_id) REFERENCES tbl_terminal (id)
+      );
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS tbl_auth_session_steps (
+        id int NOT NULL AUTO_INCREMENT,
+        session_id int NOT NULL,
+        auth_type VARCHAR(50) NOT NULL,
+        status enum('pending','success', 'failed') DEFAULT 'pending',
+        verified_at timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (id),
+        KEY session_id (session_id),
+        CONSTRAINT tbl_auth_session_steps_ibfk_1 FOREIGN KEY (session_id) REFERENCES tbl_auth_session (id) ON DELETE CASCADE
       );
     `);
 

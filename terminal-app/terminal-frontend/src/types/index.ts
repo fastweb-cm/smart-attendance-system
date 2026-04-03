@@ -7,13 +7,17 @@ export type AttendanceState =
   | "success"
   | "error"
 
+export type AuthType = "face" | "card" | "fingerprint";
+
 export interface WebcamCaptureModalProps {
   open: boolean;
   onClose: () => void;
   onCaptureStart: () => void;
-  onResult: (status: "success" | "error",message: string, user?: User | null) => void;
+  onResult: (status: "success" | "error",message: string, user?: User | null, attendance_status?: string | null, next_step?: AuthType | null) => void;
   onFeedback: (msg: string) => void;
-  userId?: number;
+  userId?: number | null;
+  auth_type?: string;
+  terminal_id?: number | null;
 }
 
 export interface ModalProps {
@@ -83,7 +87,7 @@ export interface TerminalConfig {
 
 export interface AuthStep {
   step: number;
-  type: string;
+  type: AuthType;
 }
 export interface AuthCapabilities {
   auth_step: number;

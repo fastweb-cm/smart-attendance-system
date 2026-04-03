@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthStep, User } from "@/types";
+import { AuthStep, AuthType, User } from "@/types";
 import { useState, useCallback } from "react";
 
 export function useAuthFlow(steps: AuthStep[]) {
@@ -9,6 +9,7 @@ export function useAuthFlow(steps: AuthStep[]) {
   const [identifiedUser, setIdentifiedUser] = useState<User | null>(null);
   const [allowedSteps, setAllowedSteps] = useState<string[] | null>(null);
   const [isComplete, setIsComplete] = useState(false); // Track if flow is done
+  const [completedTypes, setCompletedTypes] = useState<AuthType[]>([]); // Track completed auth types
 
   const currentStep = steps[currentStepIndex]; // which step are we curently at
 
@@ -49,11 +50,23 @@ export function useAuthFlow(steps: AuthStep[]) {
     return allowedSteps.includes(type);
   }, [allowedSteps]);
 
+  const jumpToStep = useCallback((type: AuthType) => {
+    const targetIndex = steps.findIndex(s => s.type === type);
+    if (targetIndex !== -1) {
+      setCurrentStepIndex(targetIndex);
+    }
+  }, [steps]);// jump to a previously skipped step which may be required based on user group.
+
+  const markStepCompleted = useCallback((type: AuthType) => {
+    setCompletedTypes(prev => [...new Set([...prev, type])]);
+  }, []);
+
   const reset = useCallback(() => {
     setCurrentStepIndex(0);
     setIdentifiedUser(null);
     setAllowedSteps(null);
     setIsComplete(false);
+    setCompletedTypes([]);
   }, []);
 
   return {
@@ -64,8 +77,12 @@ export function useAuthFlow(steps: AuthStep[]) {
     setUser,
     shouldAllowStep,
     isComplete,      // Useful for showing the final "Thank You" screen
+    setIsComplete,
     reset,
     allowedSteps,
     identifiedUser,
+    jumpToStep,
+    markStepCompleted,
+    completedTypes,
   };
 }

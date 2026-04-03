@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-toastify";
 import apiClient from "@/lib/axiosClient";
 import { WebcamCaptureModalProps } from "@/types";
 
@@ -23,6 +22,8 @@ export default function WebcamCaptureModal({
   onResult,
   onFeedback,
   userId,
+  auth_type,
+  terminal_id
 }: WebcamCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -36,6 +37,8 @@ export default function WebcamCaptureModal({
   const [error, setError] = useState<string | null>(null);
 
   const DETECTION_INTERVAL = 200; // 5 fps
+  
+
 
   /*
    Load face-api models
@@ -155,7 +158,9 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         if (!blob) return;
 
         const formData = new FormData();
-        formData.append("user_id", String(18));
+        if (userId) formData.append("user_id", userId.toString());
+        if (auth_type) formData.append("auth_type", auth_type);
+        if (terminal_id) formData.append("terminal_id", terminal_id.toString());
         formData.append("image", blob, "face.jpg");
 
         stopWebcam()
@@ -165,11 +170,13 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         try {
           const res = await apiClient.post("verify", formData);
           console.log(res)
-          if (res.data.verified){
+          if (res.data.verified) {
             onResult(
               "success",
               "Verification successfull.",
-              res.data?.user
+              res.data?.user,
+              res.data?.attendance_status,
+              res.data?.next_step ?? null
             );
           }else{
             onResult(
