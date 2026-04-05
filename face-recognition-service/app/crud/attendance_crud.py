@@ -11,6 +11,7 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
     # THE PRE-CHECK (COOLDOWN PROTECTION)
     cool_down_minutes = 1
     now = datetime.now(timezone.utc)
+    attendance_type = None
 
     # Check if there is an active session that started VERY recently
     recent_session = db.query(AttendanceSession).filter(
@@ -120,6 +121,8 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
 def handle_attendance_session(db: Session, user_id: int, terminal_id: int, event_id: int | None = None, context: str = "daily"):
     now_utc = datetime.now(timezone.utc)
     today = now_utc.date()
+    attendance_type = None  # this tells whether we are checkin or checkout
+
     # Look for a session that is already 'completed' for TODAY
     completed_today = db.query(AttendanceSession).filter(
         AttendanceSession.user_id == user_id,
@@ -132,8 +135,6 @@ def handle_attendance_session(db: Session, user_id: int, terminal_id: int, event
     if completed_today:
         # Stop them here. They already checked in and out today.
         return "already_completed"
-
-    attendance_type = "checkin"  # this tells whether we are checkin or checkout
 
     # create the audit log
     auth_log = AttendanceAuthLog(
