@@ -26,3 +26,4 @@ class VerifyResponse(BaseModel):
     attendance_status: Optional[str] = None
     next_step: Optional[str] = None
     user: Optional[UserResponse] = None
+    attendance_type: Optional[str] = None

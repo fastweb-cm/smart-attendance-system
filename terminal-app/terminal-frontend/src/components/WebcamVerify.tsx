@@ -23,7 +23,9 @@ export default function WebcamCaptureModal({
   onFeedback,
   userId,
   auth_type,
-  terminal_id
+  terminal_id,
+  auth_type_id,
+  attendance_type
 }: WebcamCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -161,6 +163,7 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         if (userId) formData.append("user_id", userId.toString());
         if (auth_type) formData.append("auth_type", auth_type);
         if (terminal_id) formData.append("terminal_id", terminal_id.toString());
+        if (auth_type_id) formData.append("auth_type_id", auth_type_id.toString());
         formData.append("image", blob, "face.jpg");
 
         stopWebcam()
@@ -176,7 +179,8 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
               "Verification successfull.",
               res.data?.user,
               res.data?.attendance_status,
-              res.data?.next_step ?? null
+              res.data?.next_step ?? null,
+              res.data?.attendance_type ?? null
             );
           }else{
             onResult(
@@ -188,13 +192,13 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
           capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
-          const status = error.response?.status;
-          const errorMsg = error.response?.data?.detail || "Verification failed";
+          const detail = error.response?.data?.detail;
+          // Check if detail is a string or that weird FastAPI array
+          const errorMsg = typeof detail === 'string' 
+            ? detail 
+            : (Array.isArray(detail) ? detail[0].msg : "Verification failed");
 
-          onResult(
-            "error",
-            errorMsg
-          );
+          onResult("error", errorMsg);
           capturedRef.current = false;
         }
       },

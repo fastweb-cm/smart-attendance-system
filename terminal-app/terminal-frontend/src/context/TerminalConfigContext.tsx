@@ -1,13 +1,13 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import { terminalConfiguration } from "@/types";
+import { TerminalConfig } from "@/types";
 
 //create the context
-const TerminalConfigContext = createContext<terminalConfiguration | null>(null);
+const TerminalConfigContext = createContext<TerminalConfig | null>(null);
 
 export function TerminalConfigProvider(
-    {children, config}: {children: React.ReactNode, config: terminalConfiguration}
+    {children, config}: {children: React.ReactNode, config: TerminalConfig}
 ) {
     return(
         <TerminalConfigContext.Provider value={config}>

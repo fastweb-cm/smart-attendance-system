@@ -65,3 +65,10 @@ class Terminal(Base):
         back_populates="terminal",
         cascade="all, delete-orphan"
     )
+
+    # relationship to attendance sessions
+    attendance_sessions = relationship(
+        "AttendanceSession",
+        back_populates="terminal",
+        cascade="all, delete-orphan"
+    )

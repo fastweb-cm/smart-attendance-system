@@ -63,3 +63,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+
+    # relationship to attendance sessions
+    attendance_sessions = relationship(
+        "AttendanceSession",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

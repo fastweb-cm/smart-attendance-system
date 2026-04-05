@@ -1,9 +1,9 @@
 
-import { terminalConfiguration } from "@/types";
+import { TerminalConfig } from "@/types";
 import fs from "fs"
 import path from "path";
 
-export function loadTerminalConfig(): terminalConfiguration | null {
+export function loadTerminalConfig(): TerminalConfig | null {
     const configPath = path.join(process.cwd(),"terminal-configs","config.json");
 
     if(!fs.existsSync(configPath)){

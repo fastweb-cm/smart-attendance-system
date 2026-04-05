@@ -79,13 +79,15 @@ import { AuthType, User } from "@/types";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
-
+  console.log(config)
 
   //memoized steps to avoid rebuilding on every render, only when config changes
   const steps = useMemo(
     () => buildAuthFlow(config?.auth_capabilities ?? []),
     [config]
   );
+
+  const [direction, setDirection] = useState<"checkin" | "checkout">("checkin"); // default to check-in flow
 
   const {
     currentStep,
@@ -122,13 +124,14 @@ export default function TerminalPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="text-center p-12 bg-white rounded-[2.5rem] shadow-2xl"
       >
-        <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 
+          ${direction === "checkin" ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"}`}>
           <ChevronRight className="w-10 h-10 rotate-90" />
         </div>
         <h2 className="text-3xl font-bold text-slate-900">{identifiedUser ? `Welcome, ${identifiedUser.fName}!` : "Attendance Recorded"}</h2>
         <p className="text-slate-500 mt-2 font-medium text-lg">
             {identifiedUser 
-                ? `${identifiedUser.fName} ${identifiedUser.lName}, your attendance has been successfully verified.`
+                ? `You have successfully ${direction}. Have a great ${direction === "checkin" ? "day" : "evening"} ${identifiedUser.fName} ${identifiedUser.lName}!`
                 : "Thank you for verifying!"}
         </p>
         <button 
@@ -210,7 +213,7 @@ export default function TerminalPage() {
           <div className="min-h-75 flex flex-col items-center justify-center bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 overflow-hidden relative">
             <AuthStepRenderer
               step={currentStep}
-              onSuccess={(user: User, attendance_status: string, next_step: AuthType | null) => {
+              onSuccess={(user: User, attendance_status: string, next_step: AuthType | null, attendance_type: string | null) => {
                 // If we don't have a user yet, set context
                 setUser(user, config?.access_policy ?? []);
 
@@ -221,6 +224,7 @@ export default function TerminalPage() {
                 setMessage("");
 
                 if(attendance_status === "completed") {
+                  setDirection(attendance_type === "checkout" ? "checkout" : "checkin"); // set flow direction based on attendance type
                   setIsComplete(true); // flow is complete, show success screen
                 } else if(next_step) {
                   jumpToStep(next_step); // jump to the next required step based on user group permissions
@@ -231,7 +235,7 @@ export default function TerminalPage() {
                 }
               }}
               onFailure={(msg: string) => {
-                if(msg === "User not found") {
+                if(msg === "User not found" || msg === "Invalid attendance action") {
                   setMessage("Not allowed.");
                   setTimeout(()=>{
                     reset();
@@ -244,6 +248,7 @@ export default function TerminalPage() {
               userId={identifiedUser?.id ?? null}
               auth_type={currentStep.type}
               terminal_id={config?.id ?? null}
+              auth_type_id={steps[currentStepIndex].type_id}
             />
           </div>
 

@@ -43,8 +43,6 @@ class AttendanceAuthLog(Base):
         index=True
     )
 
-    auth_type_id = Column(Integer, nullable=True, index=True)
-
     captured_at = Column(
         TIMESTAMP,
         nullable=True,

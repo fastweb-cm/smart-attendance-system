@@ -12,6 +12,7 @@ from app.db.models.auth_session import AuthSession
 from app.db.models.attendance_auth_log import AttendanceAuthLog
 from app.db.models.attendance_summary import AttendanceSummary
 from app.db.models.auth_session_steps import AuthSessionStep
+from app.db.models.attendance_session import AttendanceSession
 
 # Global cache
 # user_biometric_cache: dict[int, np.ndarray] = {}

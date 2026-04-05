@@ -137,6 +137,7 @@ async def verify_face(
     event_id: int | None = Form(None),
     terminal_id: int = Form(...),
     auth_type: str = Form(...),
+    auth_type_id: int = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
@@ -144,6 +145,10 @@ async def verify_face(
     # validation check for required fields
     if auth_type not in ["face", "fingerprint", "card"] and terminal_id is None:
         raise HTTPException(status_code=400, detail="Missing required fields")
+
+    # prepare some important variables
+    context = "event" if event_id is not None else "daily"
+    event_id = event_id if event_id is not None else None
 
     user_details = None
     if user_id is not None:
@@ -210,10 +215,12 @@ async def verify_face(
 
     else:
         # find the best match from faiss index
-        best_user, best_score = attendance_service.find_best_match(
-            new_embedding)
-        print("best match score:", best_score)
-        verified = best_score >= threshold
+        # run it 10000 for testing
+        for _ in range(10000):
+            best_user, best_score = attendance_service.find_best_match(
+                new_embedding)
+            print("best match score:", best_score)
+            verified = best_score >= threshold
 
     # if no user_id initially provided, we fetch user details of the best match
     if not user_details and verified and best_user is not None:
@@ -223,10 +230,16 @@ async def verify_face(
     if verified and user_details:
         group_policy = get_user_auth_policy(db, user_details.id, terminal_id)
         result = process_attendance_step(
-            db, user_details.id, terminal_id, auth_type, group_policy)
+            db, user_details.id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context)
 
         attendance_status = result["status"]
         next_step = result["next_step"]
+        attendance_type = result["attendance_type"]
+
+    # if attendance status is error raise an exception(user is trying to checkout too early)
+    if attendance_status == "error":
+        raise HTTPException(
+            status_code=400, detail="Invalid attendance action")
 
     print("avg time:", (time.time() - start))
     # prepare response data
@@ -235,6 +248,7 @@ async def verify_face(
             verified=True,
             attendance_status=attendance_status,
             next_step=next_step,
+            attendance_type=attendance_type,
             user=UserResponse(
                 id=user_details.id,
                 groupId=user_details.group_id,

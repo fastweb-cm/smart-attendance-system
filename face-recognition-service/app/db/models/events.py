@@ -65,3 +65,10 @@ class Event(Base):
         back_populates="event",
         cascade="all, delete-orphan"
     )
+
+    # relationship to attendance sessions
+    attendance_sessions = relationship(
+        "AttendanceSession",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
