@@ -189,7 +189,7 @@ components:
           example: "Main campus of the institution"
         status:
           type: string
-          enum: [active, revoked]
+          enum: [active, inactive]
     BranchResponse:
       allOf:
         - $ref: "#/components/schemas/Branch"
@@ -199,7 +199,10 @@ components:
               type: integer
               example: 1
             admin_id:
-              type: integer
+              type: array
+              items:
+                type: integer
+              description: Branch admins
             date_created:
               type: string
               format: date-time
