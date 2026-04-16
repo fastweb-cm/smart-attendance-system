@@ -32,3 +32,8 @@ secrets.ini
 
 # Docker logs/data
 *.log
+
+# --- Docker ---
+**/.dockerignore
+**/terminal_mysql_data/  # If you ever mount a local folder for DB data
+**/*.log

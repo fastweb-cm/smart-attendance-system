@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     connection = await createDatabaseConnection();
 
-    const dbName = process.env.NEXT_PUBLIC_DB_NAME || "db_terminal";
+    const dbName = process.env.DB_NAME || "db_terminal";
 
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await connection.query(`USE \`${dbName}\``);

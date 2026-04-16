@@ -1,0 +1,81 @@
+services:
+  # Local Database for the Terminal
+  db:
+    image: mysql:8.0
+    container_name: db_terminal
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: db_terminal
+      MYSQL_ROOT_PASSWORD: Password@2025
+    ports:
+      - "3308:3306" # Mapped to 3308 so it doesn't clash if you have MySQL on your PC
+    volumes:
+      - terminal_data:/var/lib/mysql
+      # This line below allows you to run a script to create tables automatically on start
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Python Logic
+  terminal-api:
+    build: ./api
+    container_name: terminal-api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8085:8000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=Password@2025
+      - DB_NAME=db_terminal
+      - ADMIN_API_URL=http://192.168.1.100:8000/api # The Central Admin IP
+    restart: always
+
+  # Next.js Frontend
+  terminal-ui:
+    build: ./terminal-frontend
+    container_name: terminal-ui
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - MYSQL_HOST=terminal-db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=Password@2025
+      - DB_NAME=db_terminal
+    depends_on:
+      db:
+        condition: service_healthy
+
+  #phpmyadmin (MySQL web-base GUI)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: terminal-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8086:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  terminal_data:
