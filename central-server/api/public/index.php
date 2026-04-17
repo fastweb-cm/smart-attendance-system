@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3002',
     'http://smartattendance.fastwebcm.local:3000',
 ];
 

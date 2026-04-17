@@ -44,12 +44,27 @@ generate-terminal-client:
 	@docker run --rm -v $(PWD)/terminal-app:/workspace -w /workspace/openapi-generator openapi-generator
 	@echo "Face recognition Client Generated Successfully."
 
-terminal-up:
+terminal-build:
 	cd terminal-app && docker-compose up --build -d
+
+terminal-up:
+	cd terminal-app && docker-compose up -d
 
 terminal-restart:
 	cd terminal-app && docker-compose down -v && docker-compose up --build -d
 
 terminal-vol-down:
 	cd terminal-app && docker-compose down -v
+
+central-build:
+	cd central-server && docker-compose up --build -d
+
+central-up:
+	cd central-server && docker-compose up -d
+
+central-restart:
+	cd central-server && docker-compose down -v && docker-compose up --build -d
+	
+central-vol-down:
+	cd central-server && docker-compose down -v
 

@@ -16,7 +16,7 @@ export const TerminalWizard: React.FC = () => {
       terminalDetails: {
         name: "",
         activation_code: "",
-        branch_id: 0,
+        branch_id: 1,
         slug: "",
         status: "pending",
       },

@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: db_smartattendance
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: db_smartattendance
+      MYSQL_ROOT_PASSWORD: Password@2025
+    ports:
+      - "3309:3306"
+    volumes:
+      - smartattendance_data:/var/lib/mysql
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-pPassword@2025",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api:
+    build: ./api
+    container_name: admin-api
+    restart: unless-stopped
+    volumes:
+      - ./api:/var/www
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=Password@2025
+      - DB_NAME=db_smartattendance
+      - JWT_SECRET=95ff5e0dff037e781d11d7594411971ddd638fd2cfb7a377b1691f2b0d5e6a73d7692ef5bc401932d0fd43c38f6f2654f46afc7d3a7f5ab4668c8161882781ed
+      - APP_URL=http://localhost:8087
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_smartattendance
+    restart: unless-stopped
+    ports:
+      - "8087:80"
+    volumes:
+      # Map the API code so Nginx can see the /public folder
+      - ./api:/var/www
+
+      # ro: read-only, ensures Nginx can't modify your config
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  app:
+    build:
+      context: ./admin-frontend
+      args:
+        # This takes the value from your local machine/env and passes it to the Dockerfile ARG
+        - NEXT_PUBLIC_BASE_URL=http://localhost:8087
+    container_name: admin-dashboard
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - NEXT_PUBLIC_BASE_URL=http://localhost:8087
+    depends_on:
+      db:
+        condition: service_healthy
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_smartattendance
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: Password@2025
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  smartattendance_data:

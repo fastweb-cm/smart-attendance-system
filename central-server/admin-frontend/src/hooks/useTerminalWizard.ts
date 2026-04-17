@@ -9,7 +9,7 @@ export const useTerminalWizard = (defaultValues?: TerminalCreateFormValues) => {
         defaultValues || {
             terminalDetails: {
                 name: "",
-                branch_id: 0,
+                branch_id: 1,
                 activation_code: "",
                 slug: '',
                 status: 'pending',
@@ -30,7 +30,7 @@ export const useTerminalWizard = (defaultValues?: TerminalCreateFormValues) => {
         try{
             if(currentStep === 1) {
                 const stepOneSchema = z.object({
-                    terminalDetaails: TerminalCreateSchema.shape.terminalDetails.pick({
+                    terminalDetails: TerminalCreateSchema.shape.terminalDetails.pick({
                         name: true,
                         branch_id: true,
                     }),

@@ -2,7 +2,7 @@
 
 import { useFormContext, Controller } from "react-hook-form";
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
-import { Select } from "@/components/ui/select";
+import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface Step2Props {
@@ -128,15 +128,26 @@ export const Step2Access: React.FC<Step2Props> = ({ onBack }) => {
                     render={({ field }) => (
                       <Select
                         // value={field.value}
-                        value={1}
+                        value={String(1)}
                         onValueChange={(val) =>
+                          //convert the string back to number before setting the value
                           field.onChange(Number(val))
                         }
-                        options={authOptions.map((a) => ({
-                          value: a.id,
-                          label: a.label,
-                        }))}
-                      />
+                      >
+                        {/** the trigger is the button the user clicks */}
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Auth Type" />
+                        </SelectTrigger>
+
+                        {/** the content is the dropdown box */}
+                        <SelectContent>
+                          {authOptions.map((a) => (
+                            <SelectItem key={a.id} value={String(a.id)}>
+                              {a.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   />
                 )}

@@ -130,7 +130,7 @@ export function FieldSelect({
 
             <SelectContent>
               {options.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={String(opt.value)} value={String(opt.value)}>
                   {opt.label}
                 </SelectItem>
               ))}

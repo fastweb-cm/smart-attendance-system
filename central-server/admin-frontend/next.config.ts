@@ -15,6 +15,7 @@ const nextConfig = {
   experimental: {
     hostname: 'smartattendance.fastwebcm.local',
   },
+  'output': 'standalone',
 };
 
 module.exports = nextConfig;
