@@ -8,6 +8,7 @@ app = FastAPI(title="Face Attendance Service", lifespan=startup_lifespan)
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
     "*"
 ]
 

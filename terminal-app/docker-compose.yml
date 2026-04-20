@@ -44,12 +44,16 @@ services:
       - DB_USER=root
       - DB_PASSWORD=Password@2025
       - DB_NAME=db_terminal
-      - ADMIN_API_URL=http://192.168.1.100:8000/api # The Central Admin IP
+      - ADMIN_API_URL=http://localhost:8087/api/v1 # The Central Admin IP
     restart: always
 
   # Next.js Frontend
   terminal-ui:
-    build: ./terminal-frontend
+    build:
+      context: ./terminal-frontend
+      args:
+        - NEXT_PUBLIC_LOCAL_SERVICE_URL=http://localhost:8085
+        - NEXT_PUBLIC_CENTRAL_API_URL=http://localhost:8087/api/v1
     container_name: terminal-ui
     restart: unless-stopped
     ports:
