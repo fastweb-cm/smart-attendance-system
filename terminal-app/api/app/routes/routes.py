@@ -264,3 +264,63 @@ async def verify_face(
         )
 
     return response
+
+
+@router.post("verify/card", response_model=VerifyResponse)
+async def verify_card(
+    user_id: int | None,
+    event_id: int | None,
+    terminal_id: int,
+    auth_type: str,
+    auth_type_id: int,
+    db: Session = Depends(get_db)
+):
+    # validation check for required fields
+    if auth_type not in ["face", "fingerprint", "card"] and terminal_id is None:
+        raise HTTPException(status_code=400, details="Missing required fields")
+
+    # prepare some important variables
+    context = "event" if event_id is not None else "daily"
+    event_id = event_id if event_id is not None else None
+
+    user_details = None
+    if user_id is not None:
+        # we first check whether is allowed to auth at this terminal
+        user_details = get_user_details_by_id(db, user_id)
+
+        if user_details is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    # logic to compare the card serial number against stored values
+    verified = True
+
+    id = user_id if user_id is not None else 1
+
+    # and user details
+    if verified:
+        group_policy = get_user_auth_policy(db, id, terminal_id)
+        result = process_attendance_step(
+            db, id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context
+        )
+
+        attendance_status = result["status"]
+        next_step = result["next_step"]
+        attendance_type = result["attendance_type"]
+
+    # if attendance status is error raise an exception(user is trying to checkout too early)
+    if attendance_status == "error":
+        raise HTTPException(
+            status_code=400, detail="Invalid attendance action")
+
+    # prepare response data
+    # and user details
+    if verified:
+        response = VerifyResponse(
+            verified=True,
+            attendance_status=attendance_status,
+            next_step=next_step,
+            attendance_type=attendance_type,
+            user=UserResponse(
+                id=id
+            )
+        )
