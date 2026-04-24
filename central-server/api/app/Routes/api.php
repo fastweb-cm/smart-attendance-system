@@ -7,6 +7,7 @@ use App\Middleware\AuthMiddleware;
 use App\Modules\Branch\Controllers\BranchController;
 use App\Modules\Groups\Controllers\GroupController;
 use App\Modules\Terminals\Controllers\TerminalController;
+use App\Modules\Events\Controllers\EventsController;
 
 /*
 |--------------------------
@@ -31,6 +32,8 @@ $router->get('/api/v1/terminal', [TerminalController::class, 'index']);
 $router->delete('/api/v1/terminal/{id}', [TerminalController::class, 'delete']);
 
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
+
+$router->post('/api/v1/event', [EventsController::class, 'store']);
 
 
 
