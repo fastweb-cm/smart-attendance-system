@@ -70,7 +70,7 @@ class TerminalController extends Controller {
         $data = $this->getJsonInput();
         $id = (int)($data["id"] ?? 0);
 
-        if ($id < 0) {
+        if ($id <= 0) {
             $this->json([
                 "success" => false,
                 "message"=> "Terminal ID is required"

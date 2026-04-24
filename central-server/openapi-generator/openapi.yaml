@@ -37,15 +37,15 @@ components:
   schemas:
     UserType:
       type: string
-      enum: [student, staff]
+      enum: [ student, staff ]
 
     UserStatus:
       type: string
-      enum: [active, inactive, dismissed]
+      enum: [ active, inactive, dismissed ]
 
     BiometricEnrollmentStatus:
       type: string
-      enum: [pending, completed]
+      enum: [ pending, completed ]
 
     Login:
       type: object
@@ -101,7 +101,7 @@ components:
           example: brandon@example.com
         gender:
           type: string
-          enum: [male, female]
+          enum: [ male, female ]
         user_type:
           $ref: "#/components/schemas/UserType"
         status:
@@ -137,7 +137,7 @@ components:
           example: brandon@example.com
         gender:
           type: string
-          enum: [male, female]
+          enum: [ male, female ]
         status:
           $ref: "#/components/schemas/UserStatus"
         biometric_enrollment_status:
@@ -189,7 +189,7 @@ components:
           example: "Main campus of the institution"
         status:
           type: string
-          enum: [active, inactive]
+          enum: [ active, inactive ]
     BranchResponse:
       allOf:
         - $ref: "#/components/schemas/Branch"
@@ -308,7 +308,7 @@ components:
           format: date
         status:
           type: string
-          enum: [pending, approved, rejected]
+          enum: [ pending, approved, rejected ]
         additional_proof:
           type: string
           description: The stored file name (optional)
@@ -327,7 +327,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, approved, rejected]
+          enum: [ pending, approved, rejected ]
 
     # Annoucement schema
     Annoucement:
@@ -340,11 +340,13 @@ components:
         start_datetime:
           type: string
           format: date-time
-          description: The date, time the annoucement will be visible to its respective groups/subgroups - terminals
+          description: The date, time the annoucement will be visible to its respective
+            groups/subgroups - terminals
         end_datetime:
           type: string
           format: date-time
-          description: The date, time the annoucement will be disappear to its respective groups/subgroups - terminals
+          description: The date, time the annoucement will be disappear to its respective
+            groups/subgroups - terminals
         created_by:
           type: integer
           description: The admin who created the announcement
@@ -369,14 +371,6 @@ components:
           type: string
           example: PTA Meeting
 
-        group_id:
-          type: ["integer", "null"]
-          description: Target group (exclusive with subgroup_id)
-
-        subgroup_id:
-          type: ["integer", "null"]
-          description: Target subgroup (exclusive with group_id)
-
         start_datetime:
           type: string
           format: date-time
@@ -388,19 +382,20 @@ components:
           example: "2026-03-01T11:00:00Z"
 
         affects_attendance:
-          type: boolean
-          default: true
+          type: string
+          default: "1"
 
         handshake:
-          type: integer
-          enum: [1, 2]
+          type: string
+          enum: [ "1", "2" ]
           default: 1
           description: |
-            1 = check-in only
-            2 = check-in and check-out
+            '1' = check-in only
+            '2' = check-in and check-out
 
         created_by:
           type: integer
+          description: "User who created the event, optional"
 
     EventCheckinCheckoutRange:
       type: object
@@ -412,11 +407,22 @@ components:
           type: string
           format: date-time
         checkout_start_datetime:
-          type: ["string", "null"]
+          type: [ "string", "null" ]
           format: date-time
         checkout_end_datetime:
-          type: ["string", "null"]
+          type: [ "string", "null" ]
           format: date-time
+
+    EventAccessPolicy:
+      description: groups/subgroups allowed to auth for this event and the auth mode(s)
+      type: object
+      properties:
+        group_id:
+          type: integer
+        subgroup_id:
+          type: integer
+        auth_type_id:
+          type: integer
 
     EventCreate:
       allOf:
@@ -427,18 +433,25 @@ components:
             - start_datetime
             - end_datetime
           properties:
-            checkin_ranges:
+            check_in_out_range:
               description: check-in/check-out range for this event
-              $ref: "#/components/schemas/EventCheckinCheckoutRange"
+              type: array
+              items:
+                $ref: "#/components/schemas/EventCheckinCheckoutRange"
+            access_policy:
+              type: array
+              items:
+                $ref: "#/components/schemas/EventAccessPolicy"
 
     EventResponse:
       allOf:
         - $ref: "#/components/schemas/Event"
         - type: object
           properties:
-            id:
-              type: integer
-              example: 1
+            success:
+              type: boolean
+            message:
+              type: string
 
     #exceptions schemas
     Exception:
@@ -486,7 +499,7 @@ components:
           type: string
         status:
           type: string
-          enum: ["pending", "active", "revoked"]
+          enum: [ "pending", "active", "revoked" ]
 
     AuthTypes:
       type: object
@@ -495,7 +508,7 @@ components:
           type: integer
         name:
           type: string
-          enum: [face, fingerprint, card]
+          enum: [ face, fingerprint, card ]
 
     TerminalCapabilities:
       description: This defines the type of auth supported by the terminal
@@ -591,7 +604,7 @@ components:
         matched:
           type: boolean
         user_id:
-          type: ["integer", "null"]
+          type: [ "integer", "null" ]
         confidence_score:
           type: number
           format: float
@@ -605,7 +618,7 @@ components:
       properties:
         name:
           type: string
-          enum: ["present", "absent", "late", "on permission"]
+          enum: [ "present", "absent", "late", "on permission" ]
     TerminalAuthSession:
       description: track progress throughout the auth sequence
       type: object
@@ -623,11 +636,12 @@ components:
             before there are dimmed to have completed an auth session( check-in or check-out)
         status:
           type: string
-          enum: ["in_progress", "completed"]
+          enum: [ "in_progress", "completed" ]
           default: in_progress
 
     TerminalAuthLog:
-      description: logs each auth attemp, ie record is created for each completed auth session
+      description: logs each auth attemp, ie record is created for each completed auth
+        session
       type: object
       properties:
         user_id:
@@ -636,7 +650,7 @@ components:
           type: integer
         attendance_context:
           type: string
-          enum: ["daily", "event"]
+          enum: [ "daily", "event" ]
         event_id:
           type: integer
         auth_type_id:
@@ -655,7 +669,7 @@ components:
           type: integer
         attendance_context:
           type: string
-          enum: ["daily", "event"]
+          enum: [ "daily", "event" ]
         event_id:
           type: integer
         checkin_timestamp:
@@ -666,17 +680,17 @@ components:
           format: date-time
         checkin_status:
           type: string
-          enum: ["on time", "late"]
+          enum: [ "on time", "late" ]
         checkout_status:
           type: string
-          enum: ["on time", "early"]
+          enum: [ "on time", "early" ]
         session_status:
           type: string
-          enum: ["active", "completed", "missed checkout"]
+          enum: [ "active", "completed", "missed checkout" ]
           default: active
         sync_status:
           type: string
-          enum: ["pending", "synced", "error"]
+          enum: [ "pending", "synced", "error" ]
           default: pending
 
     TerminalAttendanceSummary:
@@ -694,7 +708,7 @@ components:
           format: date
         attendance_context:
           type: string
-          enum: ["daily", "event"]
+          enum: [ "daily", "event" ]
         event_id:
           type: integer
         first_checkin:
@@ -710,7 +724,8 @@ components:
           type: integer
         derived_from_session:
           type: boolean
-          description: useful when the user is on a permission, so we do not have to compute the attendance session to arive to get the summary
+          description: useful when the user is on a permission, so we do not have to
+            compute the attendance session to arive to get the summary
 
     TerminalAuthCreate:
       allOf:
@@ -732,7 +747,7 @@ components:
       properties:
         status:
           type: string
-          enum: ["in_progress"]
+          enum: [ "in_progress" ]
         current_step:
           type: integer
           example: 1
@@ -749,7 +764,7 @@ components:
       properties:
         status:
           type: string
-          enum: ["completed"]
+          enum: [ "completed" ]
         message:
           type: string
         attendance_session:
@@ -786,7 +801,7 @@ paths:
       operationId: login
       security: []
       summary: login admin users
-      tags: [Authentication]
+      tags: [ Authentication ]
       requestBody:
         required: true
         content:
@@ -810,7 +825,7 @@ paths:
       operationId: logout
       security: []
       summary: logou admin users
-      tags: [Authentication]
+      tags: [ Authentication ]
       responses:
         "200":
           description: logout successful
@@ -830,7 +845,7 @@ paths:
       operationId: refresh
       security: []
       summary: refresh access token
-      tags: [Authentication]
+      tags: [ Authentication ]
       responses:
         "200":
           description: refresh access token
@@ -847,10 +862,11 @@ paths:
     post:
       operationId: createUser
       summary: Create a new user
-      tags: [Users]
+      tags: [ Users ]
       requestBody:
         required: true
-        description: Ensure you insert into staff tbl specifying the role and of the staff if the user type is staff
+        description: Ensure you insert into staff tbl specifying the role and of the
+          staff if the user type is staff
         content:
           application/json:
             schema:
@@ -874,7 +890,7 @@ paths:
     get:
       operationId: listUsers
       summary: List all users
-      tags: [Users]
+      tags: [ Users ]
       parameters:
         - in: query
           name: user_type
@@ -908,7 +924,7 @@ paths:
     get:
       operationId: getUserById
       summary: Get a user by ID
-      tags: [Users]
+      tags: [ Users ]
       parameters:
         - in: path
           name: id
@@ -935,7 +951,7 @@ paths:
     put:
       operationId: updateUser
       summary: Update a user
-      tags: [Users]
+      tags: [ Users ]
       parameters:
         - in: path
           name: id
@@ -968,7 +984,7 @@ paths:
     delete:
       operationId: deleteUser
       summary: Delete a user
-      tags: [Users]
+      tags: [ Users ]
       parameters:
         - in: path
           name: id
@@ -991,7 +1007,7 @@ paths:
     get:
       operationId: listRoles
       summary: List all roles
-      tags: [Roles]
+      tags: [ Roles ]
       responses:
         "200":
           description: Roles list
@@ -1014,7 +1030,7 @@ paths:
     post:
       operationId: createBranch
       summary: Create a new branch
-      tags: [Branches]
+      tags: [ Branches ]
       description: Creat a new branch or campus within the institution
       requestBody:
         required: true
@@ -1047,7 +1063,7 @@ paths:
     get:
       operationId: listBranches
       summary: List all branchs
-      tags: [Branches]
+      tags: [ Branches ]
       responses:
         "200":
           description: List of branches
@@ -1070,7 +1086,7 @@ paths:
     put:
       operationId: updateBranch
       summary: Update branch details
-      tags: [Branches]
+      tags: [ Branches ]
       parameters:
         - in: path
           name: id
@@ -1103,7 +1119,7 @@ paths:
     post:
       operationId: createGroupType
       summary: Create a group type
-      tags: [Groups]
+      tags: [ Groups ]
       requestBody:
         required: true
         content:
@@ -1135,7 +1151,7 @@ paths:
     post:
       operationId: createGroup
       summary: Create a group (class / department)
-      tags: [Groups]
+      tags: [ Groups ]
       requestBody:
         required: true
         content:
@@ -1157,7 +1173,7 @@ paths:
     get:
       operationId: listGroups
       summary: List all groups
-      tags: [Groups]
+      tags: [ Groups ]
       responses:
         "200":
           description: Groups list
@@ -1180,7 +1196,7 @@ paths:
     post:
       operationId: assignUsersToGroup
       summary: Assign users to a group
-      tags: [Groups]
+      tags: [ Groups ]
       requestBody:
         content:
           application/json:
@@ -1194,7 +1210,7 @@ paths:
                   type: array
                   items:
                     type: integer
-                  example: [1, 2, 3]
+                  example: [ 1, 2, 3 ]
       responses:
         "200":
           description: Users assigned to group
@@ -1211,7 +1227,7 @@ paths:
     post:
       operationId: createSubgroup
       summary: Create a subgroup
-      tags: [Subgroups]
+      tags: [ Subgroups ]
       parameters:
         - in: path
           name: groupId
@@ -1238,7 +1254,7 @@ paths:
     get:
       operationId: listSubgroups
       summary: List subgroups under a group
-      tags: [Subgroups]
+      tags: [ Subgroups ]
       parameters:
         - in: path
           name: groupId
@@ -1261,7 +1277,7 @@ paths:
     post:
       operationId: assignUsersToSubgroup
       summary: Assign users to a subgroup
-      tags: [Subgroups]
+      tags: [ Subgroups ]
       requestBody:
         content:
           application/json:
@@ -1275,7 +1291,7 @@ paths:
                   type: array
                   items:
                     type: integer
-                  example: [1, 2, 3]
+                  example: [ 1, 2, 3 ]
       responses:
         "200":
           description: Users assigned to subgroup
@@ -1292,7 +1308,7 @@ paths:
     post:
       operationId: createPermissionRequest
       summary: Create permission request for a user
-      tags: [Permissions (Leaves)]
+      tags: [ Permissions (Leaves) ]
       requestBody:
         required: true
         content:
@@ -1322,7 +1338,7 @@ paths:
     post:
       operationId: decidePermissionRequest
       summary: Approve or reject a permission request
-      tags: [Permissions (Leaves)]
+      tags: [ Permissions (Leaves) ]
       requestBody:
         required: true
         content:
@@ -1331,7 +1347,7 @@ paths:
               allOf:
                 - $ref: "#/components/schemas/PermissionApproval"
                 - type: object
-                  required: [status]
+                  required: [ status ]
       responses:
         "200":
           description: Permission decision recorded
@@ -1348,7 +1364,7 @@ paths:
     post:
       operationId: createAnnouncement
       summary: Create an announcement
-      tags: [Announcements]
+      tags: [ Announcements ]
       requestBody:
         required: true
         content:
@@ -1391,7 +1407,7 @@ paths:
     get:
       operationId: ListAnnouncements
       summary: Get all announcements or filter by group or subgroup ID
-      tags: [Announcements]
+      tags: [ Announcements ]
       parameters:
         - in: query
           name: group_id
@@ -1404,7 +1420,8 @@ paths:
           required: false
           schema:
             type: integer
-          description: If provided, returns pending announcements for the specified subgroup.
+          description: If provided, returns pending announcements for the specified
+            subgroup.
       responses:
         "200":
           description: List of events (optionally filtered by group or subgroup)
@@ -1427,7 +1444,7 @@ paths:
     post:
       operationId: createEvent
       summary: Create an event
-      tags: [Events]
+      tags: [ Events ]
       requestBody:
         required: true
         content:
@@ -1449,7 +1466,7 @@ paths:
     get:
       operationId: listEvents
       summary: Get all events or filter by group or subgroup ID
-      tags: [Events]
+      tags: [ Events ]
       parameters:
         - in: query
           name: group_id
@@ -1485,7 +1502,7 @@ paths:
     post:
       operationId: createException
       summary: Create an exception
-      tags: [Exceptions]
+      tags: [ Exceptions ]
       requestBody:
         required: true
         content:
@@ -1506,7 +1523,7 @@ paths:
     get:
       operationId: listExceptions
       summary: Get all exceptions
-      tags: [Exceptions]
+      tags: [ Exceptions ]
       responses:
         "200":
           description: List of exceptions
@@ -1529,7 +1546,7 @@ paths:
     post:
       operationId: createTerminal
       summary: create a terminal
-      tags: [Terminals]
+      tags: [ Terminals ]
       requestBody:
         required: true
         content:
@@ -1552,7 +1569,7 @@ paths:
     get:
       operationId: listTerminals
       summary: List all terminals at a particular branch
-      tags: [Terminals]
+      tags: [ Terminals ]
       parameters:
         - in: path
           name: branchid
@@ -1581,7 +1598,7 @@ paths:
     get:
       operationId: terminalCapabilities
       summary: Get the auth types,policy supported by the terminal
-      tags: [Terminals]
+      tags: [ Terminals ]
       parameters:
         - in: path
           name: terminalId
@@ -1610,7 +1627,7 @@ paths:
     post:
       operationId: terminalAuth
       summary: Authenticate at a terminal
-      tags: [Terminals Authentication]
+      tags: [ Terminals Authentication ]
       requestBody:
         required: true
         content:
@@ -1620,7 +1637,8 @@ paths:
       responses:
         "200":
           # now the response needs to be two, the case where the current step is not equal terminal required auth types, then we just return the current step and the next auth type to complete, but if the current step is equal to the terminal required auth types, then we create the attendance session under the hood and return success message with the attendance session details
-          description: Authentication successful, if there are more auth types to complete, the response will indicate
+          description: Authentication successful, if there are more auth types to
+            complete, the response will indicate
           content:
             application/json:
               schema:
@@ -1640,7 +1658,7 @@ paths:
     post:
       operationId: syncAttendanceSummary
       summary: Sync attendance summary to central database
-      tags: [Attendance Sync]
+      tags: [ Attendance Sync ]
       requestBody:
         required: true
         content:
@@ -1697,7 +1715,7 @@ paths:
     post:
       operationId: faceEnrollment
       summary: Enroll face biometric profile
-      tags: [Biometrics]
+      tags: [ Biometrics ]
       requestBody:
         required: true
         content:
@@ -1724,7 +1742,7 @@ paths:
     post:
       operationId: faceVerification
       summary: Authenticate user via face recognition
-      tags: [Biometrics]
+      tags: [ Biometrics ]
       requestBody:
         required: true
         content:

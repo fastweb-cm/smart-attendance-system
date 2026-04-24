@@ -36,13 +36,50 @@ class EventsController extends Controller
 
             $this->json([
                 "success" => true,
-                "message" => "Event created successfully",
-                "user_id" => count($data["access_policy"])
+                "message" => "Event created successfully"
             ]);
         } catch (Throwable $e) {
             $this->json([
                 "success" => false,
                 "message" => $e->getMessage(),
+                "type" => get_class($e)
+            ]);
+        }
+    }
+
+    public function edit(): void
+    {
+        $data = $this->getJsonInput();
+        $id = (int)($data["id"] ?? 0);
+
+
+        if ($id <= 0) {
+            $this->json([
+                "success" => false,
+                "message"=> "Event ID is required"
+            ]);
+        }
+
+
+        $this->ev->setId($id);
+        $this->ev->setName($data["name"]);
+        $this->ev->setStartDatetime($data["start_datetime"]);
+        $this->ev->setEndDatetime($data["end_datetime"]);
+        $this->ev->setAffectsAttendance((int)$data["affects_attendance"] ?? 1);
+        $this->ev->setCreatedBy((int)$data["created_by"] ?? null);
+        $this->ev->setHandshake((string)($data["handshake"]) ?? '1');
+
+        try {
+            $this->ev->update($data["access_policy"], $data["check_in_out_range"]);
+
+            $this->json([
+                "success" => true,
+                "message" => "Event Updated Successfully"
+            ]);
+        } catch (Throwable $e) {
+            $this->json([
+                "success"=> false,
+                "message"=> $e->getMessage(),
                 "type" => get_class($e)
             ]);
         }

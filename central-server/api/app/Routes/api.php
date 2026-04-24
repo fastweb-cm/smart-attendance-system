@@ -34,6 +34,7 @@ $router->delete('/api/v1/terminal/{id}', [TerminalController::class, 'delete']);
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
 
 $router->post('/api/v1/event', [EventsController::class, 'store']);
+$router->put('/api/v1/event', [EventsController::class, 'edit']);
 
 
 

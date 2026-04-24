@@ -66,24 +66,47 @@ class EventsModel
             $this->id = $this->db->lastInsertId();
 
             //event access policies
-            if ($this->id > 0) {
-                if (!empty($accessPolicy)) {
-                    $this->bulkinsertPolicies($accessPolicy);
-                }
+            $this->bulkinsertPolicies($accessPolicy);
+            $this->checkInOutInsert($checkinOutRange);
 
-                //checkin checkout time ranges
-                $sqlInOut = "INSERT INTO tbl_event_checkin_checkout_range (event_id, checkin_start_datetime,checkin_end_datetime,checkout_start_datetime,checkout_end_datetime)
-                            VALUES (?,?,?,?,?)";
+            $this->db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
 
-                $paramInOut = [
-                    $this->id,
-                    $checkinOutRange[0]["checkin_start_datetime"],
-                    $checkinOutRange[0]["checkin_end_datetime"],
-                    (isset($checkinOutRange[0]["checkout_start_datetime"]) ? $checkinOutRange[0]["checkout_start_datetime"] : null),
-                    (isset($checkinOutRange[0]["checkout_end_datetime"]) ? $checkinOutRange[0]["checkout_end_datetime"] : null)
-                ];
+    public function update(array $accessPolicy, array $checkinOutRange): bool
+    {
+        try {
+            $this->db->beginTransaction();
 
-                $this->db->query($sqlInOut, $paramInOut);
+            //update the main event record
+            $sql = "UPDATE tbl_event
+                    SET name = ?, start_datetime = ?, end_datetime = ?, affects_attendance = ?, created_by = ?, handshake = ?
+                    WHERE id = ?";
+
+            $this->db->query($sql, [
+                $this->name,
+                $this->start_datetime,
+                $this->end_datetime,
+                $this->affects_attendance,
+                $this->created_by,
+                $this->handshake,
+                $this->id
+            ]);
+
+            // sync access policy (delete old, insert new)
+            $this->db->query("DELETE FROM tbl_event_access_policy WHERE event_id = ?", [$this->id]);
+            if (!empty($accessPolicy)) {
+                $this->bulkinsertPolicies($accessPolicy);
+            }
+
+            //sync check in out ranges (Delete old, insert new)
+            $this->db->query("DELETE FROM tbl_event_checkin_checkout_range WHERE event_id = ?", [$this->id]);
+            if (!empty($checkinOutRange)) {
+                $this->checkInOutInsert($checkinOutRange);
             }
 
             $this->db->commit();
@@ -114,6 +137,30 @@ class EventsModel
             $sql = "INSERT INTO tbl_event_access_policy (event_id, group_id, subgroup_id, auth_type_id)
                     VALUES " . implode(',', $placeholders);
             $this->db->query($sql, $params);
+        }
+    }
+
+    private function checkInOutInsert(array $checkinOutRange): void
+    {
+        //event access policies
+        if ($this->id > 0) {
+            if (!empty($accessPolicy)) {
+                $this->bulkinsertPolicies($accessPolicy);
+            }
+
+            //checkin checkout time ranges
+            $sqlInOut = "INSERT INTO tbl_event_checkin_checkout_range (event_id, checkin_start_datetime,checkin_end_datetime,checkout_start_datetime,checkout_end_datetime)
+                        VALUES (?,?,?,?,?)";
+
+            $paramInOut = [
+                $this->id,
+                $checkinOutRange[0]["checkin_start_datetime"],
+                $checkinOutRange[0]["checkin_end_datetime"],
+                (isset($checkinOutRange[0]["checkout_start_datetime"]) ? $checkinOutRange[0]["checkout_start_datetime"] : null),
+                (isset($checkinOutRange[0]["checkout_end_datetime"]) ? $checkinOutRange[0]["checkout_end_datetime"] : null)
+            ];
+
+            $this->db->query($sqlInOut, $paramInOut);
         }
     }
 
