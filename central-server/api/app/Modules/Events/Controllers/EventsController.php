@@ -18,7 +18,7 @@ class EventsController extends Controller
     {
         $data = $this->getJsonInput();
 
-        $eventId = (int)($data["event_id"] ?? 0);
+        $eventId = (int)($data["id"] ?? 0);
 
         try {
             $result = $this->ev->fetch($eventId);
@@ -97,6 +97,24 @@ class EventsController extends Controller
             $this->json([
                 "success"=> false,
                 "message"=> $e->getMessage(),
+                "type" => get_class($e)
+            ]);
+        }
+    }
+
+    public function delete(int $id)
+    {
+        try {
+            $this->ev->delete($id);
+
+            $this->json([
+                "success" => true,
+                "message" => "Event deleted successfully"
+            ]);
+        } catch (Throwable $e) {
+            $this->json([
+                "success" => false,
+                "message" => $e->getMessage(),
                 "type" => get_class($e)
             ]);
         }

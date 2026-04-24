@@ -448,10 +448,31 @@ components:
         - $ref: "#/components/schemas/Event"
         - type: object
           properties:
-            success:
-              type: boolean
-            message:
+            id:
+              type: integer
+            created_at:
               type: string
+              format: date-time
+            access_policy:
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/EventAccessPolicy"
+                  - type: object
+                    properties:
+                      id:
+                        type: integer
+                      group_name:
+                        type: string
+                      auth_type_name:
+                        type: string
+            checkin_checkout_ranges:
+              allOf:
+                - $ref: "#/components/schemas/EventCheckinCheckoutRange"
+                - type: object
+                  properties:
+                    id:
+                      type: integer
 
     #exceptions schemas
     Exception:
@@ -1489,6 +1510,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/EventResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/events/{id}:
+    delete:
+      operationId: deleteEvent
+      summary: Delete an event
+      tags: [ Events ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event deleted successfully
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

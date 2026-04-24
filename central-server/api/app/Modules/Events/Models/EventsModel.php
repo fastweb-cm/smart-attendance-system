@@ -202,10 +202,14 @@ class EventsModel
 
     private function bulkinsertPolicies(array $data): void
     {
+        if (empty($data)) return;
+
         $placeholders = [];
         $params = [];
+
         foreach ($data as $row) {
             $placeholders[] = "(?, ?, ?, ?)";
+        
             $params[] = $this->id;
             $params[] = $row['group_id'];
 
@@ -216,11 +220,13 @@ class EventsModel
 
             $params[] = $subgroup;
             $params[] = $row['auth_type_id'];
-
-            $sql = "INSERT INTO tbl_event_access_policy (event_id, group_id, subgroup_id, auth_type_id)
-                    VALUES " . implode(',', $placeholders);
-            $this->db->query($sql, $params);
         }
+
+        // Move these TWO lines OUTSIDE the loop
+        $sql = "INSERT INTO tbl_event_access_policy (event_id, group_id, subgroup_id, auth_type_id)
+                VALUES " . implode(',', $placeholders);
+            
+        $this->db->query($sql, $params);
     }
 
     private function checkInOutInsert(array $checkinOutRange): void
