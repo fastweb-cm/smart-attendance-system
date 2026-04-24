@@ -117,6 +117,89 @@ class EventsModel
         }
     }
 
+    public function fetch(int $eventId = 0): array
+    {
+        $sqlEvs = "SELECT e.*, u.fname, u.lname FROM tbl_event e
+                    JOIN tbl_user u ON e.created_by = u.id";
+
+        $where = [];
+        $params = [];
+
+        if ($eventId > 0) {
+            $where[] = "e.id = ?";
+            $params[] = $eventId;
+        }
+
+        if (!empty($where)) {
+            $sqlEvs .= " WHERE " . implode(" AND ", $where);
+        }
+
+        $evsRes = $this->db->query($sqlEvs, $params);
+        if (!$evsRes || $evsRes->num_rows == 0) {
+            return [];
+        }
+
+        $events = $evsRes->fetch_all(MYSQLI_ASSOC);
+        $eventsId = array_column($events, 'id');
+        $placeholders = implode(', ', array_fill(0, count($events), '?'));
+
+        //fetch all events policies
+        $sqlPolicies = "SELECT ep.*, g.name as group_name, at.name as auth_type_name
+                        FROM tbl_event_access_policy ep
+                        LEFT JOIN tbl_group g ON ep.group_id = g.id
+                        LEFT JOIN lkup_auth_type at ON ep.auth_type_id = at.id
+                        WHERE ep.event_id IN ($placeholders)";
+
+        $polRes = $this->db->query($sqlPolicies, $eventsId);
+        $polByEvent = [];
+        if ($polRes && $polRes->num_rows > 0) {
+            foreach ($polRes->fetch_all(MYSQLI_ASSOC) as $pol) {
+                $polByEvent[$pol['event_id']][] = $pol;
+            }
+        }
+
+        // fetch all events checkin checkout ranges
+        $sqlCheckInOut = "SELECT * FROM tbl_event_checkin_checkout_range WHERE event_id IN ($placeholders)";
+        $checkInOutRes = $this->db->query($sqlCheckInOut, $eventsId);
+        $checkInOutByEvent = [];
+        if ($checkInOutRes && $checkInOutRes->num_rows > 0) {
+            foreach ($checkInOutRes->fetch_all(MYSQLI_ASSOC) as $range) {
+                $checkInOutByEvent[$range['event_id']][] = $range;
+            }
+        }
+
+        //map relationship back to events
+        // & is used to ensure we modify the original event array by reference, not a copy
+        foreach ($events as &$ev) {
+            $ev['access_policy'] = $polByEvent[$ev['id']] ?? [];
+            $ev['checkin_checkout_ranges'] = $checkInOutByEvent[$ev['id']] ?? [];
+        }
+
+        return $events;
+    }
+
+    public function delete(int $eventId): bool
+    {
+        try {
+            $this->db->beginTransaction();
+
+            //delete access policies
+            $this->db->query("DELETE FROM tbl_event_access_policy WHERE event_id = ?", [$eventId]);
+
+            //delete checkin checkout ranges
+            $this->db->query("DELETE FROM tbl_event_checkin_checkout_range WHERE event_id = ?", [$eventId]);
+
+            //delete the main event record
+            $this->db->query("DELETE FROM tbl_event WHERE id = ?", [$eventId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
     private function bulkinsertPolicies(array $data): void
     {
         $placeholders = [];

@@ -16,7 +16,24 @@ class EventsController extends Controller
 
     public function index()
     {
+        $data = $this->getJsonInput();
 
+        $eventId = (int)($data["event_id"] ?? 0);
+
+        try {
+            $result = $this->ev->fetch($eventId);
+
+            $this->json([
+                "success" => true,
+                "data" => $result
+            ]);
+        } catch (Throwable $e) {
+            $this->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "type" => get_class($e)
+            ]);
+        }
     }
 
     public function store()
