@@ -22,6 +22,16 @@ export interface WebcamCaptureModalProps {
   attendance_type?: string | null;
 }
 
+export interface AuthProps {
+  onSuccess: (user: User, attendance_status: string, next_step: AuthType | null, attendance_type: string | null) => void;
+  onResult: (status: "success" | "error",message: string, user?: User | null, attendance_status?: string | null, next_step?: AuthType | null, attendance_type?: string | null) => void;
+  userId?: number | null;
+  authType?: string;
+  terminalId?: number | null;
+  authTypeId?: number | null;
+  attendanceType?: string | null;
+}
+
 export interface ModalProps {
   isOpen: boolean;
   btnx?: boolean;

@@ -8,7 +8,7 @@ export default function AuthStepRenderer({ step, onSuccess, onFailure, userId, a
       return <FaceAuth onSuccess={onSuccess} onFailure={onFailure} auth_type={auth_type} userId={userId} terminal_id={terminal_id} auth_type_id={auth_type_id} />;
 
     case "card":
-      return <CardAuth onSuccess={onSuccess} />;
+      return <CardAuth onSuccess={onSuccess} onResult={} authType={auth_type} userId={userId} terminalId={terminal_id} authTypeId={auth_type_id}/>;
 
     default:
       return <div>Unknown auth type</div>;

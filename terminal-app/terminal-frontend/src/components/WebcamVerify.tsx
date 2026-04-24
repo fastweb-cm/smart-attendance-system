@@ -172,7 +172,6 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
 
         try {
           const res = await apiClient.post("verify", formData);
-          console.log(res)
           if (res.data.verified) {
             onResult(
               "success",
