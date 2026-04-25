@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS tbl_terminal (
     branch_id INT,
     branch_name VARCHAR(100),
     status ENUM('active','pending','revoked') DEFAULT 'active',
-    date_created DATETIME
+    date_created TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 -- 2. User Table (Needed for Events and Sessions)
@@ -25,6 +26,8 @@ CREATE TABLE IF NOT EXISTS tbl_user (
     face_template LONGBLOB, -- Changed to LONGBLOB for reliability
     fingerprint_template LONGBLOB,
     card_serial_code VARCHAR(255),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (terminal_id) REFERENCES tbl_terminal(id) ON DELETE CASCADE
 );
 
@@ -54,20 +57,34 @@ CREATE TABLE IF NOT EXISTS tbl_auth_policy (
 CREATE TABLE IF NOT EXISTS tbl_event (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    group_id INT DEFAULT NULL,
-    subgroup_id INT DEFAULT NULL,
     start_datetime DATETIME NOT NULL,
     end_datetime DATETIME NOT NULL,
     affects_attendance TINYINT(1) DEFAULT 1,
     created_by INT DEFAULT NULL,
     handshake ENUM('1','2') DEFAULT '1',
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     PRIMARY KEY (id),
-    KEY idx_event_group (group_id),
-    KEY idx_event_subgroup (subgroup_id),
     KEY idx_event_time (start_datetime, end_datetime),
     CONSTRAINT fk_event_created_by FOREIGN KEY (created_by) REFERENCES tbl_user(id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS `tbl_event_access_policy` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `event_id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
+  `subgroup_id` int DEFAULT NULL,
+  `auth_type_id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_event_scope_auth` (`event_id`,`subgroup_id`,`auth_type_id`,`group_id`) USING BTREE,
+  KEY `fk_event_access_group` (`group_id`),
+  KEY `fk_event_access_subgroup` (`subgroup_id`),
+  KEY `fk_event_access_auth` (`auth_type_id`),
+  CONSTRAINT `fk_event_access_auth` FOREIGN KEY (`auth_type_id`) REFERENCES `lkup_auth_type` (`id`),
+  CONSTRAINT `fk_event_access_group` FOREIGN KEY (`group_id`) REFERENCES `tbl_group` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_event_access_policy` FOREIGN KEY (`event_id`) REFERENCES `tbl_event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_event_access_subgroup` FOREIGN KEY (`subgroup_id`) REFERENCES `tbl_subgroup` (`id`) ON DELETE SET NULL
+) 
 
 -- 6. Event Time Ranges
 CREATE TABLE IF NOT EXISTS tbl_event_checkin_checkout_range (

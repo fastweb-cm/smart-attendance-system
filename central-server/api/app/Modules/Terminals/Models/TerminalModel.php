@@ -14,6 +14,7 @@ class TerminalModel
     private ?int $branch_id = null;
     private string $status = 'pending'; // Matches ENUM default
     private ?string $date_created = null;
+    private ?string $updated_at = null;
 
     public function __construct()
     {
@@ -30,6 +31,7 @@ class TerminalModel
     public function getBranchId(): ?int { return $this->branch_id; }
     public function getStatus(): string { return $this->status; }
     public function getDateCreated(): ?string { return $this->date_created; }
+    public function getUpdatedAt(): ?string { return $this->updated_at; }
 
     // ==========================================
     // Setters
@@ -57,6 +59,7 @@ class TerminalModel
             $this->status = $status;
         }
     }
+    public function setUpdatedAt(string $val): void { $this->updated_at = $val; }
 
     public function save(array $authCapabilities, array $accessPolicy): bool {
         try{
@@ -108,7 +111,7 @@ class TerminalModel
             // Update the main terminal record
             // We typically don't update activation_code or slug here
             $sql = "UPDATE tbl_terminal 
-                    SET name = ?, slug = ?, branch_id = ?, status = ? 
+                    SET name = ?, slug = ?, branch_id = ?, status = ?, updated_at = ? 
                     WHERE id = ?";
         
             $this->db->query($sql, [
@@ -116,6 +119,7 @@ class TerminalModel
                 $this->getSlug(),
                 $this->getBranchId(),
                 $this->getStatus(),
+                $this->getUpdatedAt(),
                 $this->getId()
             ]);
 
@@ -146,7 +150,7 @@ class TerminalModel
     public function fetch(int $branchId = 0, int $terminalId = 0, string $status = ''): array
     {
         // Build the main Terminal query dynamically
-        $sqlTerminals = "SELECT t.id,t.name,t.slug,t.branch_id,t.status,t.date_created,b.name AS branch FROM tbl_terminal t
+        $sqlTerminals = "SELECT t.*,b.name AS branch FROM tbl_terminal t
                             JOIN tbl_branch b ON t.branch_id = b.id";
         $where = [];
         $params = [];
@@ -341,7 +345,7 @@ class TerminalModel
         $placeholders = implode(",", array_fill(0, count($cleanIds), "?"));
 
         $sql = "SELECT gm.group_id, NULL AS subgroup_id, u.id, u.fname, u.lname,
-                    u.gender, u.user_type, b.face_template,
+                    u.gender, u.user_type, u.created_at, u.updated_at, b.face_template,
                     b.fingerprint_template, b.card_serial_code
                 FROM tbl_group_member gm
                 JOIN tbl_user u ON gm.user_id = u.id
@@ -375,7 +379,7 @@ class TerminalModel
 
         // 3. The Query (Fixed JOIN to LEFT JOIN and corrected 'group_id' typo)
         $sql = "SELECT sgm.subgroup_id, NULL AS group_id, u.id, u.fname, u.lname,
-                    u.gender, u.user_type, b.face_template,
+                    u.gender, u.user_type,u.created_at, u.updated_at, b.face_template,
                     b.fingerprint_template, b.card_serial_code
                 FROM tbl_subgroup_member sgm
                 JOIN tbl_user u ON sgm.user_id = u.id

@@ -15,6 +15,7 @@ class EventsModel
     private ?int $created_by = null;
     private ?string $handshake = '1';
     private ?string $created_at = null;
+    private ?string $updated_at = null;
 
     public function __construct()
     {
@@ -32,6 +33,7 @@ class EventsModel
     public function getCreatedBy(): ?int { return $this->created_by; }
     public function getHandshake(): ?string { return $this->handshake; }
     public function getCreatedAt(): ?string { return $this->created_at; }
+    public function getUpdatedAt(): ?string { return $this->updated_at; }
 
     // ==========================================
     // Setters
@@ -44,6 +46,7 @@ class EventsModel
     public function setCreatedBy(int $val): void { $this->created_by = $val; }
     public function setHandshake(string $val): void { $this->handshake = $val; }
     public function setCreatedAt(string $val): void { $this->created_at = $val; }
+    public function setUpdatedAt(string $val): void { $this->updated_at = $val; }
 
     public function save(array $accessPolicy, array $checkinOutRange): bool
     {
@@ -84,7 +87,7 @@ class EventsModel
 
             //update the main event record
             $sql = "UPDATE tbl_event
-                    SET name = ?, start_datetime = ?, end_datetime = ?, affects_attendance = ?, created_by = ?, handshake = ?
+                    SET name = ?, start_datetime = ?, end_datetime = ?, affects_attendance = ?, created_by = ?, handshake = ?, updated_at = ?
                     WHERE id = ?";
 
             $this->db->query($sql, [
@@ -94,6 +97,7 @@ class EventsModel
                 $this->affects_attendance,
                 $this->created_by,
                 $this->handshake,
+                $this->updated_at,
                 $this->id
             ]);
 

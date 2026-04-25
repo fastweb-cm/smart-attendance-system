@@ -47,6 +47,8 @@ class Event(Base):
         server_default=func.now()  # pylint: disable=not-callable
     )
 
+    updated_at = Column(TIMESTAMP)
+
     __table_args__ = (
         Index("idx_event_time", "start_datetime", "end_datetime"),
     )
@@ -69,6 +71,20 @@ class Event(Base):
     # relationship to attendance sessions
     attendance_sessions = relationship(
         "AttendanceSession",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
+
+    # Access policies for this event
+    access_policies = relationship(
+        "EventAccessPolicy",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
+
+    # Checkin/Checkout ranges for this event
+    checkin_ranges = relationship(
+        "EventCheckinCheckoutRange",
         back_populates="event",
         cascade="all, delete-orphan"
     )

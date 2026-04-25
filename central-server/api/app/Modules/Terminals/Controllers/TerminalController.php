@@ -3,6 +3,7 @@ namespace App\Modules\Terminals\Controllers;
 
 use App\Core\Controller;
 use App\Modules\Terminals\Models\TerminalModel;
+use DateTime;
 use Throwable;
 
 class TerminalController extends Controller {
@@ -77,11 +78,15 @@ class TerminalController extends Controller {
             ]);
         }
 
+        $date = new DateTime();
+        $updated_at = $date->format('Y-m-d H:i:s');
+
         $this->t->setId($id);
         $this->t->setSlug($data["slug"] ?? "");
         $this->t->setName($data["name"]);
         $this->t->setBranchId((int)($data["branch_id"] ?? 0));
         $this->t->setStatus($data["status"]);
+        $this->t->setUpdatedAt($updated_at);
 
         try{
             $this->t->update($data["auth_capabilities"], $data["access_policy"]);

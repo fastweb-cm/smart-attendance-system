@@ -3,6 +3,7 @@ namespace App\Modules\Events\Controllers;
 
 use App\Core\Controller;
 use App\Modules\Events\Models\EventsModel;
+use DateTime;
 use Throwable;
 
 class EventsController extends Controller
@@ -77,6 +78,9 @@ class EventsController extends Controller
             ]);
         }
 
+        $date = new DateTime();
+        $updated_at = $date->format('Y-m-d H:i:s');
+
 
         $this->ev->setId($id);
         $this->ev->setName($data["name"]);
@@ -85,6 +89,7 @@ class EventsController extends Controller
         $this->ev->setAffectsAttendance((int)$data["affects_attendance"] ?? 1);
         $this->ev->setCreatedBy((int)$data["created_by"] ?? null);
         $this->ev->setHandshake((string)($data["handshake"]) ?? '1');
+        $this->ev->setUpdatedAt($updated_at);
 
         try {
             $this->ev->update($data["access_policy"], $data["check_in_out_range"]);
