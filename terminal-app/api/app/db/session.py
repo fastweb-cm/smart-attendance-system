@@ -13,7 +13,7 @@ DATABASE_URL = f"mysql+pymysql://{settings.DB_USER}:{PASSWORD}@{settings.DB_HOST
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Checks if connection is still alive
-    pool_recycle=True,  # recycle old connections so MySQL does not kill them
+    pool_recycle=3600,  # recycle old connections so MySQL does not kill them
     echo=False  # Print SQL queries in terminal
 )
 

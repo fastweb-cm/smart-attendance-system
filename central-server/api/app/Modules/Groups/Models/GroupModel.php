@@ -2,6 +2,7 @@
 namespace App\Modules\Groups\Models;
 
 use App\Core\Database;
+use App\Modules\Sync\Models\SyncModel;
 class GroupModel extends Database {
     protected Database $db;
 
@@ -12,9 +13,12 @@ class GroupModel extends Database {
     private ?int $expected_weekly_hours = 40;
     private ?int $absence_threshold = 0;
 
+    private ?SyncModel $syncModel = null;
+
     public function __construct()
     {
         $this->db = Database::connect();
+        $this->syncModel = new SyncModel();
     }
 
     // =======================
@@ -60,11 +64,23 @@ class GroupModel extends Database {
 
             //now let insert the group supervisors and group members record
             if($this->id > 0){
+                // find all terminals tight to this group
+                $terminals = $this->getGroupTerminals($this->id);
                 foreach($members as $member) {
                     $sqlMem = "INSERT INTO tbl_group_member(group_id,user_id)
                     VALUES(?,?)";
                     $paramsMem = [$this->id, $member["user_id"]];
                     $this->db->query($sqlMem, $paramsMem);
+
+                    if (!empty($terminals)) {
+                        foreach ($terminals as $tId) {
+                            $this->syncModel->setTerminalId($tId);
+                            $this->syncModel->setEntityType('tbl_user');
+                            $this->syncModel->setEntityId($member["user_id"]);
+                            $this->syncModel->setAction('upsert');
+                            $this->syncModel->save();
+                        }
+                    }// same when a new user gets added to a group individually
                 }
 
                 foreach($supervisors as $supervisor) {
@@ -239,6 +255,25 @@ class GroupModel extends Database {
 
             return false;
         }
+    }
+
+    /**
+     * Fetch all terminals associated to this group
+     * @param int $groupId
+     * @return void
+     */
+    public function getGroupTerminals(int $groupId): array
+    {
+        $sql = "SELECT DISTINCT terminal_id FROM tbl_terminal_access_policy
+                WHERE group_id = ?";
+        $result = $this->db->query($sql, [$groupId]);
+        $terminalIds = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $terminalIds[] = $row['terminal_id'];
+            }
+        }
+        return $terminalIds;
     }
 
 }

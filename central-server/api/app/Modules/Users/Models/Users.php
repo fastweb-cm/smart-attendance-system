@@ -4,6 +4,7 @@ namespace App\Modules\Users\Models;
 
 use App\Core\Database;
 use App\Services\TokenService;
+use App\Modules\Sync\Models\SyncModel;
 
 class Users
 {
@@ -22,6 +23,8 @@ class Users
     private ?string $status = 'active';
     private ?string $biometric_enrollment_status = 'pending';
 
+    private ?SyncModel $syncModel = null;
+
     // Student/Staff Specific
     private ?string $regno = null;
     private ?int $role_id = null;
@@ -29,6 +32,7 @@ class Users
     public function __construct()
     {
         $this->db = Database::connect();
+        $this->syncModel = new SyncModel();
     }
 
     // =======================
@@ -107,6 +111,18 @@ class Users
             $this->db->query($sqlStaff, [$this->id, $this->role_id]);
         }
 
+        // find all terminals associated with the user's groups/subgroups and add to sync queue
+        // $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+        // if (!empty($terminals)) {
+        //     foreach ($terminals as $tId) {
+        //         $this->syncModel->setTerminalId($tId);
+        //         $this->syncModel->setEntityType('tbl_user');
+        //         $this->syncModel->setEntityId($this->id);
+        //         $this->syncModel->setAction('upsert');
+        //         $this->syncModel->save();
+        //     }
+        // }
+
         return $this->getUserById($this->id);
     }
 
@@ -167,6 +183,18 @@ class Users
         } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
             $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
             $this->db->query($sqlStaff, [$this->role_id, $this->id]);
+        }
+
+        // find all terminals associated with the user's groups/subgroups and add to sync queue
+        $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+        if (!empty($terminals)) {
+            foreach ($terminals as $tId) {
+                $this->syncModel->setTerminalId($tId);
+                $this->syncModel->setEntityType('tbl_user');
+                $this->syncModel->setEntityId($this->id);
+                $this->syncModel->setAction('upsert');
+                $this->syncModel->save();
+            }
         }
 
         return $this->getUserById($this->id);
@@ -301,5 +329,23 @@ class Users
             }
         }
         return $users;
+    }
+
+    public function getUserGroupSubgroupTerminal(int $userId): array
+    {
+        $sql = "SELECT DISTINCT terminal_id 
+                FROM tbl_terminal_access_policy 
+                WHERE 
+                    group_id IN (SELECT group_id FROM tbl_group_member WHERE user_id = ?)
+                    OR 
+                    subgroup_id IN (SELECT subgroup_id FROM tbl_subgroup_member WHERE user_id = ?)";
+        $result = $this->db->query($sql, [$userId, $userId]);
+        $terminalIds = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $terminalIds[] = $row['terminal_id'];
+            }
+        }
+        return $terminalIds;
     }
 }

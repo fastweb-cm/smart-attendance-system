@@ -9,6 +9,8 @@ use App\Modules\Groups\Controllers\GroupController;
 use App\Modules\Terminals\Controllers\TerminalController;
 use App\Modules\Events\Controllers\EventsController;
 
+use App\Modules\Sync\Controller\SyncController;
+
 /*
 |--------------------------
 |  Public Routes
@@ -20,6 +22,12 @@ $router->post('/api/v1/auth/login', [AuthController::class, 'login']);
 $router->post('/api/v1/auth/logout', [AuthController::class, 'logout']);
 $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 
+/*
+|--------------------------
+|  Sync Routes
+|--------------------------
+*/
+$router->get('/api/v1/sync/updates', [SyncController::class, 'index']);
 
 /*
 |--------------------------
