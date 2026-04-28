@@ -9,6 +9,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { useActivateTerminal } from "@/hooks/useTerminal";
+import apiClient from "@/lib/axiosClient";
 
 export default function TerminalActivationForm() {
   const router = useRouter();
@@ -38,6 +39,10 @@ export default function TerminalActivationForm() {
         const bootstrapResult = await bootstrapResponse.json();
 
         if (bootstrapResult.success){
+          //lets update the terminal id in the config
+          await apiClient.post("/terminal/update-id", {
+            terminal_id: bootstrapResult.id
+          })
           toast.success("Terminal is ready")
           //redirect to operational ui
           router.push("/terminal");

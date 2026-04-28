@@ -14,6 +14,8 @@ import app.services.attendance_service as attendance_service
 from app.db.models.users import User
 from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy
 from app.crud.attendance_crud import process_attendance_step
+from app.schemas.terminal import TerminalConfigUpdateRequest
+from app.core.config import update_terminal_id
 
 
 # Creates a router object that will hold all routes in this file
@@ -131,7 +133,7 @@ async def enroll_face(
     return {"message": "Face enrolled successfully"}
 
 
-@router.post("/verify", response_model=VerifyResponse)
+@router.post("/verify/face", response_model=VerifyResponse)
 async def verify_face(
     user_id: int | None = Form(None),
     event_id: int | None = Form(None),
@@ -266,7 +268,7 @@ async def verify_face(
     return response
 
 
-@router.post("verify/card", response_model=VerifyResponse)
+@router.post("/verify/card", response_model=VerifyResponse)
 async def verify_card(
     user_id: int | None,
     event_id: int | None,
@@ -324,3 +326,8 @@ async def verify_card(
                 id=id
             )
         )
+
+
+@router.post("/terminal/update-id")
+async def update_terminal_config(payload: TerminalConfigUpdateRequest):
+    update_terminal_id(payload.terminal_id)

@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 # and map them into python class attributes.
 from pydantic_settings import BaseSettings
 
-CONFIG_FILE_PATH = os.path.join(os.path.dirname(__file__), 'sync_config.json')
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+CONFIG_FILE_PATH = os.path.join(BASE_DIR, "sync_config.json")
 
 
 class Settings(BaseSettings):
@@ -51,3 +55,10 @@ def update_last_sync_time(timestamp=None):
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     with open(CONFIG_FILE_PATH, 'w') as f:
         json.dump({'last_sync_time': timestamp}, f)
+
+
+def update_terminal_id(terminal_id):
+    config = get_sync_config()
+    config['terminal_id'] = terminal_id
+    with open(CONFIG_FILE_PATH, 'w') as f:
+        json.dump(config, f)

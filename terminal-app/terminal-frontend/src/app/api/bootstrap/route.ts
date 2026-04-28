@@ -59,8 +59,6 @@ export async function POST(request: Request) {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS tbl_user (
         id INT PRIMARY KEY,
-        group_id INT,
-        subgroup_id INT NULL,
         terminal_id INT,
         fname VARCHAR(100),
         lname VARCHAR(100),
@@ -77,26 +75,15 @@ export async function POST(request: Request) {
       CREATE TABLE IF NOT EXISTS tbl_event (
         id INT NOT NULL AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
-
-        group_id INT DEFAULT NULL,
-        subgroup_id INT DEFAULT NULL,
-
         start_datetime DATETIME NOT NULL,
         end_datetime DATETIME NOT NULL,
-
         affects_attendance TINYINT(1) DEFAULT 1,
         created_by INT DEFAULT NULL,
         handshake ENUM('1','2') DEFAULT '1',
-
         created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-
         PRIMARY KEY (id),
-
-        KEY idx_event_group (group_id),
-        KEY idx_event_subgroup (subgroup_id),
         KEY idx_event_time (start_datetime, end_datetime),
         KEY idx_event_created_by (created_by),
-
         CONSTRAINT fk_event_created_by 
           FOREIGN KEY (created_by) REFERENCES tbl_user(id) ON DELETE SET NULL
       );
@@ -118,17 +105,45 @@ export async function POST(request: Request) {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS tbl_event_access_policy (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT,
+        group_id INT NULL,
+        subgroup_id INT NULL,
+        auth_type_id INT,
+        auth_type_name VARCHAR(50),
+        FOREIGN KEY (event_id) REFERENCES tbl_event(id) ON DELETE CASCADE
+      );
+    `);
+
+    await connection.query(`
+    CREATE TABLE IF NOT EXISTS tbl_user_permission (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      group_id INT,
+      subgroup_id INT NULL,
+      context ENUM('daily', 'event') NOT NULL,
+      event_id INT NULL,
+      FOREIGN KEY (user_id) REFERENCES tbl_user(id) ON DELETE CASCADE,
+      FOREIGN KEY (event_id) REFERENCES tbl_event(id) ON DELETE CASCADE
+    );
+  `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS tbl_auth_session (
         id int NOT NULL AUTO_INCREMENT,
         user_id int NOT NULL,
         terminal_id int NOT NULL,
+        attendance_context ENUM('daily', 'event') DEFAULT 'daily',
+        event_id INT NULL,
         started_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         status enum('in_progress','completed') DEFAULT 'in_progress',
         PRIMARY KEY (id),
         KEY user_id (user_id),
         KEY terminal_id (terminal_id),
         CONSTRAINT tbl_auth_session_ibfk_1 FOREIGN KEY (user_id) REFERENCES tbl_user (id),
-        CONSTRAINT tbl_auth_session_ibfk_2 FOREIGN KEY (terminal_id) REFERENCES tbl_terminal (id)
+        CONSTRAINT tbl_auth_session_ibfk_2 FOREIGN KEY (terminal_id) REFERENCES tbl_terminal (id),
+        CONSTRAINT tbl_auth_session_ibfk_3 FOREIGN KEY (event_id) REFERENCES tbl_event (id) ON DELETE SET NULL
       );
     `);
 
@@ -305,13 +320,11 @@ export async function POST(request: Request) {
     for (const member of data.members || []) {
       await connection.query(
         `INSERT INTO tbl_user 
-        (id, group_id, subgroup_id, terminal_id, fname, lname, gender, user_type,
+        (id,terminal_id, fname, lname, gender, user_type,
          face_template, fingerprint_template, card_serial_code)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           member.id,
-          member.group_id,
-          member.subgroup_id,
           data.id,
           member.fname,
           member.lname,
@@ -320,6 +333,70 @@ export async function POST(request: Request) {
           base64ToBuffer(member.face_template),
           base64ToBuffer(member.fingerprint_template),
           member.card_serial_code,
+        ]
+      );
+    }
+
+    for (const event of data.events || []) {
+      const [result] = await connection.query(
+        `INSERT INTO tbl_event 
+        (id, name, start_datetime, end_datetime, affects_attendance, created_by, handshake)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          event.id,
+          event.name,
+          event.start_datetime,
+          event.end_datetime,
+          event.affects_attendance,
+          event.created_by,
+          event.handshake,
+        ]
+      );
+
+      const range = event.checkinout_range;
+
+      if (range) {
+        await connection.query(
+          `INSERT INTO tbl_event_checkin_checkout_range 
+          (event_id, checkin_start_datetime, checkin_end_datetime, checkout_start_datetime, checkout_end_datetime)
+          VALUES (?, ?, ?, ?, ?)`,
+          [
+            event.id,
+            range.checkin_start_datetime,
+            range.checkin_end_datetime,
+            range.checkout_start_datetime,
+            range.checkout_end_datetime,
+          ]
+        );
+      }
+
+      for (const policy of event.access_policy || []) {
+        await connection.query(
+          `INSERT INTO tbl_event_access_policy 
+          (event_id, group_id, subgroup_id, auth_type_id, auth_type_name)
+          VALUES (?, ?, ?, ?, ?)`,
+          [
+            event.id,
+            policy.group_id,
+            policy.subgroup_id,
+            policy.auth_type_id,
+            policy.auth_type_name,
+          ]
+        );
+      }
+    }
+
+    for (const permission of data.permissions || []) {
+      await connection.query(
+        `INSERT INTO tbl_user_permission 
+        (user_id, group_id, subgroup_id, context, event_id)
+        VALUES (?, ?, ?, ?, ?)`,
+        [
+          permission.user_id,
+          permission.group_id,
+          permission.subgroup_id,
+          permission.context,
+          permission.event_id,
         ]
       );
     }
@@ -338,6 +415,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      id: data.id,
       message: "Bootstrap completed successfully",
     });
 

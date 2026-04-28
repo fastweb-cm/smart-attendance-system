@@ -23,7 +23,7 @@ export interface WebcamCaptureModalProps {
 }
 
 export interface AuthProps {
-  onSuccess: (user: User, attendance_status: string, next_step: AuthType | null, attendance_type: string | null) => void;
+  onFeedback: (msg: string) => void;
   onResult: (status: "success" | "error",message: string, user?: User | null, attendance_status?: string | null, next_step?: AuthType | null, attendance_type?: string | null) => void;
   userId?: number | null;
   authType?: string;

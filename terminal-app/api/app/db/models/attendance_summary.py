@@ -81,6 +81,6 @@ class AttendanceSummary(Base):
     )
 
     # Relationships
-    user = relationship("User", back_populates="attendance_summary")
+    user = relationship("User", back_populates="attendance_summaries")
     terminal = relationship("Terminal", back_populates="attendance_summary")
     event = relationship("Event", back_populates="attendance_summary")

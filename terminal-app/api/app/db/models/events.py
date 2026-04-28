@@ -21,9 +21,6 @@ class Event(Base):
 
     name = Column(String(100), nullable=False)
 
-    group_id = Column(Integer, nullable=True, index=True)
-    subgroup_id = Column(Integer, nullable=True, index=True)
-
     start_datetime = Column(DateTime, nullable=False)
     end_datetime = Column(DateTime, nullable=False)
 
@@ -87,4 +84,9 @@ class Event(Base):
         "EventCheckinCheckoutRange",
         back_populates="event",
         cascade="all, delete-orphan"
+    )
+
+    permissions = relationship(
+        "UserPermission",
+        back_populates="event"
     )

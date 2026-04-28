@@ -67,7 +67,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { buildAuthFlow } from "@/lib/authFlow";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import AuthStepRenderer from "@/components/AuthStepRendere";
@@ -104,9 +104,24 @@ export default function TerminalPage() {
     markStepCompleted,
   } = useAuthFlow(steps);
 
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(true);
   const [message, setMessage] = useState("");
   const hasMounted = useHasMounted();
+
+  // add an effect to auto-reset after complete verification steps
+  // so the terminal goes back to a waiting state
+  useEffect(() => {
+    if (isComplete) {
+      const timer = setTimeout(() => {
+        setMessage("Attendance Recorded. Returning to home screen...");
+        reset();
+        setStarted(false);
+      }, 5000); // show success screen for 5 seconds before resetting
+
+      return () => clearTimeout(timer); // cleanup timer on unmount or if isComplete changes
+    }
+
+  },[isComplete, reset]);
 
   //set mounted to true once component hits the browser
 
@@ -148,23 +163,25 @@ export default function TerminalPage() {
   }
   
 
-  if (!started) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-slate-800 tracking-tight uppercase">Ready to Scan</h1>
-          <p className="text-slate-500 font-medium">Please tap the button below to begin</p>
-        </div>
-        <button 
-          onClick={() => setStarted(true)}
-          className="group relative flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-2xl font-bold transition-all shadow-xl hover:shadow-blue-200"
-        >
-          <Play className="fill-current w-6 h-6" />
-          START ATTENDANCE
-        </button>
-      </div>
-    );
-  }
+  // if (!started) {
+  //   return (
+  //     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+  //       <div className="text-center space-y-2">
+  //         <h1 className="text-4xl font-black text-slate-800 tracking-tight uppercase">Ready to Scan</h1>
+  //         <p className="text-slate-500 font-medium">Please tap the button below to begin</p>
+  //       </div>
+  //       <button 
+  //         onClick={() => setStarted(true)}
+  //         className="group relative flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-2xl font-bold transition-all shadow-xl hover:shadow-blue-200"
+  //       >
+  //         <Play className="fill-current w-6 h-6" />
+  //         START ATTENDANCE
+  //       </button>
+  //     </div>
+  //   );
+  // }
+
+  if (!started) return null;
 
 
   return (

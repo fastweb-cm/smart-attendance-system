@@ -17,6 +17,7 @@ from app.db.models.auth_session_steps import AuthSessionStep
 from app.db.models.attendance_session import AttendanceSession
 from app.db.models.event_access_policy import EventAccessPolicy
 from app.db.models.event_checkin_checkout_range import EventCheckinCheckoutRange
+from app.db.models.user_permission import UserPermission
 
 # Global cache
 # user_biometric_cache: dict[int, np.ndarray] = {}

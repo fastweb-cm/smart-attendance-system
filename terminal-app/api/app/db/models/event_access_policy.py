@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, String, Index
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -12,6 +12,7 @@ class EventAccessPolicy(Base):
     group_id = Column(Integer, nullable=True)
     subgroup_id = Column(Integer, nullable=True)
     auth_type_id = Column(Integer, nullable=False)
+    auth_type_name = Column(String(50))
 
     __table_args__ = (
         UniqueConstraint('event_id', 'subgroup_id', 'auth_type_id',

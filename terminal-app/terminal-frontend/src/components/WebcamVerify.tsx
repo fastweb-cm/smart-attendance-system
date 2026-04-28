@@ -171,7 +171,7 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         onCaptureStart()
 
         try {
-          const res = await apiClient.post("verify", formData);
+          const res = await apiClient.post("verify/face", formData);
           if (res.data.verified) {
             onResult(
               "success",
@@ -187,7 +187,6 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
               `Verification failed.`
             );
           }
-          console.log(res.data)
           capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {

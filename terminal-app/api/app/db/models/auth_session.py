@@ -29,6 +29,11 @@ class AuthSession(Base):
         nullable=False
     )
 
+    attendance_context = Column(
+        Enum("daily", "event"),
+        default="daily"
+    )
+
     started_at = Column(
         TIMESTAMP,
         server_default=func.now()  # pylint: disable=not-callable

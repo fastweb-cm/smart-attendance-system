@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Apr 14, 2026 at 07:53 AM
+-- Generation Time: Apr 28, 2026 at 07:51 AM
 -- Server version: 8.0.45-0ubuntu0.24.04.1
 -- PHP Version: 8.3.6
 
@@ -350,15 +350,43 @@ INSERT INTO `tbl_class` (`id`, `class_name`, `description`) VALUES
 CREATE TABLE `tbl_event` (
   `id` int NOT NULL,
   `name` varchar(100) NOT NULL,
-  `group_id` int DEFAULT NULL,
-  `subgroup_id` int DEFAULT NULL,
   `start_datetime` datetime NOT NULL,
   `end_datetime` datetime NOT NULL,
   `affects_attendance` tinyint(1) DEFAULT '1',
   `created_by` int DEFAULT NULL,
   `handshake` enum('1','2') DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `tbl_event`
+--
+
+INSERT INTO `tbl_event` (`id`, `name`, `start_datetime`, `end_datetime`, `affects_attendance`, `created_by`, `handshake`, `created_at`, `updated_at`) VALUES
+(13, 'PTA Meeting', '2026-05-20 12:00:00', '2026-05-20 13:00:00', 1, 17, '2', '2026-04-24 13:17:43', '2026-04-25 09:23:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_event_access_policy`
+--
+
+CREATE TABLE `tbl_event_access_policy` (
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
+  `subgroup_id` int DEFAULT NULL,
+  `auth_type_id` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `tbl_event_access_policy`
+--
+
+INSERT INTO `tbl_event_access_policy` (`id`, `event_id`, `group_id`, `subgroup_id`, `auth_type_id`) VALUES
+(41, 13, 1, NULL, 1),
+(42, 13, 1, NULL, 3);
 
 -- --------------------------------------------------------
 
@@ -374,6 +402,13 @@ CREATE TABLE `tbl_event_checkin_checkout_range` (
   `checkout_start_datetime` datetime DEFAULT NULL,
   `checkout_end_datetime` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `tbl_event_checkin_checkout_range`
+--
+
+INSERT INTO `tbl_event_checkin_checkout_range` (`id`, `event_id`, `checkin_start_datetime`, `checkin_end_datetime`, `checkout_start_datetime`, `checkout_end_datetime`) VALUES
+(9, 13, '2026-05-20 11:45:00', '2026-05-20 12:00:00', '2026-05-20 13:00:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -424,17 +459,18 @@ INSERT INTO `tbl_group` (`id`, `branch_id`, `grouptype_id`, `name`, `date_create
 CREATE TABLE `tbl_group_member` (
   `group_id` int NOT NULL,
   `user_id` int NOT NULL,
-  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `tbl_group_member`
 --
 
-INSERT INTO `tbl_group_member` (`group_id`, `user_id`, `joined_at`) VALUES
-(1, 17, '2026-03-27 16:29:42'),
-(2, 1, '2026-03-27 16:29:42'),
-(2, 17, '2026-03-27 15:03:41');
+INSERT INTO `tbl_group_member` (`group_id`, `user_id`, `joined_at`, `updated_at`) VALUES
+(1, 17, '2026-03-27 16:29:42', NULL),
+(2, 1, '2026-03-27 16:29:42', NULL),
+(2, 17, '2026-03-27 15:03:41', NULL);
 
 -- --------------------------------------------------------
 
@@ -605,6 +641,29 @@ CREATE TABLE `tbl_subgroup_member` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tbl_sync_queue`
+--
+
+CREATE TABLE `tbl_sync_queue` (
+  `id` int NOT NULL,
+  `terminal_id` int NOT NULL,
+  `entity_type` varchar(100) NOT NULL,
+  `entity_id` int NOT NULL,
+  `action` enum('upsert','delete') NOT NULL,
+  `status` enum('pending','sent','sync') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `tbl_sync_queue`
+--
+
+INSERT INTO `tbl_sync_queue` (`id`, `terminal_id`, `entity_type`, `entity_id`, `action`, `status`, `created_at`) VALUES
+(1, 9, 'tbl_user', 17, 'upsert', 'sent', '2026-04-26 14:07:30');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tbl_terminal`
 --
 
@@ -615,17 +674,18 @@ CREATE TABLE `tbl_terminal` (
   `activation_code` varchar(200) NOT NULL,
   `branch_id` int NOT NULL,
   `status` enum('pending','active','revoked') DEFAULT 'pending',
-  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `tbl_terminal`
 --
 
-INSERT INTO `tbl_terminal` (`id`, `name`, `slug`, `activation_code`, `branch_id`, `status`, `date_created`) VALUES
-(2, 'Updated Entrance Gate', 'updated-entrance-gate', '$2y$10$V6.jLwdbdOx98M8iXrkLVOuFf5H/8.gAjXJWWGoG8qnhux0TBmUPC', 4, 'pending', '2026-03-27 17:49:38'),
-(6, 'Updated Entrance Kiosk', 'updated-entrance-kiosk', '$2y$10$pyXW59FzAkQ8sqAYfVoVj..JEyk3wUCWGaF3e1Ln7l7ENFv2JaJW6', 4, 'active', '2026-03-27 18:59:11'),
-(9, 'Main Entrance Terminal', 'main-entrance-01', '$2y$10$Jr27TrKgi33BXN35YqG7EeZtvGcxcGSi4Ap7oFoNFgq3GfCihn2Cu', 4, 'active', '2026-04-13 09:55:00');
+INSERT INTO `tbl_terminal` (`id`, `name`, `slug`, `activation_code`, `branch_id`, `status`, `date_created`, `updated_at`) VALUES
+(2, 'Updated Entrance Gate', 'updated-entrance-gate', '$2y$10$V6.jLwdbdOx98M8iXrkLVOuFf5H/8.gAjXJWWGoG8qnhux0TBmUPC', 4, 'pending', '2026-03-27 17:49:38', '2026-04-25 10:00:28'),
+(6, 'Updated Entrance Kiosk', 'updated-entrance-kiosk', '$2y$10$pyXW59FzAkQ8sqAYfVoVj..JEyk3wUCWGaF3e1Ln7l7ENFv2JaJW6', 4, 'active', '2026-03-27 18:59:11', '2026-04-25 10:00:28'),
+(9, 'Main Entrance Terminal', 'main-entrance-01', '$2y$10$AIQm4ttO7kcOv.jZ9pbI7u0PycC2u4qyZLQSUDfSVNLPRajGQu6/e', 4, 'active', '2026-04-13 09:55:00', '2026-04-25 10:00:28');
 
 -- --------------------------------------------------------
 
@@ -638,19 +698,21 @@ CREATE TABLE `tbl_terminal_access_policy` (
   `terminal_id` int NOT NULL,
   `group_id` int DEFAULT NULL,
   `subgroup_id` int DEFAULT NULL,
-  `auth_type_id` int NOT NULL
+  `auth_type_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `tbl_terminal_access_policy`
 --
 
-INSERT INTO `tbl_terminal_access_policy` (`id`, `terminal_id`, `group_id`, `subgroup_id`, `auth_type_id`) VALUES
-(3, 2, 2, NULL, 1),
-(5, 6, 2, NULL, 1),
-(6, 6, 2, NULL, 3),
-(11, 9, 2, NULL, 1),
-(12, 9, 2, NULL, 3);
+INSERT INTO `tbl_terminal_access_policy` (`id`, `terminal_id`, `group_id`, `subgroup_id`, `auth_type_id`, `created_at`, `updated_at`) VALUES
+(3, 9, 1, NULL, 1, '2026-04-26 04:57:55', NULL),
+(5, 6, 2, NULL, 1, '2026-04-26 04:57:55', NULL),
+(6, 6, 2, NULL, 3, '2026-04-26 04:57:55', NULL),
+(11, 9, 2, NULL, 1, '2026-04-26 04:57:55', NULL),
+(12, 9, 2, NULL, 3, '2026-04-26 04:57:55', NULL);
 
 -- --------------------------------------------------------
 
@@ -693,7 +755,7 @@ CREATE TABLE `tbl_user` (
   `user_type` enum('student','staff') NOT NULL,
   `status` enum('active','inactive','dismissed') DEFAULT 'active',
   `biometric_enrollment_status` enum('pending','completed') DEFAULT 'pending',
-  `create_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -701,7 +763,7 @@ CREATE TABLE `tbl_user` (
 -- Dumping data for table `tbl_user`
 --
 
-INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `create_at`, `updated_at`) VALUES
+INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `created_at`, `updated_at`) VALUES
 (1, 1, 'John', 'Doe', 'johndoe@student.com', 'male', NULL, NULL, 'student', 'active', 'pending', '2026-02-25 19:17:22', '2026-02-25 19:17:22'),
 (17, NULL, 'ichami', 'brandon', 'brandonichami@gmail.com', 'male', 'ichami', '$2a$12$TVYNQOQncXFV5gTnq2lGoO77.7j8hQsODYhMgHZ2kXJ2ragG43Jze', 'staff', 'active', 'pending', '2026-02-26 22:09:11', '2026-02-26 22:09:11');
 
@@ -864,10 +926,18 @@ ALTER TABLE `tbl_class`
 --
 ALTER TABLE `tbl_event`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_event_group` (`group_id`),
-  ADD KEY `idx_event_subgroup` (`subgroup_id`),
   ADD KEY `idx_event_time` (`start_datetime`,`end_datetime`),
   ADD KEY `idx_event_created_by` (`created_by`);
+
+--
+-- Indexes for table `tbl_event_access_policy`
+--
+ALTER TABLE `tbl_event_access_policy`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_event_scope_auth` (`event_id`,`subgroup_id`,`auth_type_id`,`group_id`) USING BTREE,
+  ADD KEY `fk_event_access_group` (`group_id`),
+  ADD KEY `fk_event_access_subgroup` (`subgroup_id`),
+  ADD KEY `fk_event_access_auth` (`auth_type_id`);
 
 --
 -- Indexes for table `tbl_event_checkin_checkout_range`
@@ -975,6 +1045,13 @@ ALTER TABLE `tbl_subgroup`
 ALTER TABLE `tbl_subgroup_member`
   ADD PRIMARY KEY (`subgroup_id`,`user_id`),
   ADD KEY `idx_subgroup_member_user` (`user_id`);
+
+--
+-- Indexes for table `tbl_sync_queue`
+--
+ALTER TABLE `tbl_sync_queue`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_terminal_id` (`terminal_id`);
 
 --
 -- Indexes for table `tbl_terminal`
@@ -1130,13 +1207,19 @@ ALTER TABLE `tbl_class`
 -- AUTO_INCREMENT for table `tbl_event`
 --
 ALTER TABLE `tbl_event`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `tbl_event_access_policy`
+--
+ALTER TABLE `tbl_event_access_policy`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `tbl_event_checkin_checkout_range`
 --
 ALTER TABLE `tbl_event_checkin_checkout_range`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `tbl_exception`
@@ -1191,6 +1274,12 @@ ALTER TABLE `tbl_student`
 --
 ALTER TABLE `tbl_subgroup`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_sync_queue`
+--
+ALTER TABLE `tbl_sync_queue`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tbl_terminal`
@@ -1297,9 +1386,16 @@ ALTER TABLE `tbl_branch_admins`
 -- Constraints for table `tbl_event`
 --
 ALTER TABLE `tbl_event`
-  ADD CONSTRAINT `tbl_event_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `tbl_group` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `tbl_event_ibfk_2` FOREIGN KEY (`subgroup_id`) REFERENCES `tbl_subgroup` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `tbl_event_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `tbl_user` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `tbl_event_access_policy`
+--
+ALTER TABLE `tbl_event_access_policy`
+  ADD CONSTRAINT `fk_event_access_auth` FOREIGN KEY (`auth_type_id`) REFERENCES `lkup_auth_type` (`id`),
+  ADD CONSTRAINT `fk_event_access_group` FOREIGN KEY (`group_id`) REFERENCES `tbl_group` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_event_access_policy` FOREIGN KEY (`event_id`) REFERENCES `tbl_event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_event_access_subgroup` FOREIGN KEY (`subgroup_id`) REFERENCES `tbl_subgroup` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `tbl_event_checkin_checkout_range`
@@ -1389,6 +1485,12 @@ ALTER TABLE `tbl_subgroup`
 ALTER TABLE `tbl_subgroup_member`
   ADD CONSTRAINT `tbl_subgroup_member_ibfk_1` FOREIGN KEY (`subgroup_id`) REFERENCES `tbl_subgroup` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `tbl_subgroup_member_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tbl_sync_queue`
+--
+ALTER TABLE `tbl_sync_queue`
+  ADD CONSTRAINT `fk_terminal_id` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`);
 
 --
 -- Constraints for table `tbl_terminal`
