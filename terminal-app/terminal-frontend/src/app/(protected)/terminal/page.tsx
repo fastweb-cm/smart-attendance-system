@@ -116,6 +116,7 @@ export default function TerminalPage() {
         setMessage("Attendance Recorded. Returning to home screen...");
         reset();
         setStarted(false);
+        window.location.reload();
       }, 5000); // show success screen for 5 seconds before resetting
 
       return () => clearTimeout(timer); // cleanup timer on unmount or if isComplete changes

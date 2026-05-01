@@ -22,6 +22,10 @@ export default function CardAuth({onSuccess, onFailure, authType, userId, termin
                 onFailure(msg);
             }
         }}
+      authType={authType}
+      userId={userId}
+      terminalId={terminalId}
+      authTypeId={authTypeId}
     />
   );
 }
