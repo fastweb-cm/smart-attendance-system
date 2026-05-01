@@ -27,3 +27,12 @@ class VerifyResponse(BaseModel):
     next_step: Optional[str] = None
     user: Optional[UserResponse] = None
     attendance_type: Optional[str] = None
+
+
+class CardVerifyRequest(BaseModel):
+    serial: str
+    user_id: Optional[int] = None
+    event_id: Optional[int] = None
+    terminal_id: int
+    auth_type: str
+    auth_type_id: int

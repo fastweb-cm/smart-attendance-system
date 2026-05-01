@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --default-timeout=1000 tensorflow==2.20.0
-RUN pip install --no-cache-dir --default-timeout=1000 opencv-python==4.13.0.92
-RUN pip install --no-cache-dir --default-timeout=1000 cryptography==42.0.5
+RUN pip install --no-cache-dir --default-timeout=5000 tensorflow==2.20.0
+RUN pip install --no-cache-dir --default-timeout=5000 opencv-python==4.13.0.92
+RUN pip install --no-cache-dir --default-timeout=5000 cryptography==42.0.5
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=5000 -r requirements.txt
 
 COPY . .
 

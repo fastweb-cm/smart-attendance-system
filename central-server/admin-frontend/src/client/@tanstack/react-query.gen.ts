@@ -4,8 +4,8 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteUser, faceEnrollment, faceVerification, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, terminalAuth, terminalCapabilities, updateBranch, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, TerminalAuthData, TerminalAuthResponse, TerminalCapabilitiesData, TerminalCapabilitiesResponse, UpdateBranchData, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteUser, faceEnrollment, faceVerification, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, terminalAuth, terminalCapabilities, updateBranch, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, TerminalAuthData, TerminalAuthResponse, TerminalCapabilitiesData, TerminalCapabilitiesResponse, UpdateBranchData, UpdateUserData, UpdateUserResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -465,6 +465,23 @@ export const createEventMutation = (options?: Partial<Options<CreateEventData>>)
     const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<CreateEventData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await createEvent({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete an event
+ */
+export const deleteEventMutation = (options?: Partial<Options<DeleteEventData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteEventData>> => {
+    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteEventData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteEvent({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

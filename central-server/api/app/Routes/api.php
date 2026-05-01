@@ -28,6 +28,9 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |--------------------------
 */
 $router->get('/api/v1/sync/updates', [SyncController::class, 'index']);
+$router->post('/api/v1/sync/acknowledge', [SyncController::class, 'acknowledge']);
+$router->post('/api/v1/sync/uplink/sessions-batch', [SyncController::class, 'sessionUplink']);
+$router->post('/api/v1/sync/uplink/summaries-batch', [SyncController::class, 'summaryUplink']);
 
 /*
 |--------------------------

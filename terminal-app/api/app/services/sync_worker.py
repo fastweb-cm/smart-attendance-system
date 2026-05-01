@@ -1,4 +1,3 @@
-
 from app.db.session import SessionLocal
 from sqlalchemy.orm import Session
 import requests
@@ -6,6 +5,9 @@ import logging
 import time
 from app.core.config import settings, get_sync_config, update_last_sync_time
 from app.crud.user_crud import handle_user_sync
+from app.crud.event_crud import handle_event_sync
+from app.db.models.attendance_session import AttendanceSession
+from app.services.summary_service import prepare_summary_batch
 
 URL = settings.CENTRAL_API_URL
 
@@ -38,7 +40,91 @@ def start_sync_worker():
 
 
 def push_attendance_to_central():
-    pass
+    logging.info("Checking for pending attendance to uplink...")
+    with SessionLocal() as db:
+        # Fetch unsynced sessions
+        pending_sessions = db.query(AttendanceSession).filter(
+            AttendanceSession.sync_status.in_(['pending', 'error'])
+        ).limit(100).all()
+
+        if not pending_sessions:
+            return
+
+        # Prepare the batch payload
+        batch_data = []
+        session_map = {}  # To keep track of objects to update status later
+
+        for session in pending_sessions:
+            batch_data.append({
+                "local_id": session.id,  # Send local ID so PHP can acknowledge
+                "user_id": session.user_id,
+                "terminal_id": session.terminal_id,
+                "context": session.attendance_context,
+                "event_id": session.event_id,
+                "checkin_timestamp": session.checkin_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "checkout_timestamp": session.checkout_timestamp.strftime("%Y-%m-%d %H:%M:%S") if session.checkout_timestamp else None,
+                "checkin_status": session.checkin_status,
+                "checkout_status": session.checkout_status if session.checkout_status else None,
+                "session_status": session.session_status,
+                "sync_status": session.sync_status,
+                "created_at": session.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            })
+            session_map[session.id] = session
+
+        try:
+            # Send the ENTIRE array in one hit
+            response = requests.post(
+                f"{URL}/sync/uplink/sessions-batch",
+                json={"sessions": batch_data},
+                timeout=20
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                # Use the IDs returned by the server to mark as synced
+                # This is safer than marking all, in case PHP failed on some
+                synced_ids = result.get("synced_local_ids", [])
+
+                # mark session as synced
+                for s_id in synced_ids:
+                    if s_id in session_map:
+                        session_map[s_id].sync_status = 'synced'
+
+                # filter sessions that are finalized to generate summaries
+                finalized_sessions = [s for s in pending_sessions if s.id in synced_ids and s.session_status in [
+                    'completed', 'missed checkout']]
+
+                if finalized_sessions:
+                    summary_batch = prepare_summary_batch(
+                        db, finalized_sessions)
+
+                    # push summaries immediately to central server
+                    try:
+                        summary_response = requests.post(
+                            f"{URL}/sync/uplink/summaries-batch",
+                            json={"summaries": summary_batch},
+                            timeout=20
+                        )
+                        if summary_response.status_code == 200:
+                            logging.info(
+                                f"Successfully batch-synced {len(summary_batch)} summaries.")
+                        else:
+                            logging.error(
+                                f"Batch uplink of summaries failed. Server returned: {summary_response.status_code}")
+                    except Exception as e:
+                        logging.error(
+                            f"Failed to perform batch uplink of summaries: {e}")
+
+                db.commit()
+                logging.info(
+                    f"Successfully batch-synced {len(synced_ids)} sessions.")
+            else:
+                logging.error(
+                    f"Batch uplink failed. Server returned: {response.status_code}")
+
+        except Exception as e:
+            logging.error(f"Failed to perform batch uplink: {e}")
+            db.rollback()
 
 
 def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
@@ -52,7 +138,7 @@ def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
 
         if response.status_code == 200:
             result = response.json()
-            updates = result.get("updates", [])
+            updates = result.get("data", [])
             # log the entire response for debugging
             logging.info(f"Received response from central server: {result}")
 
@@ -60,6 +146,7 @@ def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
             last_sync_time = result.get("last_sync_time")
 
             if not updates:
+                logging.info("No updates from central server.")
                 return
 
             # keep track of IDs we successfully processed to acknowledge them
@@ -67,12 +154,23 @@ def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
 
             for item in updates:
                 try:
-                    if item["entity_type"] == 'tbl_user':
+                    entity_type = item.get("type")
+
+                    if entity_type == 'tbl_event':
+                        handle_event_sync(db, item["action"], item["data"])
+                        db.commit()  # Commit each event individually to be safe
+                    elif entity_type == 'tbl_user':
                         handle_user_sync(db, item["action"], item["data"])
                         db.commit()  # Commit each user individually to be safe
 
+                    else:
+                        logging.warning(f"Unknown entity type: {entity_type}")
+
                     successfull_sync_ids.append(item["id"])
                 except Exception as e:
+                    logging.error(
+                        f"Failed to process item {item.get('id')}: {e}", exc_info=True)
+                    db.rollback()  # Rollback the failed transaction
                     continue
 
             # acknowledge the central server about the successfully processed updates
@@ -82,5 +180,27 @@ def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
             # update the local config file (last_sync)
             if last_sync_time:
                 update_last_sync_time(last_sync_time)
+
+            # acknowledge the central server about the successfully processed updates
+            if successfull_sync_ids:
+                update_sync_status(successfull_sync_ids)
     except requests.exceptions.RequestException:
         logging.warning("Downlink failed: Central Server unreachable.")
+
+# update central server about successful sync
+# passing the list of successfully processed sync IDs so that central server can mark them as completed and avoid sending them again in the next sync cycle
+
+
+def update_sync_status(successful_ids):
+    try:
+        response = requests.post(
+            f"{URL}/sync/acknowledge", json={"ids": successful_ids})
+        if response.status_code == 200:
+            logging.info(
+                "Successfully acknowledged sync updates to central server.")
+        else:
+            logging.warning(
+                f"Failed to acknowledge sync updates. Status code: {response.status_code}")
+    except requests.exceptions.RequestException:
+        logging.warning(
+            "Failed to acknowledge sync updates: Central Server unreachable.")

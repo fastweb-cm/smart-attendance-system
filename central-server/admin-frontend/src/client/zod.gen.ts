@@ -73,12 +73,12 @@ export const zBranch = z.object({
     name: z.string(),
     location: z.optional(z.string()),
     description: z.optional(z.string()),
-    status: z.optional(z.enum(['active', 'revoked']))
+    status: z.optional(z.enum(['active', 'inactive']))
 });
 
 export const zBranchResponse = zBranch.and(z.object({
     id: z.optional(z.int()),
-    admin_id: z.optional(z.int()),
+    admin_id: z.optional(z.array(z.int())),
     date_created: z.optional(z.iso.datetime())
 }));
 
@@ -152,18 +152,10 @@ export const zAnnouncementResponse = zAnnoucement.and(z.object({
 
 export const zEvent = z.object({
     name: z.optional(z.string()),
-    group_id: z.optional(z.union([
-        z.int(),
-        z.null()
-    ])),
-    subgroup_id: z.optional(z.union([
-        z.int(),
-        z.null()
-    ])),
     start_datetime: z.optional(z.iso.datetime()),
     end_datetime: z.optional(z.iso.datetime()),
-    affects_attendance: z.optional(z.boolean()).default(true),
-    handshake: z.optional(z.union([z.literal(1), z.literal(2)])),
+    affects_attendance: z.optional(z.string()).default('1'),
+    handshake: z.optional(z.enum(['1', '2'])),
     created_by: z.optional(z.int())
 });
 
@@ -180,12 +172,31 @@ export const zEventCheckinCheckoutRange = z.object({
     ]))
 });
 
+/**
+ * groups/subgroups allowed to auth for this event and the auth mode(s)
+ */
+export const zEventAccessPolicy = z.object({
+    group_id: z.optional(z.int()),
+    subgroup_id: z.optional(z.int()),
+    auth_type_id: z.optional(z.int())
+});
+
 export const zEventCreate = zEvent.and(z.object({
-    checkin_ranges: z.optional(zEventCheckinCheckoutRange)
+    check_in_out_range: z.optional(z.array(zEventCheckinCheckoutRange)),
+    access_policy: z.optional(z.array(zEventAccessPolicy))
 }));
 
 export const zEventResponse = zEvent.and(z.object({
-    id: z.optional(z.int())
+    id: z.optional(z.int()),
+    created_at: z.optional(z.iso.datetime()),
+    access_policy: z.optional(z.array(zEventAccessPolicy.and(z.object({
+        id: z.optional(z.int()),
+        group_name: z.optional(z.string()),
+        auth_type_name: z.optional(z.string())
+    })))),
+    checkin_checkout_ranges: z.optional(zEventCheckinCheckoutRange.and(z.object({
+        id: z.optional(z.int())
+    })))
 }));
 
 export const zException = z.object({
@@ -623,6 +634,14 @@ export const zListEventsResponse = z.array(zEventResponse);
 export const zCreateEventData = z.object({
     body: zEventCreate,
     path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+export const zDeleteEventData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
     query: z.optional(z.never())
 });
 

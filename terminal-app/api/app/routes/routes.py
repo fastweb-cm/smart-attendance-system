@@ -6,13 +6,13 @@ import time
 import faiss
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.schemas.user_schema import VerifyResponse, UserResponse
+from app.schemas.user_schema import VerifyResponse, UserResponse, CardVerifyRequest
 from app.utils.image_utils import base64_to_image
 from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy
+from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy, get_user_id_by_code
 from app.crud.attendance_crud import process_attendance_step
 from app.schemas.terminal import TerminalConfigUpdateRequest
 from app.core.config import update_terminal_id
@@ -155,7 +155,7 @@ async def verify_face(
     user_details = None
     if user_id is not None:
         # we first check whether is allowed to auth at this terminal
-        user_details = get_user_details_by_id(db, user_id)
+        user_details = get_user_details_by_id(db, user_id, context)
 
         if user_details is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -199,26 +199,48 @@ async def verify_face(
     best_score = 0.0
     attendance_status = None
 
+    # AUTO Enroll if user face template not found
     if user_id is not None:
-        # if user_id provided, we directly fetch the stored embedding and compare with the new one (bypassing faiss)
+        # check for existing face template
         stored_template_blob = get_user_face_template_by_id(db, user_id)
 
         if stored_template_blob is None:
-            raise HTTPException(
-                status_code=404, detail="No face template found, please enroll face first")
+            # Auto enrollment start
+            print(
+                f"Face template not found for user {user_id}. Auto enrolling...")
 
-        user_embedding = from_blob(stored_template_blob)
+            # save to db
+            blob = to_blob(new_embedding)
+            user_record = db.query(User).filter(User.id == user_id).first()
+            user_record.face_template = blob
+            db.commit()
 
-        best_score = attendance_service.verify_user_embedding(
-            user_embedding, new_embedding)
-        print("verification score:", best_score)
-        verified = best_score >= threshold
-        best_user = user_id if verified else None
+            # update faiss index
+            faiss_emb = new_embedding.astype("float32").reshape(1, -1)
+            faiss.normalize_L2(faiss_emb)
+            if attendance_service.faiss_index is not None:
+                attendance_service.faiss_index.add(faiss_emb)
+                attendance_service.user_ids.append(user_id)
+
+            # mark as verified since it's auto enrolled
+            verified = True
+            best_user = user_id
+
+        if not verified:
+            # user face template already exists, proceed with 1:1 normal verification
+            user_embedding = from_blob(stored_template_blob)
+
+            best_score = attendance_service.verify_user_embedding(
+                user_embedding, new_embedding)
+            print("verification score:", best_score)
+            verified = best_score >= threshold
+            best_user = user_id if verified else None
 
     else:
         # find the best match from faiss index
         # run it 10000 for testing
         for _ in range(10000):
+            # standard 1:N search in faiss index
             best_user, best_score = attendance_service.find_best_match(
                 new_embedding)
             print("best match score:", best_score)
@@ -226,11 +248,12 @@ async def verify_face(
 
     # if no user_id initially provided, we fetch user details of the best match
     if not user_details and verified and best_user is not None:
-        user_details = get_user_details_by_id(db, best_user)
+        user_details = get_user_details_by_id(db, best_user, context)
 
     # get the user's auth policy and process attendance step
     if verified and user_details:
-        group_policy = get_user_auth_policy(db, user_details.id, terminal_id)
+        group_policy = get_user_auth_policy(
+            db, user_details.id, terminal_id, context, event_id)
         result = process_attendance_step(
             db, user_details.id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context)
 
@@ -270,40 +293,40 @@ async def verify_face(
 
 @router.post("/verify/card", response_model=VerifyResponse)
 async def verify_card(
-    user_id: int | None,
-    event_id: int | None,
-    terminal_id: int,
-    auth_type: str,
-    auth_type_id: int,
+    request: CardVerifyRequest,
     db: Session = Depends(get_db)
 ):
     # validation check for required fields
-    if auth_type not in ["face", "fingerprint", "card"] and terminal_id is None:
+    if request.auth_type not in ["face", "fingerprint", "card"] and request.terminal_id is None:
         raise HTTPException(status_code=400, details="Missing required fields")
 
     # prepare some important variables
-    context = "event" if event_id is not None else "daily"
-    event_id = event_id if event_id is not None else None
+    context = "event" if request.event_id is not None else "daily"
+    event_id = request.event_id if request.event_id is not None else None
+    attendance_status = None
 
     user_details = None
-    if user_id is not None:
+    if request.user_id is not None:
         # we first check whether is allowed to auth at this terminal
-        user_details = get_user_details_by_id(db, user_id)
+        user_details = get_user_details_by_id(db, request.user_id, context)
 
         if user_details is None:
             raise HTTPException(status_code=404, detail="User not found")
 
     # logic to compare the card serial number against stored values
-    verified = True
-
-    id = user_id if user_id is not None else 1
+    id = get_user_id_by_code(db, request.serial)
+    verified = True if id is not None else False
 
     # and user details
     if verified:
-        group_policy = get_user_auth_policy(db, id, terminal_id)
+        group_policy = get_user_auth_policy(
+            db, id, request.terminal_id, context, event_id)
         result = process_attendance_step(
-            db, id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context
+            db, id, request.terminal_id, request.auth_type, group_policy, request.auth_type_id, event_id, context
         )
+
+        if not user_details:
+            user_details = get_user_details_by_id(db, id, context)
 
         attendance_status = result["status"]
         next_step = result["next_step"]
@@ -323,9 +346,20 @@ async def verify_card(
             next_step=next_step,
             attendance_type=attendance_type,
             user=UserResponse(
-                id=id
+                id=user_details.id,
+                groupId=user_details.group_id,
+                subgroupId=user_details.subgroup_id,
+                fName=user_details.fname,
+                lName=user_details.lname
             )
         )
+    else:
+        response = VerifyResponse(
+            verified=False,
+            user=None
+        )
+
+    return response
 
 
 @router.post("/terminal/update-id")

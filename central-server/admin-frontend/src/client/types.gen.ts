@@ -77,12 +77,15 @@ export type Branch = {
     name: string;
     location?: string;
     description?: string;
-    status?: 'active' | 'revoked';
+    status?: 'active' | 'inactive';
 };
 
 export type BranchResponse = Branch & {
     id?: number;
-    admin_id?: number;
+    /**
+     * Branch admins
+     */
+    admin_id?: Array<number>;
     date_created?: string;
 };
 
@@ -163,23 +166,18 @@ export type AnnouncementResponse = Annoucement & {
 
 export type Event = {
     name?: string;
-    /**
-     * Target group (exclusive with subgroup_id)
-     */
-    group_id?: number | null;
-    /**
-     * Target subgroup (exclusive with group_id)
-     */
-    subgroup_id?: number | null;
     start_datetime?: string;
     end_datetime?: string;
-    affects_attendance?: boolean;
+    affects_attendance?: string;
     /**
-     * 1 = check-in only
-     * 2 = check-in and check-out
+     * '1' = check-in only
+     * '2' = check-in and check-out
      *
      */
-    handshake?: 1 | 2;
+    handshake?: '1' | '2';
+    /**
+     * User who created the event, optional
+     */
     created_by?: number;
 };
 
@@ -190,15 +188,34 @@ export type EventCheckinCheckoutRange = {
     checkout_end_datetime?: string | null;
 };
 
+/**
+ * groups/subgroups allowed to auth for this event and the auth mode(s)
+ */
+export type EventAccessPolicy = {
+    group_id?: number;
+    subgroup_id?: number;
+    auth_type_id?: number;
+};
+
 export type EventCreate = Event & {
     /**
      * check-in/check-out range for this event
      */
-    checkin_ranges?: EventCheckinCheckoutRange;
+    check_in_out_range?: Array<EventCheckinCheckoutRange>;
+    access_policy?: Array<EventAccessPolicy>;
 };
 
 export type EventResponse = Event & {
     id?: number;
+    created_at?: string;
+    access_policy?: Array<EventAccessPolicy & {
+        id?: number;
+        group_name?: string;
+        auth_type_name?: string;
+    }>;
+    checkin_checkout_ranges?: EventCheckinCheckoutRange & {
+        id?: number;
+    };
 };
 
 export type Exception = {
@@ -1294,6 +1311,41 @@ export type CreateEventErrors = {
 export type CreateEventResponses = {
     /**
      * Event created successfully
+     */
+    200: unknown;
+};
+
+export type DeleteEventData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/events/{id}';
+};
+
+export type DeleteEventErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type DeleteEventResponses = {
+    /**
+     * Event deleted successfully
      */
     200: unknown;
 };
