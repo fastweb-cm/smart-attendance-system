@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.db.session import SessionLocal
 from sqlalchemy.orm import Session
 import requests
@@ -7,12 +9,16 @@ from app.core.config import settings, get_sync_config, update_last_sync_time
 from app.crud.user_crud import handle_user_sync
 from app.crud.event_crud import handle_event_sync
 from app.db.models.attendance_session import AttendanceSession
-from app.services.summary_service import prepare_summary_batch
+from app.services.summary_service import prepare_summary_batch, midnight_missed_checkout_cleanup
 
 URL = settings.CENTRAL_API_URL
 
+# keep track of the last time cleanup ran in memory
+LAST_CLEANUP_DATE = None
+
 
 def start_sync_worker():
+    global LAST_CLEANUP_DATE
     logging.info("Starting the sync worker...")
     while True:
         # Get the current config
@@ -25,6 +31,13 @@ def start_sync_worker():
             try:
                 with SessionLocal() as db:
                     # UPLINK: (Push attendance to central server)
+                    current_date = date.today()
+                    if LAST_CLEANUP_DATE is None or LAST_CLEANUP_DATE < current_date:
+                        logging.info(
+                            "Running midnight cleanup for missed checkouts...")
+                        midnight_missed_checkout_cleanup(db)
+                        LAST_CLEANUP_DATE = current_date
+
                     push_attendance_to_central()
 
                     # DOWNLINK: (Fetch updates from central server)
@@ -36,7 +49,7 @@ def start_sync_worker():
             logging.info("Terminal not activated. Skipping Sync...")
 
         # wait for 5 minutes before next sync
-        time.sleep(30)
+        time.sleep(60)
 
 
 def push_attendance_to_central():
