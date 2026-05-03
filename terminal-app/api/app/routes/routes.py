@@ -212,15 +212,15 @@ async def verify_face(
             # save to db
             blob = to_blob(new_embedding)
             user_record = db.query(User).filter(User.id == user_id).first()
-            user_record.face_template = blob
-            db.commit()
+            if user_record:
+                user_record.face_template = blob
+                # mark for sync so the central server gets this new face
+                user_record.sync_status = "pending"
+                db.commit()
 
             # update faiss index
-            faiss_emb = new_embedding.astype("float32").reshape(1, -1)
-            faiss.normalize_L2(faiss_emb)
-            if attendance_service.faiss_index is not None:
-                attendance_service.faiss_index.add(faiss_emb)
-                attendance_service.user_ids.append(user_id)
+            if user_id not in attendance_service.user_ids:
+                attendance_service.load_users_into_memory()
 
             # mark as verified since it's auto enrolled
             verified = True

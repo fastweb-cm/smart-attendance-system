@@ -69,9 +69,16 @@ class SyncModel
     public function getPendingUpdates(int $terminalId): array
     {
         // fetch pending updates from the queue
-        $sql = "SELECT * FROM tbl_sync_queue
+        $sql = "SELECT *,
+                CASE 
+                    WHEN entity_type = 'tbl_event' THEN 1
+                    WHEN entity_type = 'tbl_user' THEN 2
+                    ELSE 3
+                END AS priority
+                FROM tbl_sync_queue
                 WHERE terminal_id = ? AND status = 'pending'
-                ORDER BY created_at ASC LIMIT 100";
+                ORDER BY priority ASC, created_at ASC 
+                LIMIT 100";
 
         $result = $this->db->query($sql, [$terminalId]);
         if (!$result || $result->num_rows === 0) return [];
@@ -383,4 +390,35 @@ public function syncAttendanceSummary(array $summaries): bool
         throw $e;
     }
 }
+
+public function syncUserTemplates(array $users): array
+    {
+        if (empty($users)) {
+            return [];
+        }
+
+        $syncIds = [];
+
+        try{
+            $this->db->beginTransaction();
+
+            foreach ($users as $u) {
+                $sql = "UPDATE tbl_user 
+                        SET face_template = ?
+                        WHERE id = ?";
+
+                $faceTemplate = base64_decode($u["face_template"]);
+                $this->db->query($sql, [$faceTemplate, $u["user_id"]]);
+
+                $syncIds[] = $u["user_id"];
+            }
+
+            $this->db->commit();
+            return $syncIds;
+        }catch(Throwable $e) {
+            $this->db->rollBack();
+            error_log("Error in userTemplatesUplink: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }

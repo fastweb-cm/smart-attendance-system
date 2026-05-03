@@ -6,6 +6,7 @@ from app.db.models.auth_policy import AuthPolicy
 from app.db.models.user_permission import UserPermission
 from app.db.models.event_access_policy import EventAccessPolicy
 from app.db.models.events import Event
+from app.services.attendance_service import load_users_into_memory
 
 
 def get_user_by_id(db: Session, id: int):
@@ -89,6 +90,7 @@ def get_user_auth_policy(db: Session, user_id: int, terminal_id: int, context: s
 
 def handle_user_sync(db: Session, action: str, data: dict):
     user_id = data.get("id")
+    needs_memory_refresh = False  # track if biometrics changed
 
     try:
         if action == "upsert":
@@ -97,6 +99,15 @@ def handle_user_sync(db: Session, action: str, data: dict):
             if not user:
                 user = User(id=user_id)
                 db.add(user)
+                needs_memory_refresh = True  # new user with biometrics will require memory refresh
+
+            # check if face template is actually changing
+            new_face = data.get('face_template')
+            if new_face:
+                decoded_face = base64.b64decode(new_face)
+                if user.face_template != decoded_face:
+                    user.face_template = decoded_face
+                    needs_memory_refresh = True
 
             user.fname = data.get("fname")
             user.lname = data.get("lname")
@@ -130,7 +141,22 @@ def handle_user_sync(db: Session, action: str, data: dict):
                 logging.info(
                     "User %s and permissions synced successfully.", user_id)
                 db.commit()
+
+            # If biometrics changed, signal the attendance service to refresh its in-memory data
+            if needs_memory_refresh:
+                logging.info(
+                    "Biometric data changed for user %s. Signaling attendance service to refresh cache.", user_id)
+                load_users_into_memory()
+
     except Exception as e:
         db.rollback()
         logging.error("Error syncing user %s: %s", user_id, str(e))
         raise
+
+
+def get_pending_users_face_templates(db: Session):
+    """
+    Fetches all users with pending sync status and their face templates.
+    This is used by the uplink worker to know which users need to be synced to the central server.
+    """
+    return db.query(User.id, User.face_template).filter(User.sync_status == "pending").all()

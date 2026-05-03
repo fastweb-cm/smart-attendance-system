@@ -1,12 +1,14 @@
+import base64
 from datetime import date
 
+from api.app.db.models.users import User
 from app.db.session import SessionLocal
 from sqlalchemy.orm import Session
 import requests
 import logging
 import time
 from app.core.config import settings, get_sync_config, update_last_sync_time
-from app.crud.user_crud import handle_user_sync
+from app.crud.user_crud import handle_user_sync, get_pending_users_face_templates
 from app.crud.event_crud import handle_event_sync
 from app.db.models.attendance_session import AttendanceSession
 from app.services.summary_service import prepare_summary_batch, midnight_missed_checkout_cleanup
@@ -39,6 +41,8 @@ def start_sync_worker():
                         LAST_CLEANUP_DATE = current_date
 
                     push_attendance_to_central()
+
+                    push_user_templates_to_central()
 
                     # DOWNLINK: (Fetch updates from central server)
                     pull_central_updates(db, terminal_id, last_sync)
@@ -153,7 +157,7 @@ def pull_central_updates(db: Session, terminal_id: int, last_sync: str):
             result = response.json()
             updates = result.get("data", [])
             # log the entire response for debugging
-            logging.info(f"Received response from central server: {result}")
+            # logging.info(f"Received response from central server: {result}")
 
             # The most recent sync queue in the central server
             last_sync_time = result.get("last_sync_time")
@@ -217,3 +221,50 @@ def update_sync_status(successful_ids):
     except requests.exceptions.RequestException:
         logging.warning(
             "Failed to acknowledge sync updates: Central Server unreachable.")
+
+
+def push_user_templates_to_central():
+    logging.info("Checking for pending user face templates to uplink...")
+    with SessionLocal() as db:
+        pending_users = get_pending_users_face_templates(db)
+
+        if not pending_users:
+            return
+
+        payload = []
+        for user_id, face_template in pending_users:
+            payload.append({
+                "user_id": user_id,
+                "face_template": base64.b64encode(face_template).decode('utf-8') if face_template else None,
+            })
+
+        if not payload:
+            return
+
+        try:
+            response = requests.post(
+                f"{URL}/sync/uplink/user-templates",
+                json={"users": payload}
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                synced_user_ids = result.get("synced_user_ids", [])
+
+                # mark users as synced
+                for u_id in synced_user_ids:
+                    user_record = db.query(User).filter(
+                        User.id == u_id).first()
+                    if user_record:
+                        user_record.sync_status = 'synced'
+                db.commit()
+
+                logging.info(
+                    f"Successfully batch-synced {len(synced_user_ids)} user templates.")
+            else:
+                logging.error(
+                    f"Batch uplink of user templates failed. Server returned: {response.status_code}")
+        except Exception as e:
+            logging.error(
+                f"Failed to perform batch uplink of user templates: {e}")
+            db.rollback()

@@ -136,4 +136,40 @@ class SyncController extends Controller {
             ], 500);
         }
     }
+
+    public function userTemplatesUplink()
+    {
+        $data = $this->getJsonInput();
+
+        $users = $data["users"] ?? [];
+
+        if (empty($users)) {
+            $this->json([
+                "success" => false,
+                "message" => "No batch data"
+            ], 400);
+        }
+
+        try{
+            $syncIds = $this->s->syncUserTemplates($users);
+            if (!empty($syncIds)) {
+                $this->json([
+                    "success" => true,
+                    "message" => "User templates synced successfully",
+                    "synced_user_ids" => $syncIds
+                ]);
+            } else {
+                $this->json([
+                    "success" => false,
+                    "message" => "Failed to sync user templates"
+                ], 500);
+            }
+        } catch (Throwable $e) {
+            $this->json([
+                "success"=> false,
+                "message"=> $e->getMessage(),
+                "type"=> get_class($e)
+            ], 500);
+        }
+    }
 }

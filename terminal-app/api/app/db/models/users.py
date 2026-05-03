@@ -33,6 +33,7 @@ class User(Base):
     fingerprint_template = Column(LargeBinary)
 
     card_serial_code = Column(String(255))
+    sync_status = Column(String(20), default="sync")
 
     # -----------------
     # Relationships

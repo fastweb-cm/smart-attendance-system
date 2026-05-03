@@ -1,4 +1,4 @@
-
+import threading
 import numpy as np
 import faiss
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from app.db.session import SessionLocal
 # Prepare a global cache
 user_ids = []
 faiss_index = None
+faiss_lock = threading.Lock()  # to ensure thread safety when updating the index
 
 
 def load_users_into_memory():
@@ -17,6 +18,10 @@ def load_users_into_memory():
     try:
         users = db.query(User.id, User.face_template).filter(
             User.face_template != None).all()
+
+        if not users:
+            print("No users with face templates found.")
+            return
 
         embeddings_list = []
         user_ids = []
@@ -40,12 +45,27 @@ def load_users_into_memory():
             faiss_index = faiss.IndexFlatIP(dimension)
 
             faiss_index.add(embeddings)
+
+            # swap: use the lock to update the global varaibles safely
+            with faiss_lock:
+                # update the global index and user_ids
+                faiss_index = faiss_index
+                user_ids = user_ids
+
+        print(
+            f"Loaded {len(user_ids)} users into memory for facial recognition.")
+    except Exception as e:
+        print(f"Error loading users into memory: {e}")
     finally:
         db.close()
 
 
 def find_best_match(new_embedding: np.ndarray):
     global faiss_index, user_ids
+
+    with faiss_lock:  # wait if a sync is currently updating the index
+        if faiss_index is None or faiss_index.ntotal == 0:
+            return None, 0.0
 
     if faiss_index is None or faiss_index.ntotal == 0:
         return None, 0.0
