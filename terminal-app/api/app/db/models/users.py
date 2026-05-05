@@ -75,3 +75,9 @@ class User(Base):
         "AttendanceSummary",
         back_populates="user"
     )
+
+    face_buffers = relationship(
+        "FaceBuffer",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
