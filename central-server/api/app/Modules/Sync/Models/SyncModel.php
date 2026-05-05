@@ -403,9 +403,9 @@ public function syncUserTemplates(array $users): array
             $this->db->beginTransaction();
 
             foreach ($users as $u) {
-                $sql = "UPDATE tbl_user 
+                $sql = "UPDATE tbl_biometricprofile 
                         SET face_template = ?
-                        WHERE id = ?";
+                        WHERE user_id = ?";
 
                 $faceTemplate = base64_decode($u["face_template"]);
                 $this->db->query($sql, [$faceTemplate, $u["user_id"]]);

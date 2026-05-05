@@ -159,4 +159,7 @@ def get_pending_users_face_templates(db: Session):
     Fetches all users with pending sync status and their face templates.
     This is used by the uplink worker to know which users need to be synced to the central server.
     """
-    return db.query(User.id, User.face_template).filter(User.sync_status == "pending").all()
+
+    logging.debug(
+        "Fetching users with pending sync status for face template upload.")
+    return db.query(User.id, User.face_template).filter(User.sync_status == "pending").limit(25).all()

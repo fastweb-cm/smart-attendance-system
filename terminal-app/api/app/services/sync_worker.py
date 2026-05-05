@@ -1,7 +1,7 @@
 import base64
 from datetime import date
 
-from api.app.db.models.users import User
+from app.db.models.users import User
 from app.db.session import SessionLocal
 from sqlalchemy.orm import Session
 import requests
@@ -256,7 +256,7 @@ def push_user_templates_to_central():
                     user_record = db.query(User).filter(
                         User.id == u_id).first()
                     if user_record:
-                        user_record.sync_status = 'synced'
+                        user_record.sync_status = 'sync'
                 db.commit()
 
                 logging.info(
