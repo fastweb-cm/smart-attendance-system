@@ -267,7 +267,7 @@ async def verify_face(
         # check if we have reached he training the limit
         sample_count = get_face_buffer_count_for_user(db, best_user)
 
-        if sample_count >= 2:
+        if sample_count >= 20:
             samples = get_face_buffers_by_user_id(db, best_user)
 
             # convert blobs back to embeddings
