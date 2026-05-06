@@ -12,10 +12,11 @@ from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy, get_user_id_by_code
+from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy, get_user_id_by_code, get_user_original_face_template_by_id
 from app.crud.attendance_crud import process_attendance_step
 from app.schemas.terminal import TerminalConfigUpdateRequest
 from app.core.config import update_terminal_id
+from app.crud.face_buffer import create_face_buffer_entry, get_face_buffer_count_for_user, get_face_buffers_by_user_id, clear_face_buffers_for_user
 
 
 # Creates a router object that will hold all routes in this file
@@ -201,7 +202,7 @@ async def verify_face(
 
     # AUTO Enroll if user face template not found
     if user_id is not None:
-        # check for existing face template
+        # check for refined face, fallback to original
         stored_template_blob = get_user_face_template_by_id(db, user_id)
 
         if stored_template_blob is None:
@@ -214,6 +215,8 @@ async def verify_face(
             user_record = db.query(User).filter(User.id == user_id).first()
             if user_record:
                 user_record.face_template = blob
+                # this one will eventually update overtime
+                user_record.face_template_refined = blob
                 # mark for sync so the central server gets this new face
                 user_record.sync_status = "pending"
                 db.commit()
@@ -237,14 +240,10 @@ async def verify_face(
             best_user = user_id if verified else None
 
     else:
-        # find the best match from faiss index
-        # run it 10000 for testing
-        for _ in range(10000):
-            # standard 1:N search in faiss index
-            best_user, best_score = attendance_service.find_best_match(
-                new_embedding)
-            print("best match score:", best_score)
-            verified = best_score >= threshold
+        # standard 1:N search in faiss index
+        best_user, best_score = attendance_service.find_best_match(
+            new_embedding)
+        verified = best_score >= threshold
 
     # if no user_id initially provided, we fetch user details of the best match
     if not user_details and verified and best_user is not None:
@@ -260,6 +259,45 @@ async def verify_face(
         attendance_status = result["status"]
         next_step = result["next_step"]
         attendance_type = result["attendance_type"]
+
+        # Add to buffer
+        create_face_buffer_entry(
+            db, best_user, to_blob(new_embedding), best_score)
+
+        # check if we have reached he training the limit
+        sample_count = get_face_buffer_count_for_user(db, best_user)
+
+        if sample_count >= 2:
+            samples = get_face_buffers_by_user_id(db, best_user)
+
+            # convert blobs back to embeddings
+            samples_embedding = [from_blob(s.face_template) for s in samples]
+
+            # calculate centroid (average face)
+            refined_embeddings = np.mean(samples_embedding, axis=0)
+            faiss.normalize_L2(refined_embeddings.reshape(1, -1))
+
+            # Always compare back to the absolute original
+            original_blob = get_user_original_face_template_by_id(
+                db, best_user)
+            original_emb = from_blob(original_blob)
+
+            # verify the centroid embeddings against the original embs in db
+            similatity_to_origin = attendance_service.verify_user_embedding(
+                original_emb, refined_embeddings)
+
+            if similatity_to_origin > 0.45:
+                user_rec = db.query(User).filter(User.id == best_user).first()
+
+                # rotate only the refined template
+                user_rec.face_template_refined = to_blob(refined_embeddings)
+                user_rec.sync_status = "pending"  # so it can be synced to central server
+
+                # clear the buffer for the next learning cycle
+                clear_face_buffers_for_user(db, best_user)
+
+                # update faiss index
+                attendance_service.load_users_into_memory()
 
     # if attendance status is error raise an exception(user is trying to checkout too early)
     if attendance_status == "error":

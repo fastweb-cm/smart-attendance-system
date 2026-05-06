@@ -232,10 +232,10 @@ def push_user_templates_to_central():
             return
 
         payload = []
-        for user_id, face_template in pending_users:
+        for user_id, face_template_refined in pending_users:
             payload.append({
                 "user_id": user_id,
-                "face_template": base64.b64encode(face_template).decode('utf-8') if face_template else None,
+                "face_template": base64.b64encode(face_template_refined).decode('utf-8') if face_template_refined else None,
             })
 
         if not payload:

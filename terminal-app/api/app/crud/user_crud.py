@@ -1,6 +1,7 @@
 import base64
 import logging
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.db.models.users import User
 from app.db.models.auth_policy import AuthPolicy
 from app.db.models.user_permission import UserPermission
@@ -27,10 +28,22 @@ def get_user_details_by_id(db: Session, id: int, context: str = "daily"):
         User.lname
     ).join(UserPermission, User.id == UserPermission.user_id).filter(User.id == id).filter(UserPermission.context == context).first()
 
+# get user original face template by id (used for comparison during enrollment refinement)
 
-# get user face embedding template by user id
-def get_user_face_template_by_id(db: Session, id: int):
+
+def get_user_original_face_template_by_id(db: Session, id: int):
     user = db.query(User.face_template).filter(User.id == id).first()
+    return user[0] if user else None
+
+# get user refined face, fallback to original if no refined face
+
+
+def get_user_face_template_by_id(db: Session, id: int):
+    # coalesce(refined, original) returns refined if it's not NULL, otherwise original
+    user = db.query(
+        func.coalesce(User.face_template_refined, User.face_template)
+    ).filter(User.id == id).first()
+
     return user[0] if user else None
 
 # get user card user card
@@ -162,4 +175,4 @@ def get_pending_users_face_templates(db: Session):
 
     logging.debug(
         "Fetching users with pending sync status for face template upload.")
-    return db.query(User.id, User.face_template).filter(User.sync_status == "pending").limit(25).all()
+    return db.query(User.id, User.face_template_refined).filter(User.sync_status == "pending").limit(25).all()

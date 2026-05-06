@@ -2,6 +2,7 @@ import threading
 import numpy as np
 import faiss
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.services.embedding_service import from_blob
 from app.db.models.users import User
 from app.db.session import SessionLocal
@@ -16,8 +17,10 @@ def load_users_into_memory():
     global user_ids, faiss_index
     db = SessionLocal()
     try:
-        users = db.query(User.id, User.face_template).filter(
-            User.face_template != None).all()
+        # select refined face template if exists, otherwise original template
+        users = db.query(User.id, User.face_template_refined, User.face_template).filter(
+            or_(User.face_template_refined != None, User.face_template != None)
+        ).all()
 
         if not users:
             print("No users with face templates found.")
@@ -26,12 +29,15 @@ def load_users_into_memory():
         embeddings_list = []
         user_ids = []
 
-        for user_id, face_template in users:
-            if face_template is not None:
-                emb = from_blob(face_template)
-                embeddings_list.append(emb)
-                user_ids.append(user_id)
+        for user_id, refined, original in users:
+            # use refined if exists, otherwise original
+            if refined is not None:
+                emb = from_blob(refined)
+            else:
+                emb = from_blob(original)
 
+            embeddings_list.append(emb)
+            user_ids.append(user_id)
         if embeddings_list:
             embeddings = np.stack(embeddings_list).astype("float32")
 

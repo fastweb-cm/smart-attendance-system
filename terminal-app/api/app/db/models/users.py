@@ -30,6 +30,7 @@ class User(Base):
     user_type = Column(String(50))
 
     face_template = Column(LargeBinary)
+    face_template_refined = Column(LargeBinary)
     fingerprint_template = Column(LargeBinary)
 
     card_serial_code = Column(String(255))

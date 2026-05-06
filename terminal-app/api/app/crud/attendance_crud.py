@@ -37,7 +37,9 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
     session = db.query(AuthSession).filter(
         AuthSession.user_id == user_id,
         AuthSession.terminal_id == terminal_id,
-        AuthSession.status == 'in_progress'
+        AuthSession.status == 'in_progress',
+        AuthSession.attendance_context == context,
+        AuthSession.event_id == event_id
     ).first()
 
     # if no session exists, create the master session and the checklist
