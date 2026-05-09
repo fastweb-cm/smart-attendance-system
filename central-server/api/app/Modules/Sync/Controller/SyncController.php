@@ -31,7 +31,7 @@ class SyncController extends Controller {
             $this->json([
                 "success"=> true,
                 "data"=> $syncData["updates"],
-                "last_sync_time" => $syncData["last_sync_time"]
+                "last_sync_time" => ""
             ]);
         }catch(Throwable $e) {
             $this->json([
