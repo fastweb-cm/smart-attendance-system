@@ -34,6 +34,9 @@ class AuthSession(Base):
         default="daily"
     )
 
+    event_id = Column(Integer, ForeignKey(
+        "tbl_event.id"), index=True, nullable=True)
+
     started_at = Column(
         TIMESTAMP,
         server_default=func.now()  # pylint: disable=not-callable
@@ -49,3 +52,5 @@ class AuthSession(Base):
     terminal = relationship("Terminal", back_populates="auth_sessions")
     steps = relationship(
         "AuthSessionStep", back_populates="auth_session", cascade="all, delete-orphan")
+
+    event = relationship("Event", back_populates="auth_sessions")

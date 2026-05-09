@@ -4,6 +4,7 @@ use App\Modules\Users\Controllers\UserRegistrationController;
 use App\Modules\Users\Controllers\UserController;
 use App\Modules\Users\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\TerminalHeartBeatMiddleware;
 use App\Modules\Branch\Controllers\BranchController;
 use App\Modules\Groups\Controllers\GroupController;
 use App\Modules\Terminals\Controllers\TerminalController;
@@ -27,8 +28,13 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |  Sync Routes
 |--------------------------
 */
-$router->get('/api/v1/sync/updates', [SyncController::class, 'index']);
-
+$router->group(['middleware' => [TerminalHeartBeatMiddleware::class]], function($router) {
+    $router->get('/api/v1/sync/updates', [SyncController::class, 'index']);
+    $router->post('/api/v1/sync/acknowledge', [SyncController::class, 'acknowledge']);
+    $router->post('/api/v1/sync/uplink/sessions-batch', [SyncController::class, 'sessionUplink']);
+    $router->post('/api/v1/sync/uplink/summaries-batch', [SyncController::class, 'summaryUplink']);
+    $router->post('/api/v1/sync/uplink/user-templates', [SyncController::class, 'userTemplatesUplink']);
+});
 /*
 |--------------------------
 |  Protected Routes

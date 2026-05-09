@@ -37,8 +37,28 @@ export default function WebcamCaptureModal({
   const [loadingModels, setLoadingModels] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attemptCount, setAttemptCount] = useState(0); // track retries
 
   const DETECTION_INTERVAL = 200; // 5 fps
+
+  // helper to restart the detection loop with a delay after a failure
+  const restartDetection = (feedbackMsg: string) => {
+    setTimeout(() => {
+    onFeedback(feedbackMsg);
+  }, 0);
+
+  capturedRef.current = false;
+
+  if (animationRef.current) {
+    cancelAnimationFrame(animationRef.current);
+  }
+
+  setTimeout(() => {
+    if (videoRef.current && open) {
+      detect();
+    }
+  }, 2000);
+};
   
 
 
@@ -123,6 +143,21 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
     return brightness < 60;
   };
 
+  const handleFailure = (message: string) => {
+  setAttemptCount((prev) => {
+    const next = prev + 1;
+
+    if (next >= 3) {
+      onFeedback("Too many failed attempts. Resetting...");
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      restartDetection(`${message} Retry ${next}/3`);
+    }
+
+    return next;
+  });
+};
+
   /*
    Capture Image
   */
@@ -145,14 +180,14 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
       // setFeedback("Image is blurry. Please hold still.");
       onFeedback("Image is blurry. Please hold still.");
       capturedRef.current = false;
-      return;
+      return restartDetection("Image is blurry. Please hold still.");
     }
 
     if (isTooDark(canvas)) {
       // setFeedback("Lighting is too dark.");
       onFeedback("Lighting is too dark.");
       capturedRef.current = false;
-      return;
+      return restartDetection("Lighting is too dark.");
     }
 
     canvas.toBlob(
@@ -166,13 +201,15 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         if (auth_type_id) formData.append("auth_type_id", auth_type_id.toString());
         formData.append("image", blob, "face.jpg");
 
-        stopWebcam()
-        onClose()
-        onCaptureStart()
+        // stopWebcam()
+        // onClose()
+        // onCaptureStart()
 
         try {
           const res = await apiClient.post("verify/face", formData);
           if (res.data.verified) {
+            stopWebcam();
+            onClose();
             onResult(
               "success",
               "Verification successfull.",
@@ -182,12 +219,13 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
               res.data?.attendance_type ?? null
             );
           }else{
-            onResult(
-              "error",
-              `Verification failed.`
-            );
+            // onResult(
+            //   "error",
+            //   `Verification failed.`
+            // );
+            capturedRef.current = false;
+            handleFailure("Verification failed.");
           }
-          capturedRef.current = true;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           const detail = error.response?.data?.detail;
@@ -196,8 +234,18 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
             ? detail 
             : (Array.isArray(detail) ? detail[0].msg : "Verification failed");
 
-          onResult("error", errorMsg);
-          capturedRef.current = false;
+          // 404 usually means user not found, dont retry again
+          if (error.response?.status === 404) {
+            stopWebcam()
+            onClose()
+            onResult("error", errorMsg);
+            return;
+          } else {
+            handleFailure(`${errorMsg} `);
+          }
+
+          // onResult("error", errorMsg);
+          // capturedRef.current = false;
         }
       },
       "image/jpeg",
@@ -211,7 +259,10 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
   const detect = async () => {
   const video = videoRef.current;
 
-  if (!video || capturedRef.current) return;
+  if (!video || capturedRef.current){
+    animationRef.current = requestAnimationFrame(detect);
+    return;
+  } 
 
   const detection = await faceapi
     .detectSingleFace(
@@ -260,6 +311,7 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
   // setFeedback("Hold still... capturing");
   if (box.width < video.videoWidth * 0.2) {
     onFeedback("Move closer to the camera");
+    animationRef.current = requestAnimationFrame(detect);
     return;
   }
 

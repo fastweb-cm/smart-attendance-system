@@ -1,7 +1,8 @@
-
+import threading
 import numpy as np
 import faiss
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.services.embedding_service import from_blob
 from app.db.models.users import User
 from app.db.session import SessionLocal
@@ -9,24 +10,34 @@ from app.db.session import SessionLocal
 # Prepare a global cache
 user_ids = []
 faiss_index = None
+faiss_lock = threading.Lock()  # to ensure thread safety when updating the index
 
 
 def load_users_into_memory():
     global user_ids, faiss_index
     db = SessionLocal()
     try:
-        users = db.query(User.id, User.face_template).filter(
-            User.face_template != None).all()
+        # select refined face template if exists, otherwise original template
+        users = db.query(User.id, User.face_template_refined, User.face_template).filter(
+            or_(User.face_template_refined != None, User.face_template != None)
+        ).all()
+
+        if not users:
+            print("No users with face templates found.")
+            return
 
         embeddings_list = []
         user_ids = []
 
-        for user_id, face_template in users:
-            if face_template is not None:
-                emb = from_blob(face_template)
-                embeddings_list.append(emb)
-                user_ids.append(user_id)
+        for user_id, refined, original in users:
+            # use refined if exists, otherwise original
+            if refined is not None:
+                emb = from_blob(refined)
+            else:
+                emb = from_blob(original)
 
+            embeddings_list.append(emb)
+            user_ids.append(user_id)
         if embeddings_list:
             embeddings = np.stack(embeddings_list).astype("float32")
 
@@ -40,12 +51,27 @@ def load_users_into_memory():
             faiss_index = faiss.IndexFlatIP(dimension)
 
             faiss_index.add(embeddings)
+
+            # swap: use the lock to update the global varaibles safely
+            with faiss_lock:
+                # update the global index and user_ids
+                faiss_index = faiss_index
+                user_ids = user_ids
+
+        print(
+            f"Loaded {len(user_ids)} users into memory for facial recognition.")
+    except Exception as e:
+        print(f"Error loading users into memory: {e}")
     finally:
         db.close()
 
 
 def find_best_match(new_embedding: np.ndarray):
     global faiss_index, user_ids
+
+    with faiss_lock:  # wait if a sync is currently updating the index
+        if faiss_index is None or faiss_index.ntotal == 0:
+            return None, 0.0
 
     if faiss_index is None or faiss_index.ntotal == 0:
         return None, 0.0

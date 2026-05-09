@@ -69,9 +69,16 @@ class SyncModel
     public function getPendingUpdates(int $terminalId): array
     {
         // fetch pending updates from the queue
-        $sql = "SELECT * FROM tbl_sync_queue
+        $sql = "SELECT *,
+                CASE 
+                    WHEN entity_type = 'tbl_event' THEN 1
+                    WHEN entity_type = 'tbl_user' THEN 2
+                    ELSE 3
+                END AS priority
+                FROM tbl_sync_queue
                 WHERE terminal_id = ? AND status = 'pending'
-                ORDER BY created_at ASC LIMIT 100";
+                ORDER BY priority ASC, created_at ASC 
+                LIMIT 100";
 
         $result = $this->db->query($sql, [$terminalId]);
         if (!$result || $result->num_rows === 0) return [];
@@ -86,12 +93,12 @@ class SyncModel
             // fetch data based on type
             if ($item["action"] === "upsert") {
                 switch ($item["entity_type"]) {
+                    case "tbl_event":
+                        $data = $this->getHydratedEvent($item["entity_id"]);
+                        break;
                     case "tbl_user":
                         // hydrate the user with full biometric and group data
                         $data = $this->getHydratedUserForTerminal($item["entity_id"], $terminalId);
-                        break;
-                    case "tbl_event":
-                        //logic
                         break;
                     // add more cases 
                 }
@@ -164,12 +171,255 @@ class SyncModel
         $result = $this->db->query($sql, [$terminalId, $userId]);
         $user = ($result) ? $result->fetch_assoc() : null;
 
+
         if ($user) {
-            // Convert Blobs to Base64 so Python/JSON can carry them
             $user['face_template'] = $user['face_template'] ? base64_encode($user['face_template']) : null;
             $user['fingerprint_template'] = $user['fingerprint_template'] ? base64_encode($user['fingerprint_template']) : null;
         }
 
+        $user['permissions'] = $this->getUserPermissions($userId, $terminalId);
+
         return $user;
     }
+
+        private function getUserPermissions(int $userId, int $terminalId): array
+{
+    $sql = "
+        -- 1. Check for Daily Context
+        SELECT 
+            gm.group_id, 
+            sgm.subgroup_id, 
+            'daily' as context, 
+            NULL as event_id
+        FROM tbl_user u
+        LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
+        LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
+        JOIN tbl_terminal_access_policy tap ON (
+            (tap.group_id = gm.group_id) OR (tap.subgroup_id = sgm.subgroup_id)
+        )
+        WHERE u.id = ? AND tap.terminal_id = ?
+
+        UNION
+
+        -- 2. Check for Event Context
+        SELECT 
+            gm.group_id, 
+            sgm.subgroup_id, 
+            'event' as context, 
+            eap.event_id
+        FROM tbl_user u
+        LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
+        LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
+        JOIN tbl_event_access_policy eap ON (
+            (eap.group_id = gm.group_id) OR (eap.subgroup_id = sgm.subgroup_id)
+        )
+        WHERE u.id = ?
+    ";
+
+    $result = $this->db->query($sql, [$userId, $terminalId, $userId]);
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+    private function getHydratedEvent (int $eventId): ?array
+    {
+        $sql = "SELECT * FROM tbl_event WHERE id = ?";
+        $res = $this->db->query($sql, [$eventId]);
+        $event = $res ? $res->fetch_assoc() : null;
+
+        if ($event) {
+            //fetch the checking checkout range
+            $sqlrange = "SELECT * FROM tbl_event_checkin_checkout_range WHERE event_id = ?";
+            $resrange = $this->db->query($sqlrange, [$eventId]);
+            $event['checkinout_range'] = $resrange ? $resrange->fetch_assoc() : null;
+
+            // get the event policies
+            $sqlPol = "SELECT ev.*, at.name AS auth_type_name FROM tbl_event_access_policy ev 
+                       LEFT JOIN lkup_auth_type at ON ev.auth_type_id = at.id
+                       WHERE ev.event_id = ?";
+            $resPol = $this->db->query($sqlPol, [$eventId]);
+            $event['access_policies'] = $resPol ? $resPol->fetch_all(MYSQLI_ASSOC) : [];
+        }
+
+        return $event;
+    }
+
+    public function updateSyncStatus(array $syncIds): void
+    {
+        if (empty($syncIds)) {
+            return;
+        }
+        // Create ?, ?, ? placeholders dynamically
+        $placeholders = implode(',', array_fill(0, count($syncIds), '?'));
+
+        $sql = "
+            UPDATE tbl_sync_queue
+            SET status = ?
+            WHERE id IN ($placeholders)";
+
+        // First parameter is status, followed by IDs
+        $params = array_merge(['sync'], $syncIds);
+
+        $this->db->query($sql, $params);
+    }
+
+public function syncAttendanceSession(array $sessions): array
+{
+    if (empty($sessions)) {
+        return [];
+    }
+
+    $synced_ids = [];
+    $values = [];
+    $placeholders = [];
+
+    try {
+        // Start transaction within the model
+        $this->db->beginTransaction();
+
+        foreach ($sessions as $s) {
+            // Collect IDs for acknowledgment
+            $synced_ids[] = $s["local_id"];
+
+            // Add values in the exact order of the columns below
+            $values[] = $s["user_id"];
+            $values[] = $s["terminal_id"];
+            $values[] = $s["local_id"];
+            $values[] = $s["context"];
+            $values[] = $s["event_id"] ?? null;
+            $values[] = $s["checkin_timestamp"];
+            $values[] = $s["checkout_timestamp"] ?? null;
+            $values[] = $s["checkin_status"];
+            $values[] = $s["checkout_status"] ?? null;
+            $values[] = $s["session_status"];
+            $values[] = $s["sync_status"];
+            $values[] = $s["created_at"];
+
+            // Create the placeholder string (?, ?, ..., ?)
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        }
+
+        // Single Batch Query
+        $sql = "INSERT INTO tbl_attendance_session (
+                    user_id, 
+                    terminal_id,
+                    terminal_session_id, 
+                    attendance_context, 
+                    event_id, 
+                    checkin_timestamp, 
+                    checkout_timestamp, 
+                    checkin_status, 
+                    checkout_status, 
+                    session_status, 
+                    sync_status,
+                    created_at
+                ) VALUES " . implode(', ', $placeholders) . "
+                ON DUPLICATE KEY UPDATE 
+                    checkout_timestamp = VALUES(checkout_timestamp),
+                    checkout_status = VALUES(checkout_status),
+                    sync_status = VALUES(sync_status),
+                    session_status = VALUES(session_status)";
+
+        $this->db->query($sql, $values);
+
+        // Commit everything
+        $this->db->commit();
+
+        return $synced_ids;
+
+    } catch (Throwable $e) {
+        // Rollback on any failure
+        $this->db->rollBack();
+        error_log("Error syncing attendance sessions: " . $e->getMessage());
+        throw $e; // Rethrow to let the controller handle the error message
+    }
+}
+
+public function syncAttendanceSummary(array $summaries): bool
+{
+    if (empty($summaries)) {
+        return false;
+    }
+
+    $synced_ids = [];
+    $values = [];
+    $placeholders = [];
+
+    try {
+        $this->db->beginTransaction();
+
+        foreach ($summaries as $s) {
+            // Track the local ID to return to Python for confirmation
+
+            $values[] = $s["user_id"];
+            $values[] = $s["terminal_id"];
+            $values[] = $s["attendance_date"];
+            $values[] = $s["attendance_context"];
+            $values[] = $s["event_id"] ?? null;
+            $values[] = $s["first_checkin"];
+            $values[] = $s["last_checkout"] ?? null;
+            $values[] = $s["total_hours"];
+            $values[] = $s["attendance_status"];
+
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        }
+
+        $sql = "INSERT INTO tbl_attendance_summary (
+                    user_id, 
+                    terminal_id, 
+                    attendance_date, 
+                    attendance_context, 
+                    event_id, 
+                    first_checkin, 
+                    last_checkout, 
+                    total_hours, 
+                    attendance_status
+                ) VALUES " . implode(', ', $placeholders) . "
+                ON DUPLICATE KEY UPDATE 
+                    last_checkout = VALUES(last_checkout),
+                    total_hours = VALUES(total_hours),
+                    attendance_status = VALUES(attendance_status)";
+
+        $this->db->query($sql, $values);
+
+        $this->db->commit();
+        return true;
+
+    } catch (Throwable $e) {
+        $this->db->rollBack();
+        error_log("Database Error in syncAttendanceSummary: " . $e->getMessage());
+        throw $e;
+    }
+}
+
+public function syncUserTemplates(array $users): array
+    {
+        if (empty($users)) {
+            return [];
+        }
+
+        $syncIds = [];
+
+        try{
+            $this->db->beginTransaction();
+
+            foreach ($users as $u) {
+                $sql = "UPDATE tbl_biometricprofile 
+                        SET face_template = ?
+                        WHERE user_id = ?";
+
+                $faceTemplate = base64_decode($u["face_template"]);
+                $this->db->query($sql, [$faceTemplate, $u["user_id"]]);
+
+                $syncIds[] = $u["user_id"];
+            }
+
+            $this->db->commit();
+            return $syncIds;
+        }catch(Throwable $e) {
+            $this->db->rollBack();
+            error_log("Error in userTemplatesUplink: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
 }

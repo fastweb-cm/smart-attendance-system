@@ -44,7 +44,7 @@ class Event(Base):
         server_default=func.now()  # pylint: disable=not-callable
     )
 
-    updated_at = Column(TIMESTAMP)
+    updated_at = Column(TIMESTAMP, nullable=True, onupdate=func.now())
 
     __table_args__ = (
         Index("idx_event_time", "start_datetime", "end_datetime"),
@@ -89,4 +89,10 @@ class Event(Base):
     permissions = relationship(
         "UserPermission",
         back_populates="event"
+    )
+
+    auth_sessions = relationship(
+        "AuthSession",
+        back_populates="event",
+        cascade="all, delete-orphan"
     )

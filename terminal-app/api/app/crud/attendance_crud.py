@@ -5,6 +5,7 @@ from app.db.models.auth_session import AuthSession
 from app.db.models.auth_session_steps import AuthSessionStep
 from app.db.models.attendance_auth_log import AttendanceAuthLog
 from app.db.models.attendance_session import AttendanceSession
+from app.db.models.event_checkin_checkout_range import EventCheckinCheckoutRange
 
 
 def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_type: str, policy: list, auth_type_id: int, event_id: int | None = None, context: str = "daily"):
@@ -36,7 +37,9 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
     session = db.query(AuthSession).filter(
         AuthSession.user_id == user_id,
         AuthSession.terminal_id == terminal_id,
-        AuthSession.status == 'in_progress'
+        AuthSession.status == 'in_progress',
+        AuthSession.attendance_context == context,
+        AuthSession.event_id == event_id
     ).first()
 
     # if no session exists, create the master session and the checklist
@@ -45,6 +48,8 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
             user_id=user_id,
             terminal_id=terminal_id,
             status='in_progress',
+            attendance_context=context,
+            event_id=event_id
         )
         db.add(session)
         db.flush()  # get session.id without committing yet
@@ -126,9 +131,9 @@ def handle_attendance_session(db: Session, user_id: int, terminal_id: int, event
     # Look for a session that is already 'completed' for TODAY
     completed_today = db.query(AttendanceSession).filter(
         AttendanceSession.user_id == user_id,
-        AttendanceSession.session_status == 'completed',
         AttendanceSession.attendance_context == context,
         AttendanceSession.event_id == event_id,
+        AttendanceSession.session_status == 'completed',
         func.date(AttendanceSession.checkin_timestamp) == today
     ).first()
 
@@ -146,30 +151,52 @@ def handle_attendance_session(db: Session, user_id: int, terminal_id: int, event
     )
     db.add(auth_log)
 
-    # check for an active session
+    # check for an active session (context-specific)
     active_session = db.query(AttendanceSession).filter(
         AttendanceSession.user_id == user_id,
         AttendanceSession.terminal_id == terminal_id,
+        AttendanceSession.attendance_context == context,
+        AttendanceSession.event_id == event_id,
         AttendanceSession.session_status == 'active'
     ).first()
 
     if active_session:
         # this is checkout
+        attendance_type = "checkout"
         active_session.checkout_timestamp = now_utc
         active_session.session_status = 'completed'
-        # TODO: logic to compare against schedule for 'early' status
+        active_session.sync_status = 'pending'  # Force re-sync on update
+
+        # Calculate Checkout Status
         checkout_status = "on time"
-        if now_utc.time() >= datetime.strptime("17:00:00", "%H:%M:%S").time():
-            checkout_status = "early"
+        if context == 'event' and event_id:
+            # Query your event range table
+            range_info = db.query(EventCheckinCheckoutRange).filter(
+                EventCheckinCheckoutRange.event_id == event_id).first()
+            if range_info and now_utc < range_info.checkout_start_datetime.replace(tzinfo=timezone.utc):
+                checkout_status = "early"
+        else:
+            # Daily logic (keep your current default or fetch from shift schedule)
+            if now_utc.time() < datetime.strptime("17:00:00", "%H:%M:%S").time():
+                checkout_status = "early"
         active_session.checkout_status = checkout_status
 
-        attendance_type = "checkout"
     else:
-        # this is checkin
-        # TODO: fetch schedule to determine if late or on time
+        attendance_type = "checkin"
         checkin_status = "on time"
-        if now_utc.time() >= datetime.strptime("08:00:00", "%H:%M:%S").time():
-            checkin_status = "late"
+
+        if context == 'event' and event_id:
+            range_info = db.query(EventCheckinCheckoutRange).filter(
+                EventCheckinCheckoutRange.event_id == event_id).first()
+            # If current time is past checkin_end_datetime, they are late
+            if range_info and now_utc > range_info.checkin_end_datetime.replace(tzinfo=timezone.utc):
+                checkin_status = "late"
+
+        else:
+            # Daily logic
+            if now_utc.time() >= datetime.strptime("08:00:00", "%H:%M:%S").time():
+                checkin_status = "late"
+
         new_session = AttendanceSession(
             user_id=user_id,
             terminal_id=terminal_id,

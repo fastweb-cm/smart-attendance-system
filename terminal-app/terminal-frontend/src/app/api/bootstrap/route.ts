@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         created_by INT DEFAULT NULL,
         handshake ENUM('1','2') DEFAULT '1',
         created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY idx_event_time (start_datetime, end_datetime),
         KEY idx_event_created_by (created_by),
@@ -340,8 +341,8 @@ export async function POST(request: Request) {
     for (const event of data.events || []) {
       const [result] = await connection.query(
         `INSERT INTO tbl_event 
-        (id, name, start_datetime, end_datetime, affects_attendance, created_by, handshake)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (id, name, start_datetime, end_datetime, affects_attendance, created_by, handshake,created_at,updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           event.id,
           event.name,
@@ -350,6 +351,8 @@ export async function POST(request: Request) {
           event.affects_attendance,
           event.created_by,
           event.handshake,
+          event.created_at,
+          event.updated_at,
         ]
       );
 
