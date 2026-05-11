@@ -84,3 +84,14 @@ export interface ExtendedDataTableProps<TData, TValue> extends DataTableProps<TD
   onGlobalSearchChange?: (value: string) => void;
 }
 
+
+export interface TerminalFetchResponseType {
+  id: number;
+  name: string;
+  branch_id: number;
+  branch: string;
+  status: string;
+  ip_address: string | null;
+  last_heartbeat: string | null;
+  health_status: string;
+}

@@ -177,7 +177,8 @@ class TerminalModel
         }
 
         if (!empty($where)) {
-            $sqlTerminals .= " WHERE " . implode(" AND ", $where);
+            // order by id desc to show the latest created terminal first
+            $sqlTerminals .= " WHERE " . implode(" AND ", $where) . " ORDER BY t.id DESC";
         }
 
         $terminalResult = $this->db->query($sqlTerminals, $params);

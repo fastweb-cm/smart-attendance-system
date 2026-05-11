@@ -344,26 +344,26 @@ export const createException = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
+ * List all terminals at a particular branch
+ */
+export const listTerminals = <ThrowOnError extends boolean = false>(options?: Options<ListTerminalsData, ThrowOnError>) => (options?.client ?? client).get<ListTerminalsResponses, ListTerminalsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/terminal',
+    ...options
+});
+
+/**
  * create a terminal
  */
 export const createTerminal = <ThrowOnError extends boolean = false>(options: Options<CreateTerminalData, ThrowOnError>) => (options.client ?? client).post<CreateTerminalResponses, CreateTerminalErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/terminals',
+    url: '/api/v1/terminal',
     ...options,
     headers: {
         'Content-Type': 'application/json',
         ...options.headers
     }
-});
-
-/**
- * List all terminals at a particular branch
- */
-export const listTerminals = <ThrowOnError extends boolean = false>(options: Options<ListTerminalsData, ThrowOnError>) => (options.client ?? client).get<ListTerminalsResponses, ListTerminalsErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/terminals/${branchid}',
-    ...options
 });
 
 /**

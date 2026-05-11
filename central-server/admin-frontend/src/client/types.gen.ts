@@ -264,8 +264,8 @@ export type TerminalCapabilities = {
  * groups/subgroups allowed to auth at this terminal
  */
 export type TerminalAccessPolicy = {
-    group_id?: number;
-    subgroup_id?: number;
+    group_id?: number | null;
+    subgroup_id?: number | null;
     auth_type_id?: number;
 };
 
@@ -280,6 +280,35 @@ export type TerminalCreate = Terminal & {
 export type TerminalResponse = Terminal & {
     id?: number;
     date_created?: string;
+};
+
+export type TerminalFetchResponse = {
+    id: number;
+    name: string;
+    branch_id: number;
+    slug?: string;
+    branch: string;
+    status: 'active' | 'inactive';
+    ip_address: string | null;
+    last_heartbeat: string | null;
+    health_status: string;
+    auth_capabilities?: Array<TerminalCapabilities & {
+        terminal_id?: number;
+        auth_type_name?: 'face' | 'fingerprint' | 'card';
+    }>;
+    access_policy?: Array<TerminalAccessPolicy & {
+        id?: number;
+        terminal_id?: number;
+        created_at?: string;
+        updated_at?: string | null;
+        group_name?: string;
+        auth_type_name?: 'face' | 'fingerprint' | 'card';
+    }>;
+};
+
+export type ApiResponseTerminalList = {
+    success: boolean;
+    data: Array<TerminalFetchResponse>;
 };
 
 export type BiometricFaceEnrollRequest = {
@@ -1418,11 +1447,50 @@ export type CreateExceptionResponses = {
     200: unknown;
 };
 
+export type ListTerminalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        branch_id?: number;
+        terminal_id?: number;
+        status?: 'active' | 'pending' | 'revoked';
+    };
+    url: '/api/v1/terminal';
+};
+
+export type ListTerminalsErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListTerminalsResponses = {
+    /**
+     * List of all terminals at that branch
+     */
+    200: ApiResponseTerminalList;
+};
+
+export type ListTerminalsResponse = ListTerminalsResponses[keyof ListTerminalsResponses];
+
 export type CreateTerminalData = {
     body: TerminalCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/terminals';
+    url: '/api/v1/terminal';
 };
 
 export type CreateTerminalErrors = {
@@ -1450,43 +1518,6 @@ export type CreateTerminalResponses = {
      */
     200: unknown;
 };
-
-export type ListTerminalsData = {
-    body?: never;
-    path: {
-        branchid: number;
-    };
-    query?: never;
-    url: '/api/v1/terminals/${branchid}';
-};
-
-export type ListTerminalsErrors = {
-    /**
-     * Invalid input
-     */
-    400: unknown;
-    /**
-     * Unauthorized - Invalid or missing token
-     */
-    401: unknown;
-    /**
-     * Resource not found
-     */
-    404: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type ListTerminalsResponses = {
-    /**
-     * List of all terminals at that branch
-     */
-    200: Array<TerminalCreate>;
-};
-
-export type ListTerminalsResponse = ListTerminalsResponses[keyof ListTerminalsResponses];
 
 export type TerminalCapabilitiesData = {
     body?: never;

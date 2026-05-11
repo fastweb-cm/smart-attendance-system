@@ -244,8 +244,14 @@ export const zTerminalCapabilities = z.object({
  * groups/subgroups allowed to auth at this terminal
  */
 export const zTerminalAccessPolicy = z.object({
-    group_id: z.optional(z.int()),
-    subgroup_id: z.optional(z.int()),
+    group_id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
+    subgroup_id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
     auth_type_id: z.optional(z.int())
 });
 
@@ -258,6 +264,52 @@ export const zTerminalResponse = zTerminal.and(z.object({
     id: z.optional(z.int()),
     date_created: z.optional(z.iso.datetime())
 }));
+
+export const zTerminalFetchResponse = z.object({
+    id: z.int(),
+    name: z.string(),
+    branch_id: z.int(),
+    slug: z.optional(z.string()),
+    branch: z.string(),
+    status: z.enum(['active', 'inactive']),
+    ip_address: z.union([
+        z.string(),
+        z.null()
+    ]),
+    last_heartbeat: z.union([
+        z.iso.datetime(),
+        z.null()
+    ]),
+    health_status: z.string(),
+    auth_capabilities: z.optional(z.array(zTerminalCapabilities.and(z.object({
+        terminal_id: z.optional(z.int()),
+        auth_type_name: z.optional(z.enum([
+            'face',
+            'fingerprint',
+            'card'
+        ]))
+    })))),
+    access_policy: z.optional(z.array(zTerminalAccessPolicy.and(z.object({
+        id: z.optional(z.int()),
+        terminal_id: z.optional(z.int()),
+        created_at: z.optional(z.iso.datetime()),
+        updated_at: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        group_name: z.optional(z.string()),
+        auth_type_name: z.optional(z.enum([
+            'face',
+            'fingerprint',
+            'card'
+        ]))
+    }))))
+});
+
+export const zApiResponseTerminalList = z.object({
+    success: z.boolean(),
+    data: z.array(zTerminalFetchResponse)
+});
 
 export const zBiometricFaceEnrollRequest = z.object({
     user_id: z.int(),
@@ -662,24 +714,30 @@ export const zCreateExceptionData = z.object({
     query: z.optional(z.never())
 });
 
-export const zCreateTerminalData = z.object({
-    body: zTerminalCreate,
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
 export const zListTerminalsData = z.object({
     body: z.optional(z.never()),
-    path: z.object({
-        branchid: z.int()
-    }),
-    query: z.optional(z.never())
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        branch_id: z.optional(z.int()),
+        terminal_id: z.optional(z.int()),
+        status: z.optional(z.enum([
+            'active',
+            'pending',
+            'revoked'
+        ]))
+    }))
 });
 
 /**
  * List of all terminals at that branch
  */
-export const zListTerminalsResponse = z.array(zTerminalCreate);
+export const zListTerminalsResponse = zApiResponseTerminalList;
+
+export const zCreateTerminalData = z.object({
+    body: zTerminalCreate,
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
 
 export const zTerminalCapabilitiesData = z.object({
     body: z.optional(z.never()),

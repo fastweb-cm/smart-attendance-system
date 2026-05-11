@@ -19,8 +19,17 @@ export const sidebarMenItems = [
       },
       {
         title: "Terminals",
-        url: "/admin/terminals",
         icon: Computer,
+        children: [
+          {
+            title: "All Terminals",
+            url: "/admin/terminals",
+          },
+          {
+            title: "Add Terminal",
+            url: "/admin/terminals/add",
+          }
+        ]
       },
       // {
       //   title: "Subscriptions",

@@ -527,6 +527,24 @@ export const createExceptionMutation = (options?: Partial<Options<CreateExceptio
     return mutationOptions;
 };
 
+export const listTerminalsQueryKey = (options?: Options<ListTerminalsData>) => createQueryKey('listTerminals', options);
+
+/**
+ * List all terminals at a particular branch
+ */
+export const listTerminalsOptions = (options?: Options<ListTerminalsData>) => queryOptions<ListTerminalsResponse, AxiosError<DefaultError>, ListTerminalsResponse, ReturnType<typeof listTerminalsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listTerminals({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listTerminalsQueryKey(options)
+});
+
 /**
  * create a terminal
  */
@@ -543,24 +561,6 @@ export const createTerminalMutation = (options?: Partial<Options<CreateTerminalD
     };
     return mutationOptions;
 };
-
-export const listTerminalsQueryKey = (options: Options<ListTerminalsData>) => createQueryKey('listTerminals', options);
-
-/**
- * List all terminals at a particular branch
- */
-export const listTerminalsOptions = (options: Options<ListTerminalsData>) => queryOptions<ListTerminalsResponse, AxiosError<DefaultError>, ListTerminalsResponse, ReturnType<typeof listTerminalsQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await listTerminals({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listTerminalsQueryKey(options)
-});
 
 export const terminalCapabilitiesQueryKey = (options: Options<TerminalCapabilitiesData>) => createQueryKey('terminalCapabilities', options);
 
