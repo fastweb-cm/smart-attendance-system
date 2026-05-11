@@ -122,7 +122,7 @@ class TerminalController extends Controller {
             if ($this->t->delete()) { 
                 $this->json([
                     "success"=> true,
-                    "message"=> "Group ID ".$id." was successfully deleted"
+                    "message"=> "Terminal ID ".$id." was successfully deleted"
                 ]);
             }
         } catch (Throwable $e) {

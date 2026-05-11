@@ -1750,26 +1750,30 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/v1/terminals/{terminalId}:
-    get:
-      operationId: terminalCapabilities
-      summary: Get the auth types,policy supported by the terminal
+  /api/v1/terminal/{id}:
+    delete:
+      operationId: deleteTerminal
+      summary: Delete a terminal
       tags: [Terminals]
       parameters:
         - in: path
-          name: terminalId
+          name: id
           required: true
           schema:
             type: integer
       responses:
         "200":
-          description: List the auth types supported by this terminal
+          description: Delete terminal successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TerminalCreate"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

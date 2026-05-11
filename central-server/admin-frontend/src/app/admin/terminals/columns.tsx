@@ -6,7 +6,8 @@ import { Trash2, EyeIcon } from "lucide-react";
 import { TerminalFetchResponse } from "@/client";
 
 export const terminalColumns = (
-  onView: (t: TerminalFetchResponse) => void
+  onView: (t: TerminalFetchResponse) => void,
+  onDelete: (t: TerminalFetchResponse) => void
 ): ColumnDef<TerminalFetchResponse>[] => [
   {
     accessorKey: "name",
@@ -96,7 +97,7 @@ export const terminalColumns = (
         <EyeIcon size={16} className="text-primary cursor-pointer" />
       </div>
       <div title="Delete">
-        <Trash2 size={16} className="text-destructive cursor-pointer" />
+        <Trash2 size={16} onClick={() => onDelete(row.original)} className="text-destructive cursor-pointer" />
       </div>
     </div>
   }

@@ -739,18 +739,21 @@ export const zCreateTerminalData = z.object({
     query: z.optional(z.never())
 });
 
-export const zTerminalCapabilitiesData = z.object({
+export const zDeleteTerminalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        terminalId: z.int()
+        id: z.int()
     }),
     query: z.optional(z.never())
 });
 
 /**
- * List the auth types supported by this terminal
+ * Delete terminal successfully
  */
-export const zTerminalCapabilitiesResponse = z.array(zTerminalCreate);
+export const zDeleteTerminalResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
 
 export const zTerminalAuthData = z.object({
     body: zTerminalAuthCreate,

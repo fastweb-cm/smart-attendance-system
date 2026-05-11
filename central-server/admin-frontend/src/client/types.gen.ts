@@ -1519,16 +1519,16 @@ export type CreateTerminalResponses = {
     200: unknown;
 };
 
-export type TerminalCapabilitiesData = {
+export type DeleteTerminalData = {
     body?: never;
     path: {
-        terminalId: number;
+        id: number;
     };
     query?: never;
-    url: '/api/v1/terminals/{terminalId}';
+    url: '/api/v1/terminal/{id}';
 };
 
-export type TerminalCapabilitiesErrors = {
+export type DeleteTerminalErrors = {
     /**
      * Invalid input
      */
@@ -1547,14 +1547,17 @@ export type TerminalCapabilitiesErrors = {
     500: unknown;
 };
 
-export type TerminalCapabilitiesResponses = {
+export type DeleteTerminalResponses = {
     /**
-     * List the auth types supported by this terminal
+     * Delete terminal successfully
      */
-    200: Array<TerminalCreate>;
+    200: {
+        success?: boolean;
+        message?: string;
+    };
 };
 
-export type TerminalCapabilitiesResponse = TerminalCapabilitiesResponses[keyof TerminalCapabilitiesResponses];
+export type DeleteTerminalResponse = DeleteTerminalResponses[keyof DeleteTerminalResponses];
 
 export type TerminalAuthData = {
     body: TerminalAuthCreate;
