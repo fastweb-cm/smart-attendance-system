@@ -150,8 +150,14 @@ class TerminalModel
     public function fetch(int $branchId = 0, int $terminalId = 0, string $status = ''): array
     {
         // Build the main Terminal query dynamically
-        $sqlTerminals = "SELECT t.*,b.name AS branch FROM tbl_terminal t
-                            JOIN tbl_branch b ON t.branch_id = b.id";
+        $sqlTerminals = "SELECT t.*,b.name AS branch, th.ip_address, th.last_heartbeat,
+                            CASE 
+                                WHEN th.last_heartbeat >= NOW() - INTERVAL 10 MINUTE THEN 'online'
+                                ELSE 'offline'
+                            END AS health_status
+                            FROM tbl_terminal t
+                            JOIN tbl_branch b ON t.branch_id = b.id
+                            LEFT JOIN tbl_terminal_health th ON t.id = th.terminal_id";
         $where = [];
         $params = [];
 

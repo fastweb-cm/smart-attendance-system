@@ -30,9 +30,11 @@ class User(Base):
     user_type = Column(String(50))
 
     face_template = Column(LargeBinary)
+    face_template_refined = Column(LargeBinary)
     fingerprint_template = Column(LargeBinary)
 
     card_serial_code = Column(String(255))
+    sync_status = Column(String(20), default="sync")
 
     # -----------------
     # Relationships
@@ -73,4 +75,10 @@ class User(Base):
     attendance_summaries = relationship(
         "AttendanceSummary",
         back_populates="user"
+    )
+
+    face_buffers = relationship(
+        "FaceBuffer",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )
