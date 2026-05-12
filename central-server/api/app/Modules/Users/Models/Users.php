@@ -104,6 +104,9 @@ class Users
         $this->db->query($sqlUser, $paramsUser);
         $this->id = $this->db->lastInsertId();
 
+        // card record
+        $this->createCardRecord($this->id);
+
         if ($this->user_type === 'student') {
             $sqlStudent = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
             $this->db->query($sqlStudent, [$this->id, $this->regno, $this->class_id]);
@@ -391,6 +394,9 @@ class Users
                     $sqlStype = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
                     $this->db->query($sqlStype, [$studentId,$s["sregno"],$classId]);
                     
+
+                    //card insert
+                    $this->createCardRecord($studentId);
                 }
             }
 
@@ -414,6 +420,8 @@ class Users
 
                     $sql = "INSERT INTO tbl_staff (user_id, role_id) VALUES (?,?)";
                     $this->db->query($sql, [$staffId,2]);
+
+                    $this->createCardRecord($staffId);
                 }
             }
 
@@ -429,4 +437,72 @@ class Users
             throw $e;
         }
     }
+
+    //helper function to generate the card_uid
+    public function generateCardUID(): string
+    {
+        return strtoupper(bin2hex(random_bytes(4)));
+    }
+
+    public function createCardRecord(int $userId) {
+        $card_uid = $this->generateCardUID();
+        $sql = "INSERT INTO tbl_card (user_id,card_uid) VALUES (?,?)";
+        $this->db->query($sql, [$userId, $card_uid]);
+    }
+
+
+    public function fetchUserCardDetails(): array
+    {
+        $sql = "SELECT u.id, u.fname as firstName, u.lname AS lastName, u.user_type AS role, u.photo, u.gender,
+            cl.class_name AS className, c.card_uid AS cardUid,
+            CASE
+                WHEN u.user_type = 'student' THEN st.regno
+                ELSE s.sregno
+            END AS regno
+            FROM tbl_user u
+            LEFT JOIN tbl_class cl ON u.class_id = cl.id
+            LEFT JOIN tbl_student st ON u.id = st.user_id
+            LEFT JOIN tbl_staff s ON u.id = s.user_id
+            JOIN tbl_card c ON u.id = c.user_id
+            WHERE u.status = 'active' AND c.status IN ('pending', 'revoked')";
+        $res = $this->db->query($sql, []);
+
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+public function markCardActive(array $userIds): bool
+{
+    if (empty($userIds)) return false;
+
+    try {
+        // Ensure IDs are integers
+        $userIds = array_map('intval', $userIds);
+        
+        $this->db->beginTransaction();
+        
+        $issue_at = date('Y-m-d');
+        $expires_at = date('Y-m-d', strtotime('+3 years')); 
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        
+        $sql = "UPDATE tbl_card 
+                SET status = 'active', issued_at = ?, expires_at = ? 
+                WHERE user_id IN ($placeholders)";
+
+        $params = array_merge([$issue_at, $expires_at], $userIds);
+        
+        $this->db->query($sql, $params);
+        
+        // Log the IDs for a quick check in your logs
+        error_log("Attempting to update IDs: " . json_encode($userIds));
+        
+        $this->db->commit();
+        return true;
+    } catch (\Throwable $e) {
+        $this->db->rollback();
+        error_log("SQL Error: " . $e->getMessage());
+        throw $e;
+    }
+}
+
 }

@@ -60,4 +60,32 @@ class UserController extends Controller
             }
         }
     }
+
+    public function fetchUsersToIssueCard()
+    {
+        $this->json((new Users())->fetchUserCardDetails());
+    }
+
+    public function markCardIssued()
+    {
+        $data = $this->getJsonInput();
+        $userIds = $data["ids"] ?? [];
+
+        error_log("ids:". json_encode($userIds));
+
+        if (!empty($userIds)) {
+            try {
+                $result = (new Users())->markCardActive($userIds);
+                $this->json(["success" => $result]);
+            } catch (Throwable $e) {
+                $this->json([
+                    "success" => false,
+                    "message" => $e->getMessage(),
+                    "type" => get_class($e)
+                ]);
+            }
+        } else {
+            $this->json(["success" => false, "message" => "No user IDs provided"]);
+        }
+    }
 }

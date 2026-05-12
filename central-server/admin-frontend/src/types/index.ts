@@ -95,3 +95,20 @@ export interface TerminalFetchResponseType {
   last_heartbeat: string | null;
   health_status: string;
 }
+
+export interface CardUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  designation: string;
+  department: string;
+  role?: 'student'| 'staff';
+  status?: 'pending'|'active'|'revoked';
+  className?: string;
+  gender?: string;
+  employeeId: string;
+  cardUid: string;
+  regno?: string;
+  photo?: string;
+  selected?: boolean;
+}

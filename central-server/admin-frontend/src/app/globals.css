@@ -129,3 +129,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  aside,
+  nav,
+  header,
+  footer,
+  .sidebar,
+  .sidebar-trigger,
+  .sidebar-collapse,
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+}
