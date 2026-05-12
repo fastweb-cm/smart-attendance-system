@@ -5,6 +5,7 @@ namespace App\Modules\Users\Models;
 use App\Core\Database;
 use App\Services\TokenService;
 use App\Modules\Sync\Models\SyncModel;
+use Throwable;
 
 class Users
 {
@@ -347,5 +348,85 @@ class Users
             }
         }
         return $terminalIds;
+    }
+
+    public function getClassIdFromName(string $className): int
+    {
+        $sql = "SELECT id FROM tbl_class WHERE class_name = ?";
+
+        $res = $this->db->query($sql, [$className]);
+        return $res && $res->num_rows > 0 ? $res->fetch_assoc() : 0;
+    }
+
+    public function syncUsersFromOnline(array $students, array $staff): array
+    {
+        $synced_students = [];
+        $synced_staff = [];
+        try {
+            //start a transaction
+            $this->db->beginTransaction();
+            if (!empty($students)) {
+
+                foreach ($students as $s) {
+                    // collect IDS for acknowledgement
+                    $synced_students[] = $s["id"];
+                    $classId = $this->getClassIdFromName($s["cname"]);
+
+                    $sqlStu = "INSERT INTO tbl_user
+                        (class_id, fname, lname, gender, user_type, status, biometric_enrollment_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                    $paramsStu = [
+                        $classId,
+                        $s["fname"],
+                        $s["lname"],
+                        $s["gender"],
+                        "student",
+                        "active",
+                        "pending"
+                    ];
+                    $this->db->query($sqlStu, $paramsStu);
+                    $studentId = $this->db->lastInsertId();
+
+                    $sqlStype = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
+                    $this->db->query($sqlStype, [$studentId,$s["sregno"],$classId]);
+                    
+                }
+            }
+
+            if (!empty($staff)) {
+                foreach ($staff as $st) {
+                    $synced_staff[] = $st["id"];
+
+                    $sqlStaff = "INSERT INTO tbl_user
+                        (fname,lname,user_type, status,biometric_enrollment_status)
+                        VALUES (?,?,?,?,?)";
+
+                    $paramsStaff = [
+                        $st["fname"],
+                        $st["lname"],
+                        "staff",
+                        "active",
+                        "pending"
+                    ];
+                    $this->db->query($sqlStaff, $paramsStaff);
+                    $staffId = $this->db->lastInsertId();
+
+                    $sql = "INSERT INTO tbl_staff (user_id, role_id) VALUES (?,?)";
+                    $this->db->query($sql, [$staffId,2]);
+                }
+            }
+
+            $this->db->commit();
+
+            return [
+                $synced_students,
+                $synced_staff
+            ];
+
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 }

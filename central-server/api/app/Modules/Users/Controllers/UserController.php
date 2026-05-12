@@ -3,6 +3,7 @@ namespace App\Modules\Users\Controllers;
 
 use App\Core\Controller;
 use App\Modules\Users\Models\Users;
+use Throwable;
 
 class UserController extends Controller
 {
@@ -31,6 +32,32 @@ class UserController extends Controller
             $this->json($user);
         } else {
             $this->json(['error' => 'User not found'], 404);
+        }
+    }
+
+    public function syncUsers()
+    {
+        $data = $this->getJsonInput();
+
+        $students = $data["students"] ?? [];
+        $staff = $data["staff"] ?? [];
+
+        if (!empty($students) || !empty($staff)) {
+            try {
+                $ids = (new Users())->syncUsersFromOnline($students, $staff);
+
+                $this->json([
+                    "success" => true,
+                    "studentIds" => $ids["synced_students"],
+                    "staffIds" => $ids["synced_staff"]
+                ]);
+            } catch (Throwable $e) {
+                    $this->json([
+                    "success"=> false,
+                    "message"=> $e->getMessage(),
+                    "type" => get_class($e)
+                ]);
+            }
         }
     }
 }
