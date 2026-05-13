@@ -1,6 +1,6 @@
 import { listUsersQueryKey } from "@/client/@tanstack/react-query.gen"
 import { queryClient } from "@/lib/queryClient"
-import { userMutation } from "@/services/users/mutations"
+import { userMutation, sycUsersMutation } from "@/services/users/mutations"
 import { getUsersQuery, ListusersFilters, userQueryKey } from "@/services/users/queries"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "react-toastify"
@@ -28,6 +28,17 @@ export const useCreateUser = () =>
                 queryKey: listUsersQueryKey({
                     query: {user_type}
                 })
+            })
+        }
+    })
+
+//sync users hook
+export const useSyncUsers = () =>
+    useMutation({
+        ...sycUsersMutation(),
+        onSettled: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: listUsersQueryKey()
             })
         }
     })

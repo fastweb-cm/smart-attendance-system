@@ -226,9 +226,9 @@ class Users
 
     public function findByUsername(string $username): ?array
     {
-        $sql = "SELECT u.*,st.*,r.role_name AS role FROM tbl_user u
-                JOIN tbl_staff st ON u.id = st.user_id
-                JOIN lkup_role r ON r.id = st.role_id
+        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
+                LEFT JOIN tbl_staff st ON u.id = st.user_id
+                LEFT JOIN lkup_role r ON r.id = st.role_id
                 WHERE u.username = ?";
         $result = $this->db->query($sql, [$username]);
         return $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
@@ -357,9 +357,14 @@ class Users
     public function getClassIdFromName(string $className): int
     {
         $sql = "SELECT id FROM tbl_class WHERE class_name = ?";
-
         $res = $this->db->query($sql, [$className]);
-        return $res && $res->num_rows > 0 ? $res->fetch_assoc() : 0;
+
+        if ($res && $res->num_rows > 0) {
+            $row = $res->fetch_assoc();
+            return (int)$row['id']; // Extract the ID and cast to int
+        }
+
+        return 0; // Return 0 if class not found
     }
 
     public function syncUsersFromOnline(array $students, array $staff): array
@@ -376,9 +381,14 @@ class Users
                     $synced_students[] = $s["id"];
                     $classId = $this->getClassIdFromName($s["cname"]);
 
+                    if ($classId === 0) {
+                        error_log("Sync Warning: Class '{$s['cname']}' not found. Skipping student {$s['id']}");
+                        continue; 
+                    }
+
                     $sqlStu = "INSERT INTO tbl_user
                         (class_id, fname, lname, gender, user_type, status, biometric_enrollment_status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        VALUES (?, ?, ?, ?, ?, ?, ?)";
 
                     $paramsStu = [
                         $classId,
@@ -405,13 +415,14 @@ class Users
                     $synced_staff[] = $st["id"];
 
                     $sqlStaff = "INSERT INTO tbl_user
-                        (fname,lname,user_type, status,biometric_enrollment_status)
-                        VALUES (?,?,?,?,?)";
+                        (fname,lname,user_type, gender, status,biometric_enrollment_status)
+                        VALUES (?,?,?,?,?,?)";
 
                     $paramsStaff = [
                         $st["fname"],
                         $st["lname"],
                         "staff",
+                        "male",
                         "active",
                         "pending"
                     ];

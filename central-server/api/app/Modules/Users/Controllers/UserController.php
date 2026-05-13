@@ -48,10 +48,11 @@ class UserController extends Controller
 
                 $this->json([
                     "success" => true,
-                    "studentIds" => $ids["synced_students"],
-                    "staffIds" => $ids["synced_staff"]
+                    "studentIds" => $ids[0],
+                    "staffIds" => $ids[1]
                 ]);
             } catch (Throwable $e) {
+                error_log("Error syncing users: " . $e->getMessage());
                     $this->json([
                     "success"=> false,
                     "message"=> $e->getMessage(),
@@ -88,4 +89,5 @@ class UserController extends Controller
             $this->json(["success" => false, "message" => "No user IDs provided"]);
         }
     }
+
 }

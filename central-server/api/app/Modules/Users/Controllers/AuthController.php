@@ -18,6 +18,7 @@ class AuthController extends controller
 
             $user = $users->findByUsername($data['username']);
 
+
             if(!$user || !password_verify($data['password'], $user['password_hash'])){
                 $this->json([
                     'success' => false,

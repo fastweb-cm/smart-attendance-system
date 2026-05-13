@@ -64,6 +64,54 @@ export type UserResponse = {
     username?: string;
 };
 
+export type StudentInput = {
+    /**
+     * The online database studentid.
+     */
+    id: number;
+    /**
+     * Unique registration number.
+     */
+    sregnum: string;
+    fname: string;
+    lname: string;
+    gender: 'Male' | 'Female' | 'Other';
+    /**
+     * The class name string.
+     */
+    cname: string;
+};
+
+export type StaffInput = {
+    /**
+     * The online database teacherid.
+     */
+    id: number;
+    /**
+     * Unique teacher registration number.
+     */
+    tregnum: string;
+    fname: string;
+    lname: string;
+};
+
+export type SyncRequest = {
+    students?: Array<StudentInput>;
+    staff?: Array<StaffInput>;
+};
+
+export type SyncResponse = {
+    success?: boolean;
+    /**
+     * List of student IDs successfully processed to be sent back to online ACK.
+     */
+    studentIds?: Array<number>;
+    /**
+     * List of teacher IDs successfully processed to be sent back to online ACK.
+     */
+    staffIds?: Array<number>;
+};
+
 export type Role = {
     role_name: string;
     description?: string;
@@ -602,6 +650,41 @@ export type CreateUserResponses = {
 };
 
 export type CreateUserResponse = CreateUserResponses[keyof CreateUserResponses];
+
+export type SyncUsersData = {
+    body: SyncRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/sync';
+};
+
+export type SyncUsersErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type SyncUsersResponses = {
+    /**
+     * Users synced successfully
+     */
+    200: SyncResponse;
+};
+
+export type SyncUsersResponse = SyncUsersResponses[keyof SyncUsersResponses];
 
 export type DeleteUserData = {
     body?: never;

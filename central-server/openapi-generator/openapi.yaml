@@ -151,6 +151,80 @@ components:
         username:
           type: string
 
+    StudentInput:
+      type: object
+      required: [id, sregnum, fname, lname, gender, cname]
+      properties:
+        id:
+          type: integer
+          description: The online database studentid.
+          example: 1445
+        sregnum:
+          type: string
+          description: Unique registration number.
+          example: "STU-2026-A1B2"
+        fname:
+          type: string
+          example: "John"
+        lname:
+          type: string
+          example: "Doe"
+        gender:
+          type: string
+          enum: [Male, Female, Other]
+          example: "Male"
+        cname:
+          type: string
+          description: The class name string.
+          example: "Form 5 Science"
+
+    StaffInput:
+      type: object
+      required: [id, tregnum, fname, lname]
+      properties:
+        id:
+          type: integer
+          description: The online database teacherid.
+          example: 82
+        tregnum:
+          type: string
+          description: Unique teacher registration number.
+          example: "STF-2026-X8B2"
+        fname:
+          type: string
+          example: "Jane"
+        lname:
+          type: string
+          example: "Smith"
+    SyncRequest:
+      type: object
+      properties:
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentInput"
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffInput"
+    SyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        studentIds:
+          type: array
+          description: List of student IDs successfully processed to be sent back to online ACK.
+          items:
+            type: integer
+          example: [1445, 1446]
+        staffIds:
+          type: array
+          description: List of teacher IDs successfully processed to be sent back to online ACK.
+          items:
+            type: integer
+          example: [82]
     # Role Schema
     Role:
       type: object
@@ -1044,6 +1118,32 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/v1/users/sync:
+    post:
+      operationId: syncUsers
+      summary: Sync users from the online SSEC database
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Users synced successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/users/{id}:
     get:
       operationId: getUserById

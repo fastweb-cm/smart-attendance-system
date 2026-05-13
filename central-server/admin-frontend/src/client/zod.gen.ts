@@ -60,6 +60,37 @@ export const zUserResponse = z.object({
     username: z.optional(z.string())
 });
 
+export const zStudentInput = z.object({
+    id: z.int(),
+    sregnum: z.string(),
+    fname: z.string(),
+    lname: z.string(),
+    gender: z.enum([
+        'Male',
+        'Female',
+        'Other'
+    ]),
+    cname: z.string()
+});
+
+export const zStaffInput = z.object({
+    id: z.int(),
+    tregnum: z.string(),
+    fname: z.string(),
+    lname: z.string()
+});
+
+export const zSyncRequest = z.object({
+    students: z.optional(z.array(zStudentInput)),
+    staff: z.optional(z.array(zStaffInput))
+});
+
+export const zSyncResponse = z.object({
+    success: z.optional(z.boolean()),
+    studentIds: z.optional(z.array(z.int())),
+    staffIds: z.optional(z.array(z.int()))
+});
+
 export const zRole = z.object({
     role_name: z.string(),
     description: z.optional(z.string())
@@ -494,6 +525,17 @@ export const zCreateUserData = z.object({
  * User created successfully
  */
 export const zCreateUserResponse = zUserResponse;
+
+export const zSyncUsersData = z.object({
+    body: zSyncRequest,
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Users synced successfully
+ */
+export const zSyncUsersResponse = zSyncResponse;
 
 export const zDeleteUserData = z.object({
     body: z.optional(z.never()),
