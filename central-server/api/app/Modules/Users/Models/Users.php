@@ -547,4 +547,11 @@ public function markCardActive(array $userIds): bool
     }
 }
 
+public function getClasses(): array
+{
+    $sql = "SELECT id, class_name FROM tbl_class ORDER BY class_name ASC";
+    $res = $this->db->query($sql, []);
+    return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 }

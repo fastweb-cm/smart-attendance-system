@@ -58,6 +58,13 @@ $router->get('/api/v1/users/pending-card', [UserController::class, 'fetchUsersTo
 $router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCardIssued']);
 
 
+/*
+|--------------------------
+|  lookup Routes
+|--------------------------
+*/
+$router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
+
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 
     $router->get('/api/v1/users', [UserController::class, 'index']);

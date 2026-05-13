@@ -90,4 +90,10 @@ class UserController extends Controller
         }
     }
 
+    public function getClasses()
+    {
+        $classes = (new Users())->getClasses();
+        $this->json($classes);
+    }
+
 }

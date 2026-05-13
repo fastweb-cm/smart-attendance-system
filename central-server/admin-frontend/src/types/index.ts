@@ -113,3 +113,8 @@ export interface CardUser {
   selected?: boolean;
   issuedAt?: string;
 }
+
+export interface LookupClass {
+  id: number;
+  class_name: string;
+}

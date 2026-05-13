@@ -8,10 +8,24 @@ import InputField from '../ui/InputField'
 import { Button } from '../ui/button';
 import { useCreateUser } from '@/hooks/useUsers';
 import { toast } from 'react-toastify';
+import { LookupClass } from '@/types';
+import { useClasses } from '@/hooks/useLookups';
 
-export default function UsersForm({ userType }: { userType: z.infer<typeof userCreateForm>['user_type'] }) {
+export default function UsersForm({ 
+  userType,
+  initialData
+ }: { 
+  userType: z.infer<typeof userCreateForm>['user_type'],
+  initialData: LookupClass[]
+}) {
 
   const createUserMutation = useCreateUser();
+  const { data: classes } = useClasses(initialData);
+
+  const classOptions = classes?.map((c: LookupClass) => ({
+    label: c.class_name,
+    value: c.id
+  })) || [];
   
   const methods = useForm<createUserFormValues>({
     resolver: zodResolver(userCreateForm),
@@ -47,8 +61,8 @@ export default function UsersForm({ userType }: { userType: z.infer<typeof userC
             <InputField name='email' label='Email Adress' required />
 
             { userType === 'student' && <>
-              <InputField name='regno' label='Reg No' required={true} />
-              <InputField name='class_id' type='select' required label='Student Class' options={[{ label: "Form 1A", value: 1 }, { label: "Form 2A", value: 2 }]} valueType="number"/>
+              <InputField name='regno' label='Reg No' defaultValue='AUTO-GENERATED' required={true} inputProps={{ readOnly: true, placeholder: 'AUTO-GENERATED' }}/>
+              <InputField name='class_id' type='select' required label='Student Class' options={classOptions} valueType="number"/>
               </>
             }
 
