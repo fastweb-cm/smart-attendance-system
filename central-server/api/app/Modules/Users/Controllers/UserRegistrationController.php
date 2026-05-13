@@ -49,7 +49,6 @@ class UserRegistrationController extends Controller
 
         // Student-specific
         if ($data['user_type'] === 'student') {
-            $user->setRegno($data['regno'] ?? null);
             $user->setClassId($data['class_id'] ?? null);
         }
 

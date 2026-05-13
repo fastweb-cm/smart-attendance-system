@@ -31,6 +31,8 @@
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-active-foreground: var(--active-foreground);
+  --color-active: var(--active);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
@@ -58,6 +60,8 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
+  --active: oklch(0.97 0 0);
+  --active-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
@@ -92,6 +96,8 @@
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
+  --active: oklch(0.269 0 0);
+  --active-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
@@ -121,5 +127,86 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+.card-bg {
+  position: absolute;
+  inset: 0;
+  transition: background-color 0.5s;
+}
+.card-bg.management {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #1d4ed8) !important;
+}
+.card-bg.staff {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1, #94a3b8) !important;
+}
+
+@media screen {
+  .print-area {
+    display: none !important;
+  }
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  aside,
+  nav,
+  header,
+  footer,
+  .sidebar,
+  .sidebar-trigger,
+  .sidebar-collapse,
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  body,
+  html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print,
+  .screen-wrapper {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+    width: 210mm !important;
+    padding: 10mm !important;
+    overflow: hidden !important;
+  }
+
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: 85.6mm 85.6mm !important;
+    gap: 5mm !important;
+    justify-content: center !important;
+  }
+  .card-items {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .id-card-element {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 14px !important;
+    background-color: white !important;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
   }
 }

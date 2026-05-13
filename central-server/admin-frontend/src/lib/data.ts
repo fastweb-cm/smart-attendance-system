@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Settings,
   Sliders,
+  IdCard
 } from "lucide-react"
 
 export const sidebarMenItems = [
@@ -19,8 +20,17 @@ export const sidebarMenItems = [
       },
       {
         title: "Terminals",
-        url: "/admin/terminals",
         icon: Computer,
+        children: [
+          {
+            title: "All Terminals",
+            url: "/admin/terminals",
+          },
+          {
+            title: "Add Terminal",
+            url: "/admin/terminals/add",
+          }
+        ]
       },
       // {
       //   title: "Subscriptions",
@@ -41,6 +51,12 @@ export const sidebarMenItems = [
           },
         ],
       },
+
+      {
+        title: "Issue Cards",
+        url: "/admin/issue-card",
+        icon: IdCard,
+      }
     ],
   },
   // {

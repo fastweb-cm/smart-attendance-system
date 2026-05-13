@@ -52,7 +52,18 @@ $router->put('/api/v1/event', [EventsController::class, 'edit']);
 $router->get('/api/v1/event', [EventsController::class, 'index']);
 $router->delete('/api/v1/event/{id}', [EventsController::class, 'delete']);
 
+$router->get('/api/v1/users', [UserController::class, 'index']);
+$router->post('/api/v1/users/sync', [UserController::class, 'syncUsers']);
+$router->get('/api/v1/users/pending-card', [UserController::class, 'fetchUsersToIssueCard']);
+$router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCardIssued']);
 
+
+/*
+|--------------------------
+|  lookup Routes
+|--------------------------
+*/
+$router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 

@@ -177,7 +177,8 @@ class TerminalModel
         }
 
         if (!empty($where)) {
-            $sqlTerminals .= " WHERE " . implode(" AND ", $where);
+            // order by id desc to show the latest created terminal first
+            $sqlTerminals .= " WHERE " . implode(" AND ", $where) . " ORDER BY t.id DESC";
         }
 
         $terminalResult = $this->db->query($sqlTerminals, $params);
@@ -502,10 +503,11 @@ private function getEventsMetadata(array $eventIds): array
 
         $sql = "SELECT gm.group_id, NULL AS subgroup_id, u.id, u.fname, u.lname,
                     u.gender, u.user_type, u.created_at, u.updated_at, b.face_template,
-                    b.fingerprint_template, b.card_serial_code
+                    b.fingerprint_template, c.card_uid AS card_serial_code
                 FROM tbl_group_member gm
                 JOIN tbl_user u ON gm.user_id = u.id
                 LEFT JOIN tbl_biometricprofile b ON u.id = b.user_id
+                LEFT JOIN tbl_card c ON u.id = c.user_id
                 WHERE gm.group_id IN ($placeholders) AND u.status = 'active'";
 
         $result = $this->db->query($sql, $cleanIds);
@@ -536,10 +538,11 @@ private function getEventsMetadata(array $eventIds): array
         // 3. The Query (Fixed JOIN to LEFT JOIN and corrected 'group_id' typo)
         $sql = "SELECT sgm.subgroup_id, NULL AS group_id, u.id, u.fname, u.lname,
                     u.gender, u.user_type,u.created_at, u.updated_at, b.face_template,
-                    b.fingerprint_template, b.card_serial_code
+                    b.fingerprint_template, c.card_uid AS card_serial_code
                 FROM tbl_subgroup_member sgm
                 JOIN tbl_user u ON sgm.user_id = u.id
                 LEFT JOIN tbl_biometricprofile b ON u.id = b.user_id
+                LEFT JOIN tbl_card c ON u.id = c.user_id
                 WHERE sgm.subgroup_id IN ($placeholders) AND u.status = 'active'";
 
         $result = $this->db->query($sql, $cleanIds);

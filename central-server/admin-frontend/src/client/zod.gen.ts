@@ -60,6 +60,37 @@ export const zUserResponse = z.object({
     username: z.optional(z.string())
 });
 
+export const zStudentInput = z.object({
+    id: z.int(),
+    sregnum: z.string(),
+    fname: z.string(),
+    lname: z.string(),
+    gender: z.enum([
+        'Male',
+        'Female',
+        'Other'
+    ]),
+    cname: z.string()
+});
+
+export const zStaffInput = z.object({
+    id: z.int(),
+    tregnum: z.string(),
+    fname: z.string(),
+    lname: z.string()
+});
+
+export const zSyncRequest = z.object({
+    students: z.optional(z.array(zStudentInput)),
+    staff: z.optional(z.array(zStaffInput))
+});
+
+export const zSyncResponse = z.object({
+    success: z.optional(z.boolean()),
+    studentIds: z.optional(z.array(z.int())),
+    staffIds: z.optional(z.array(z.int()))
+});
+
 export const zRole = z.object({
     role_name: z.string(),
     description: z.optional(z.string())
@@ -244,8 +275,14 @@ export const zTerminalCapabilities = z.object({
  * groups/subgroups allowed to auth at this terminal
  */
 export const zTerminalAccessPolicy = z.object({
-    group_id: z.optional(z.int()),
-    subgroup_id: z.optional(z.int()),
+    group_id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
+    subgroup_id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
     auth_type_id: z.optional(z.int())
 });
 
@@ -258,6 +295,52 @@ export const zTerminalResponse = zTerminal.and(z.object({
     id: z.optional(z.int()),
     date_created: z.optional(z.iso.datetime())
 }));
+
+export const zTerminalFetchResponse = z.object({
+    id: z.int(),
+    name: z.string(),
+    branch_id: z.int(),
+    slug: z.optional(z.string()),
+    branch: z.string(),
+    status: z.enum(['active', 'inactive']),
+    ip_address: z.union([
+        z.string(),
+        z.null()
+    ]),
+    last_heartbeat: z.union([
+        z.iso.datetime(),
+        z.null()
+    ]),
+    health_status: z.string(),
+    auth_capabilities: z.optional(z.array(zTerminalCapabilities.and(z.object({
+        terminal_id: z.optional(z.int()),
+        auth_type_name: z.optional(z.enum([
+            'face',
+            'fingerprint',
+            'card'
+        ]))
+    })))),
+    access_policy: z.optional(z.array(zTerminalAccessPolicy.and(z.object({
+        id: z.optional(z.int()),
+        terminal_id: z.optional(z.int()),
+        created_at: z.optional(z.iso.datetime()),
+        updated_at: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        group_name: z.optional(z.string()),
+        auth_type_name: z.optional(z.enum([
+            'face',
+            'fingerprint',
+            'card'
+        ]))
+    }))))
+});
+
+export const zApiResponseTerminalList = z.object({
+    success: z.boolean(),
+    data: z.array(zTerminalFetchResponse)
+});
 
 export const zBiometricFaceEnrollRequest = z.object({
     user_id: z.int(),
@@ -442,6 +525,17 @@ export const zCreateUserData = z.object({
  * User created successfully
  */
 export const zCreateUserResponse = zUserResponse;
+
+export const zSyncUsersData = z.object({
+    body: zSyncRequest,
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Users synced successfully
+ */
+export const zSyncUsersResponse = zSyncResponse;
 
 export const zDeleteUserData = z.object({
     body: z.optional(z.never()),
@@ -662,37 +756,46 @@ export const zCreateExceptionData = z.object({
     query: z.optional(z.never())
 });
 
+export const zListTerminalsData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        branch_id: z.optional(z.int()),
+        terminal_id: z.optional(z.int()),
+        status: z.optional(z.enum([
+            'active',
+            'pending',
+            'revoked'
+        ]))
+    }))
+});
+
+/**
+ * List of all terminals at that branch
+ */
+export const zListTerminalsResponse = zApiResponseTerminalList;
+
 export const zCreateTerminalData = z.object({
     body: zTerminalCreate,
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-export const zListTerminalsData = z.object({
+export const zDeleteTerminalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        branchid: z.int()
+        id: z.int()
     }),
     query: z.optional(z.never())
 });
 
 /**
- * List of all terminals at that branch
+ * Delete terminal successfully
  */
-export const zListTerminalsResponse = z.array(zTerminalCreate);
-
-export const zTerminalCapabilitiesData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        terminalId: z.int()
-    }),
-    query: z.optional(z.never())
+export const zDeleteTerminalResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
 });
-
-/**
- * List the auth types supported by this terminal
- */
-export const zTerminalCapabilitiesResponse = z.array(zTerminalCreate);
 
 export const zTerminalAuthData = z.object({
     body: zTerminalAuthCreate,

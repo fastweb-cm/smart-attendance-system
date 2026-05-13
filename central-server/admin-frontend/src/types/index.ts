@@ -84,3 +84,37 @@ export interface ExtendedDataTableProps<TData, TValue> extends DataTableProps<TD
   onGlobalSearchChange?: (value: string) => void;
 }
 
+
+export interface TerminalFetchResponseType {
+  id: number;
+  name: string;
+  branch_id: number;
+  branch: string;
+  status: string;
+  ip_address: string | null;
+  last_heartbeat: string | null;
+  health_status: string;
+}
+
+export interface CardUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  designation: string;
+  department: string;
+  role?: 'student'| 'staff';
+  status?: 'pending'|'active'|'revoked';
+  className?: string;
+  gender?: string;
+  employeeId: string;
+  cardUid: string;
+  regno?: string;
+  photo?: string;
+  selected?: boolean;
+  issuedAt?: string;
+}
+
+export interface LookupClass {
+  id: number;
+  class_name: string;
+}

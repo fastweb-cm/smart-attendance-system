@@ -17,9 +17,10 @@ class TerminalController extends Controller {
     {
         $data = $this->getJsonInput();
 
-        $branchId = (int)$data["branch_id"] ?? 0;
-        $terminalId = (int)$data["terminal_id"] ?? 0;
-        $status = $data["status"] ?? 'active';
+        $branchId = (int) ($_GET['branch_id'] ?? 0);
+        $terminalId = (int) ($_GET['terminal_id'] ?? 0);
+        $status = $_GET['status'] ?? "";
+
 
         try{
             $result = $this->t->fetch($branchId, $terminalId, $status);
@@ -121,7 +122,7 @@ class TerminalController extends Controller {
             if ($this->t->delete()) { 
                 $this->json([
                     "success"=> true,
-                    "message"=> "Group ID ".$id." was successfully deleted"
+                    "message"=> "Terminal ID ".$id." was successfully deleted"
                 ]);
             }
         } catch (Throwable $e) {

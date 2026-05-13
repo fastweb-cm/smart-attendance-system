@@ -1,9 +1,9 @@
-import { TerminalWizard } from "@/components/terminalWizard"
+import TerminalList from "@/components/TerminalList"
 
-export default function Terminal() {
+export default function page() {
   return (
-    <>
-        <TerminalWizard />
-    </>
+    <div className="space-y-4 my-4">
+        <TerminalList />
+    </div>
   )
 }

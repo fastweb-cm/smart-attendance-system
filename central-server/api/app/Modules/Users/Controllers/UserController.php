@@ -3,6 +3,7 @@ namespace App\Modules\Users\Controllers;
 
 use App\Core\Controller;
 use App\Modules\Users\Models\Users;
+use Throwable;
 
 class UserController extends Controller
 {
@@ -33,4 +34,66 @@ class UserController extends Controller
             $this->json(['error' => 'User not found'], 404);
         }
     }
+
+    public function syncUsers()
+    {
+        $data = $this->getJsonInput();
+
+        $students = $data["students"] ?? [];
+        $staff = $data["staff"] ?? [];
+
+        if (!empty($students) || !empty($staff)) {
+            try {
+                $ids = (new Users())->syncUsersFromOnline($students, $staff);
+
+                $this->json([
+                    "success" => true,
+                    "studentIds" => $ids[0],
+                    "staffIds" => $ids[1]
+                ]);
+            } catch (Throwable $e) {
+                error_log("Error syncing users: " . $e->getMessage());
+                    $this->json([
+                    "success"=> false,
+                    "message"=> $e->getMessage(),
+                    "type" => get_class($e)
+                ]);
+            }
+        }
+    }
+
+    public function fetchUsersToIssueCard()
+    {
+        $this->json((new Users())->fetchUserCardDetails());
+    }
+
+    public function markCardIssued()
+    {
+        $data = $this->getJsonInput();
+        $userIds = $data["ids"] ?? [];
+
+        error_log("ids:". json_encode($userIds));
+
+        if (!empty($userIds)) {
+            try {
+                $result = (new Users())->markCardActive($userIds);
+                $this->json(["success" => $result]);
+            } catch (Throwable $e) {
+                $this->json([
+                    "success" => false,
+                    "message" => $e->getMessage(),
+                    "type" => get_class($e)
+                ]);
+            }
+        } else {
+            $this->json(["success" => false, "message" => "No user IDs provided"]);
+        }
+    }
+
+    public function getClasses()
+    {
+        $classes = (new Users())->getClasses();
+        $this->json($classes);
+    }
+
 }

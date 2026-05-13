@@ -13,18 +13,18 @@ export const studentColumns: ColumnDef <UserResponseType>[] = [
     },
     {
         accessorKey: "name",
-        header: () => <div className="text-center">Name</div>,
-        cell: ( { row } ) => <div className="text-center capitalize">{row.getValue("name")}</div>
+        header: () => <div className="flex flex-start">Name</div>,
+        cell: ( { row } ) => <div className="text-left capitalize">{row.getValue("name")}</div>
     },
     {
         accessorKey: "gender",
-        header: () => <div className="text-center">Gender</div>,
-        cell: ({row}) => <div className="text-center capitalize">{row.getValue("gender")}</div>
+        header: () => <div className="flex flex-start">Gender</div>,
+        cell: ({row}) => <div className="text-left capitalize">{row.getValue("gender")}</div>
     },
     {
         accessorKey: "class",
-        header: () => <div className="text-center">Student Class</div>,
-        cell: ({row}) => <div className="text-center text-capitalize">{row.getValue("class")}</div>
+        header: () => <div className="flex flex-start">Student Class</div>,
+        cell: ({row}) => <div className="text-left text-capitalize">{row.getValue("class")}</div>
     },
     {
         accessorKey: "biometric_enrollment_status",
