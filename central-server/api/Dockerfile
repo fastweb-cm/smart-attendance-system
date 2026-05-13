@@ -21,6 +21,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy all files (vendor, app, public, etc.)
 COPY . /var/www
 
+# Install composer dependencies
+# --no-interaction: don't ask questions
+# --optimize-autoloader: makes the app faster
+RUN composer install --no-interaction --optimize-autoloader
+
 # Permissions: www-data needs to own the files to execute them
 RUN chown -R www-data:www-data /var/www
 
