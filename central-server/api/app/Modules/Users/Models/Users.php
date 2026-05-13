@@ -108,11 +108,15 @@ class Users
         $this->createCardRecord($this->id);
 
         if ($this->user_type === 'student') {
+            // generate unique regno if not provided
+            $regno = $this->generateUniqueRegno();
             $sqlStudent = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
-            $this->db->query($sqlStudent, [$this->id, $this->regno, $this->class_id]);
+            $this->db->query($sqlStudent, [$this->id, $regno, $this->class_id]);
         } elseif ($this->user_type === 'staff') {
-            $sqlStaff = "INSERT INTO tbl_staff (user_id, role_id) VALUES (?, ?)";
-            $this->db->query($sqlStaff, [$this->id, $this->role_id]);
+            // generate unique sregno
+            $sregno = $this->generateUniqueRegno('STF-', 'tbl_staff', 'sregno');
+            $sqlStaff = "INSERT INTO tbl_staff (user_id, role_id, sregno) VALUES (?, ?, ?)";
+            $this->db->query($sqlStaff, [$this->id, $this->role_id, $sregno]);
         }
 
         // find all terminals associated with the user's groups/subgroups and add to sync queue
@@ -126,6 +130,7 @@ class Users
         //         $this->syncModel->save();
         //     }
         // }
+
 
         return $this->getUserById($this->id);
     }
@@ -171,10 +176,6 @@ class Users
         if ($this->user_type === 'student') {
             $fieldsStudent = [];
             $paramsStudent = [];
-            if ($this->regno !== null) {
-                $fieldsStudent[] = "regno = ?";
-                $paramsStudent[] = $this->regno;
-            }
             if ($this->class_id !== null) {
                 $fieldsStudent[] = "class_id = ?";
                 $paramsStudent[] = $this->class_id;
@@ -225,7 +226,7 @@ class Users
 
     public function findByUsername(string $username): ?array
     {
-        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
+        $sql = "SELECT u.*,st.*,r.role_name AS role FROM tbl_user u
                 JOIN tbl_staff st ON u.id = st.user_id
                 JOIN lkup_role r ON r.id = st.role_id
                 WHERE u.username = ?";
@@ -235,7 +236,7 @@ class Users
 
     public function findAdmin(int $userId)
     {
-        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
+        $sql = "SELECT u.*,st.*,r.role_name AS role FROM tbl_user u
                 JOIN tbl_staff st ON u.id = st.user_id
                 JOIN lkup_role r ON r.id = st.role_id
                 WHERE u.id = ?";
@@ -392,9 +393,8 @@ class Users
                     $studentId = $this->db->lastInsertId();
 
                     $sqlStype = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
-                    $this->db->query($sqlStype, [$studentId,$s["sregno"],$classId]);
+                    $this->db->query($sqlStype, [$studentId,$s["sregnum"],$classId]);
                     
-
                     //card insert
                     $this->createCardRecord($studentId);
                 }
@@ -418,8 +418,8 @@ class Users
                     $this->db->query($sqlStaff, $paramsStaff);
                     $staffId = $this->db->lastInsertId();
 
-                    $sql = "INSERT INTO tbl_staff (user_id, role_id) VALUES (?,?)";
-                    $this->db->query($sql, [$staffId,2]);
+                    $sql = "INSERT INTO tbl_staff (user_id, role_id, sregno) VALUES (?, ?, ?)";
+                    $this->db->query($sql, [$staffId,2, $st["tregnum"]]);
 
                     $this->createCardRecord($staffId);
                 }
@@ -443,6 +443,23 @@ class Users
     {
         // Generates an 8-character hex string (e.g., A1B2C3D4)
         return strtoupper(bin2hex(random_bytes(4)));
+    }
+
+    public function generateUniqueRegno(string $prefix = 'STU-', string $targetTable = 'tbl_student', string $targetColumn = 'regno'): string
+    {
+        $isUnique = false;
+        $regno = '';
+
+        while (!$isUnique) {
+            $regno = $prefix . str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+            // Check if this regno is already in the target table
+            $checkSql = "SELECT COUNT(*) as count FROM $targetTable WHERE $targetColumn = ?";
+            $stmt = $this->db->query($checkSql, [$regno]);
+            $isUnique = $stmt->num_rows > 0 ? true : false;
+        }
+
+        return $regno;
     }
 
     public function createCardRecord(int $userId) {

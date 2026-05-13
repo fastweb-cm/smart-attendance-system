@@ -160,13 +160,14 @@ class SyncModel
                     sgm.subgroup_id, 
                     ? as terminal_id, 
                     u.fname, u.lname, u.gender, u.user_type,
-                    b.face_template, b.fingerprint_template, b.card_serial_code
+                    b.face_template, b.fingerprint_template, c.card_uid AS card_serial_code
                 FROM tbl_user u
                 LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
                 LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
                 LEFT JOIN tbl_biometricprofile b ON u.id = b.user_id
+                LEFT JOIN tbl_card c ON u.id = c.user_id
                 WHERE u.id = ? AND u.status = 'active'
-                LIMIT 1";
+                LIMIT 10";
 
         $result = $this->db->query($sql, [$terminalId, $userId]);
         $user = ($result) ? $result->fetch_assoc() : null;
