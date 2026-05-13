@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   UserPlus, 
   LayoutGrid, 
@@ -21,6 +21,7 @@ import { CardUser } from '@/types';
 import apiClient from '@/lib/axiosClient';
 import { toast } from 'react-toastify';
 import { Button } from './ui/button';
+import Webcam from 'react-webcam';
 
 export default function CardIssuance() {
   const [tab, setTab] = useState<'enroll' | 'batch'>('enroll');
@@ -44,6 +45,37 @@ export default function CardIssuance() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
+  const [isCameraMode, setIsCameraMode] = useState(false);
+  const webcamRef = useRef<Webcam>(null);
+
+  const capturePhoto = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      setFormData(prev => ({ ...prev, photo: imageSrc }));
+      setIsCameraMode(false); // Close camera after taking photo
+      toast.success("Photo captured!");
+    }
+  }, [webcamRef]);
+
+  const handleKeyPress = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Enter' && isCameraMode) {
+      // Prevent the default action (like submitting a form)
+      event.preventDefault();
+      capturePhoto();
+    }
+  }, [isCameraMode, capturePhoto]);
+
+  useEffect(() => {
+    if (isCameraMode) {
+      window.addEventListener('keydown', handleKeyPress);
+    }
+  
+    // Cleanup: Remove the listener when camera mode is turned off
+  return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isCameraMode, handleKeyPress]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -53,11 +85,25 @@ export default function CardIssuance() {
           ...user,
           selected: true,
         }));
+        // lets filter the users to only include those with pending or revoked cards
+        // and also sort the entire res by the revoked and pending cards first, active next, then by the issuedAt date with the most recent first
+        const filtered = formatted.filter((u: CardUser) => u.status === 'pending' || u.status === 'revoked');
+        const sorted = formatted.sort((a: CardUser, b: CardUser) => {
+          if ((a.status === 'pending' || a.status === 'revoked') && b.status === 'active') return -1;
+          if (a.status === 'active' && (b.status === 'pending' || b.status === 'revoked')) return 1;
+
+          const dateA = new Date(a.issuedAt || '').getUTCDate() || 0;
+          const dateB = new Date(b.issuedAt || '').getUTCDate() || 0;
+          return dateB - dateA;
+        });
+
+        // we set the db users to the sorted list
+        setDbUsers(sorted);
+
         // Slice the array to only take the first 10 items
-        const limitedData = res.data.slice(0, 10);
+        const limitedData = filtered.slice(0, 10);
 
         setQueue(limitedData.map((u: CardUser) => ({ ...u, queueId: u.id, selected: true })));
-        setDbUsers(formatted);
       } catch (err) {
         console.error(err);
       }
@@ -166,15 +212,29 @@ export default function CardIssuance() {
       // refresh the database users to reflect the changes
       const res = await apiClient.get("/api/v1/users/pending-card");
       const formatted = res.data.map((user: CardUser) => ({
-        ...user,
-        selected: true,
-        queueId: user.id, // add queueId for consistency
-      }));
-      setDbUsers(formatted);
-      // Slice the array to only take the first 10 items
-      const limitedData = res.data.slice(0, 10);
+          ...user,
+          selected: true,
+          queueId: user.id,
+        }));
+        // lets filter the users to only include those with pending or revoked cards
+        // and also sort the entire res by the revoked and pending cards first, active next, then by the issuedAt date with the most recent first
+        const filtered = formatted.filter((u: CardUser) => u.status === 'pending' || u.status === 'revoked');
+        const sorted = formatted.sort((a: CardUser, b: CardUser) => {
+          if ((a.status === 'pending' || a.status === 'revoked') && b.status === 'active') return -1;
+          if (a.status === 'active' && (b.status === 'pending' || b.status === 'revoked')) return 1;
 
-      setQueue(limitedData.map((u: CardUser) => ({ ...u, queueId: u.id, selected: true })));
+          const dateA = new Date(a.issuedAt || '').getUTCDate() || 0;
+          const dateB = new Date(b.issuedAt || '').getUTCDate() || 0;
+          return dateB - dateA;
+        });
+
+        // we set the db users to the sorted list
+        setDbUsers(sorted);
+
+        // Slice the array to only take the first 10 items
+        const limitedData = filtered.slice(0, 10);
+
+        setQueue(limitedData.map((u: CardUser) => ({ ...u, queueId: u.id, selected: true })));
 
       toast.success("Marked selected cards as issued successfully!");
       }
@@ -335,11 +395,56 @@ export default function CardIssuance() {
                       <input name="cardUid" value={formData.cardUid} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-indigo-50 border border-indigo-100 text-indigo-700 font-mono font-black rounded-2xl text-sm outline-none placeholder:text-indigo-300" placeholder="Scan UID" readOnly/>
                     </div>
 
-                    <label className="flex flex-col items-center justify-center w-full h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all">
-                      <Camera className="w-6 h-6 mb-1 text-slate-400" />
-                      <p className="text-xs text-slate-500">Face Photo</p>
-                      <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" />
-                    </label>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center px-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase">Personnel Photo</label>
+                        <button 
+                          type="button"
+                          onClick={() => setIsCameraMode(!isCameraMode)}
+                          className="text-[10px] font-bold text-indigo-600 hover:underline"
+                        >
+                          {isCameraMode ? "Switch to Upload" : "Switch to Live Camera"}
+                        </button>
+                      </div>
+
+                      {isCameraMode ? (
+                        <div className="relative group overflow-hidden rounded-2xl bg-black aspect-video border-2 border-slate-200" >
+                          <Webcam
+                            audio={false}
+                            ref={webcamRef}
+                            screenshotFormat="image/jpeg"
+                            videoConstraints={{ facingMode: "user" }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                            <button
+                              type="button"
+                              onClick={capturePhoto}
+                              className="bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-black shadow-xl hover:bg-indigo-50 transition-all active:scale-90"
+                            >
+                              Capture Snapshot
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all overflow-hidden relative">
+                          {formData.photo ? (
+                            <img src={formData.photo} className="w-full h-full object-cover opacity-50" alt="Preview" />
+                          ) : (
+                            <>
+                              <Camera className="w-6 h-6 mb-1 text-slate-400" />
+                              <p className="text-xs text-slate-500">Click to Upload Photo</p>
+                            </>
+                          )}
+                          <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" />
+                          {formData.photo && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px]">
+                              <p className="text-[10px] font-black text-slate-900 uppercase bg-white px-3 py-1 rounded-full shadow-sm">Change Photo</p>
+                            </div>
+                          )}
+                        </label>
+                      )}
+                    </div>
 
                     <button onClick={addToQueue} className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black shadow-xl">Add to Print Queue</button>
                   </div>
@@ -402,73 +507,6 @@ export default function CardIssuance() {
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .card-bg {
-          position: absolute;
-          inset: 0;
-          transition: background-color 0.5s;
-        }
-        .card-bg.management {
-          background: linear-gradient(135deg, #60a5fa, #3b82f6, #1d4ed8) !important;
-        }
-        .card-bg.staff {
-          background: linear-gradient(135deg, #e2e8f0, #cbd5e1, #94a3b8) !important;
-        }
-
-        @media screen {
-          .print-area {
-            display: none !important;
-          }
-        }
-
-        @media print {
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          body, html {
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          .no-print, .screen-wrapper {
-            display: none !important;
-          }
-
-          .print-area {
-            display: block !important;
-            width: 210mm !important;
-            padding: 10mm !important;
-            overflow: hidden !important;
-          }
-
-          .print-grid {
-            display: grid !important;
-            grid-template-columns: 85.6mm 85.6mm !important;
-            gap: 5mm !important;
-            justify-content: center !important;
-          }
-          .card-items {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-
-          .id-card-element {
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 14px !important;
-            background-color: white !important;
-            page-break-inside: avoid;
-          }
-
-          @page {
-            size: A4;
-            margin: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }

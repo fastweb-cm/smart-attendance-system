@@ -130,7 +130,29 @@
   }
 }
 
+.card-bg {
+  position: absolute;
+  inset: 0;
+  transition: background-color 0.5s;
+}
+.card-bg.management {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #1d4ed8) !important;
+}
+.card-bg.staff {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1, #94a3b8) !important;
+}
+
+@media screen {
+  .print-area {
+    display: none !important;
+  }
+}
+
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   aside,
   nav,
   header,
@@ -144,5 +166,47 @@
 
   ::-webkit-scrollbar {
     display: none !important;
+  }
+
+  body,
+  html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print,
+  .screen-wrapper {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+    width: 210mm !important;
+    padding: 10mm !important;
+    overflow: hidden !important;
+  }
+
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: 85.6mm 85.6mm !important;
+    gap: 5mm !important;
+    justify-content: center !important;
+  }
+  .card-items {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .id-card-element {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 14px !important;
+    background-color: white !important;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
   }
 }

@@ -111,4 +111,5 @@ export interface CardUser {
   regno?: string;
   photo?: string;
   selected?: boolean;
+  issuedAt?: string;
 }

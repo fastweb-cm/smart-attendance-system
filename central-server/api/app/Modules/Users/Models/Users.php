@@ -441,11 +441,24 @@ class Users
     //helper function to generate the card_uid
     public function generateCardUID(): string
     {
+        // Generates an 8-character hex string (e.g., A1B2C3D4)
         return strtoupper(bin2hex(random_bytes(4)));
     }
 
     public function createCardRecord(int $userId) {
-        $card_uid = $this->generateCardUID();
+        $isUnique = false;
+        $card_uid = '';
+
+        // Loop until we find a UID that doesn't exist yet
+        while (!$isUnique) {
+            $card_uid = $this->generateCardUID();
+        
+            // Check if this UID is already in the table
+            $checkSql = "SELECT COUNT(*) as count FROM tbl_card WHERE card_uid = ?";
+            $stmt = $this->db->query($checkSql, [$card_uid]);
+            $isUnique = $stmt->num_rows > 0 ? true : false;
+
+        }
         $sql = "INSERT INTO tbl_card (user_id,card_uid) VALUES (?,?)";
         $this->db->query($sql, [$userId, $card_uid]);
     }
@@ -454,7 +467,7 @@ class Users
     public function fetchUserCardDetails(): array
     {
         $sql = "SELECT u.id, u.fname as firstName, u.lname AS lastName, u.user_type AS role, u.photo, u.gender,
-            cl.class_name AS className, c.card_uid AS cardUid,
+            cl.class_name AS className, c.card_uid AS cardUid, c.issued_at AS issuedAt, c.status AS status,
             CASE
                 WHEN u.user_type = 'student' THEN st.regno
                 ELSE s.sregno
@@ -464,7 +477,8 @@ class Users
             LEFT JOIN tbl_student st ON u.id = st.user_id
             LEFT JOIN tbl_staff s ON u.id = s.user_id
             JOIN tbl_card c ON u.id = c.user_id
-            WHERE u.status = 'active' AND c.status IN ('pending', 'revoked')";
+            WHERE u.status = 'active'
+            ORDER BY u.fname ASC, u.lname ASC";
         $res = $this->db->query($sql, []);
 
         return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
