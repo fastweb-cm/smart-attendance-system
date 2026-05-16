@@ -89,4 +89,10 @@ class BranchController extends Controller {
             "message" => "An unexpected error occurred"
         ],500);
     }
+
+    public function getBranches()
+    {
+        $branches = $this->branch->fetchBranches();
+        $this->json($branches);
+    }
 }

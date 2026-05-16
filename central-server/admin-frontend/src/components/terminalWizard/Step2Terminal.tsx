@@ -1,177 +1,161 @@
 "use client";
 
-import { useFormContext, Controller } from "react-hook-form";
+import { useFormContext, useFieldArray } from "react-hook-form";
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
-import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "../ui/button";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { GroupWithSubgroupsLookup, Lookup } from "@/types";
+import { useAuthPolicies } from "@/hooks/useLookups";
 
 interface Step2Props {
   onBack: () => void;
+  initialAuthTypes: Lookup[];
+  initialAuthPolicies: GroupWithSubgroupsLookup[];
 }
 
-export const Step2Access: React.FC<Step2Props> = ({ onBack }) => {
-  const { control, watch, setValue } =
-    useFormContext<TerminalCreateFormValues>();
+export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, initialAuthPolicies }) => {
+  const { control, watch } = useFormContext<TerminalCreateFormValues>();
 
-  // Correct field names
-  const authTypes = watch("authCapabilities") || [];
+  const { append, remove } = useFieldArray({
+    control,
+    name: "authPolicies",
+  });
+
+  // Watch properties using exact backend snake_case properties
+  const chosenCapabilities = watch("authCapabilities") || [];
   const policies = watch("authPolicies") || [];
 
-  // Build auth options from selected capabilities
-  const authOptions = authTypes.map((a) => ({
-    id: a.auth_type_id,
-    label:
-      a.auth_type_id === 1
-        ? "Face"
-        : a.auth_type_id === 2
-        ? "Card"
-        : "Fingerprint",
-  }));
+  // Map chosen capabilities back to dynamic lookup human labels
+  const allowedAuthOptions = chosenCapabilities.map((cap: { auth_type_id: number }) => {
+    const matchedLookup = initialAuthTypes.find((t) => t.id === cap.auth_type_id);
+    return {
+      id: cap.auth_type_id,
+      label: matchedLookup ? matchedLookup.name : `Auth Type #${cap.auth_type_id}`,
+    };
+  });
 
-  const groups = [
-    {
-      id: 1,
-      label: "Group A",
-      subgroups: [
-        { id: 101, label: "Subgroup A1" },
-        { id: 102, label: "Subgroup A2" },
-      ],
-    },
-    {
-      id: 2,
-      label: "Group B",
-      subgroups: [{ id: 201, label: "Subgroup B1" }],
-    },
-  ];
+  const { data: groups } = useAuthPolicies(initialAuthPolicies);
 
-  const toggleGroup = (groupId: number, subgroupId: number) => {
-    const exists = policies.find(
-      (p) => p.group_id === groupId && p.subgroup_id === subgroupId
+  // Helper to safely identify if a specific target assignment entry already exists
+  const isPolicyChecked = (groupId: number, subgroupId: number | null, authTypeId: number) => {
+    return policies.some(
+      (p: { group_id?: number | null; subgroup_id?: number | null; auth_type_id?: number }) =>
+        p.group_id === groupId && p.subgroup_id === subgroupId && p.auth_type_id === authTypeId
+    );
+  };
+
+  // Toggle function that creates independent array objects for every capability chosen
+  const handleTogglePolicy = (groupId: number, subgroupId: number | null, authTypeId: number) => {
+    const policyIndex = policies.findIndex(
+      (p: { group_id?: number | null; subgroup_id?: number | null; auth_type_id?: number }) => p.group_id === groupId && p.subgroup_id === subgroupId && p.auth_type_id === authTypeId
     );
 
-    if (exists) {
-      setValue(
-        "authPolicies",
-        policies.filter(
-          (p) =>
-            !(p.group_id === groupId && p.subgroup_id === subgroupId)
-        )
-      );
+    if (policyIndex !== -1) {
+      remove(policyIndex);
     } else {
-      setValue("authPolicies", [
-        ...policies,
-        {
-          group_id: groupId,
-          subgroup_id: subgroupId,
-          auth_type_id: authOptions[0]?.id ?? 1,
-        },
-      ]);
+      append({
+        group_id: groupId,
+        subgroup_id: subgroupId, // Can be number or explicitly null
+        auth_type_id: authTypeId,
+      });
     }
   };
 
-  const setAuthType = (
-    groupId: number,
-    subgroupId: number,
-    authTypeId: number
-  ) => {
-    setValue(
-      "authPolicies",
-      policies.map((p) =>
-        p.group_id === groupId && p.subgroup_id === subgroupId
-          ? { ...p, auth_type_id: authTypeId }
-          : p
-      )
+  // Shared UI row rendering block for clean presentation
+  const renderRow = (groupId: number, subgroupId: number | null, title: string, isSubgroup = false) => {
+    return (
+      <div 
+        className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-xl gap-3 transition-all ${
+          isSubgroup ? "border-gray-100 bg-white" : "border-gray-200 bg-gray-50/50 font-medium"
+        }`}
+      >
+        <span className={`text-sm ${isSubgroup ? "text-gray-600 pl-2" : "text-gray-900 font-semibold"}`}>
+          {title} {!isSubgroup && <span className="text-xs text-gray-400 font-normal">(Entire Group)</span>}
+        </span>
+
+        {/* Dynamic selector nodes matching allowed capabilities from Step 1 */}
+        <div className="flex flex-wrap items-center gap-3">
+          {allowedAuthOptions.map((auth) => {
+            const checked = isPolicyChecked(groupId, subgroupId, auth.id);
+            const inputId = `policy-${groupId}-${subgroupId ?? "parent"}-${auth.id}`;
+
+            return (
+              <div 
+                key={auth.id} 
+                className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg transition-all ${
+                  checked 
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-900" 
+                    : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                <Checkbox
+                  id={inputId}
+                  checked={checked}
+                  onCheckedChange={() => handleTogglePolicy(groupId, subgroupId, auth.id)}
+                />
+                <label htmlFor={inputId} className="text-xs font-medium cursor-pointer select-none">
+                  {auth.label}
+                </label>
+              </div>
+            );
+          })}
+          {allowedAuthOptions.length === 0 && (
+            <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded">
+              No modes chosen in Step 1
+            </span>
+          )}
+        </div>
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium mb-4">
-        Access Policy
-      </h3>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">Access Policies</h3>
+        <p className="text-xs text-gray-500">
+          Select which authentication modes apply at the broad group or specific subgroup levels.
+        </p>
+      </div>
 
-      {groups.map((group) => (
-        <div
-          key={group.id}
-          className="border p-4 rounded-md space-y-2"
-        >
-          <p className="font-semibold">{group.label}</p>
+      <div className="space-y-4">
+        {groups.map((group) => (
+          <div key={group.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50/20 space-y-3">
+            
+            {/* 1. Parent Scope configuration row (Generates subgroup_id: null payload) */}
+            {renderRow(group.id, null, group.label, false)}
 
-          {group.subgroups.map((sg) => {
-            const policyIndex = policies.findIndex(
-              (p) =>
-                p.group_id === group.id &&
-                p.subgroup_id === sg.id
-            );
-
-            const policy =
-              policyIndex !== -1 ? policies[policyIndex] : null;
-
-            return (
-              <div
-                key={sg.id}
-                className="flex items-center gap-4"
-              >
-                <Checkbox
-                  checked={!!policy}
-                  onCheckedChange={() =>
-                    toggleGroup(group.id, sg.id)
-                  }
-                />
-
-                <span>{sg.label}</span>
-
-                {policy && (
-                  <Controller
-                    name={`authPolicies.${policyIndex}.auth_type_id`}
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        // value={field.value}
-                        value={String(1)}
-                        onValueChange={(val) =>
-                          //convert the string back to number before setting the value
-                          field.onChange(Number(val))
-                        }
-                      >
-                        {/** the trigger is the button the user clicks */}
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Auth Type" />
-                        </SelectTrigger>
-
-                        {/** the content is the dropdown box */}
-                        <SelectContent>
-                          {authOptions.map((a) => (
-                            <SelectItem key={a.id} value={String(a.id)}>
-                              {a.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
+            {/* 2. Individual Subgroup configuration rows nested inside */}
+            {group.subgroups.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 pl-4 border-l-2 border-gray-100">
+                {group.subgroups.map((sg) => 
+                  renderRow(group.id, sg.id, sg.label, true)
                 )}
               </div>
-            );
-          })}
-        </div>
-      ))}
+            )}
 
-      <div className="flex justify-between mt-4">
-        <button
+          </div>
+        ))}
+      </div>
+
+      {/* Footer Navigation Controls */}
+      <div className="flex justify-between items-center border-t pt-4 mt-6">
+        <Button
           type="button"
-          className="btn btn-secondary"
+          variant="outline"
+          className="flex items-center gap-2"
           onClick={onBack}
         >
-          Back
-        </button>
+          <ArrowLeft size={16} /> Back
+        </Button>
 
-        <button
+        <Button
           type="submit"
-          className="btn btn-primary"
+          
         >
-          Submit
-        </button>
+          <CheckCircle2 size={16} /> Create Terminal
+        </Button>
       </div>
     </div>
   );

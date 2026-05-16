@@ -42,13 +42,13 @@ class TerminalController extends Controller {
         $data = $this->getJsonInput();
 
 
-        $this->t->setSlug($data["slug"] ?? "");
-        $this->t->setName($data["name"]);
-        $this->t->setBranchId((int)($data["branch_id"] ?? 0));
-        $this->t->setStatus($data["status"]);
+        $this->t->setSlug($data["terminalDetails"]["slug"] ?? "");
+        $this->t->setName($data["terminalDetails"]["name"]);
+        $this->t->setBranchId((int)($data["terminalDetails"]["branch_id"] ?? 0));
+        $this->t->setStatus($data["terminalDetails"]["status"]);
 
         try{
-            $this->t->save($data["auth_capabilities"], $data["access_policy"]);
+            $this->t->save($data["authCapabilities"], $data["authPolicies"]);
 
             //let get the activation code
             $code = $this->t->getActivationCode();
@@ -163,6 +163,12 @@ class TerminalController extends Controller {
             ]);
         }
 
+    }
+
+    public function getAuthTypes()
+    {
+        $authTypes = $this->t->fetchAuthTypes();
+        $this->json($authTypes);
     }
 
 }

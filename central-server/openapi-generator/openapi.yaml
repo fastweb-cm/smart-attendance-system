@@ -585,6 +585,8 @@ components:
     Terminal:
       type: object
       properties:
+        id:
+          type: ["integer", "null"]
         name:
           type: string
         activation_code:
@@ -631,31 +633,30 @@ components:
           type: integer
 
     TerminalCreate:
-      allOf:
-        - $ref: "#/components/schemas/Terminal"
-        - type: object
-          required:
-            - name
-            - branch_id
-          properties:
-            auth_capabilities:
-              description: The supported auth types for this terminal
-              type: array
-              items:
-                $ref: "#/components/schemas/TerminalCapabilities"
-            access_policy:
-              type: array
-              items:
-                $ref: "#/components/schemas/TerminalAccessPolicy"
+      type: object
+      properties:
+        terminalDetails:
+          allOf:
+            - $ref: "#/components/schemas/Terminal"
+            - type: object
+              required:
+                - name
+                - branch_id
+        authCapabilities:
+          description: The supported auth types for this terminal
+          type: array
+          items:
+            $ref: "#/components/schemas/TerminalCapabilities"
+        authPolicies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TerminalAccessPolicy"
 
     TerminalResponse:
       allOf:
         - $ref: "#/components/schemas/Terminal"
         - type: object
           properties:
-            id:
-              type: integer
-              example: 1
             date_created:
               type: string
               format: date-time

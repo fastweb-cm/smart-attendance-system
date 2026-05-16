@@ -635,4 +635,9 @@ private function getEventsMetadata(array $eventIds): array
         $this->db->query($sql, $params);
     }
 
+    public function fetchAuthTypes(): array
+    {
+        $result = $this->db->query("SELECT id, name FROM lkup_auth_type");
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
 }

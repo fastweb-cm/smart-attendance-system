@@ -119,4 +119,10 @@ class GroupController extends Controller {
             ], $e->getCode() ? : 500);
         }
     }
+
+    public function getAuthPolicies()
+    {
+        $authPolicies = $this->g->fetchGroupsAndCorrespondingSubgroups();
+        $this->json($authPolicies);
+    }
 }

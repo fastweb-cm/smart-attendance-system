@@ -243,6 +243,10 @@ export const zExceptionResponse = zException.and(z.object({
 }));
 
 export const zTerminal = z.object({
+    id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
     name: z.optional(z.string()),
     activation_code: z.optional(z.string()),
     branch_id: z.optional(z.int()),
@@ -286,13 +290,13 @@ export const zTerminalAccessPolicy = z.object({
     auth_type_id: z.optional(z.int())
 });
 
-export const zTerminalCreate = zTerminal.and(z.object({
-    auth_capabilities: z.optional(z.array(zTerminalCapabilities)),
-    access_policy: z.optional(z.array(zTerminalAccessPolicy))
-}));
+export const zTerminalCreate = z.object({
+    terminalDetails: z.optional(zTerminal.and(z.record(z.string(), z.unknown()))),
+    authCapabilities: z.optional(z.array(zTerminalCapabilities)),
+    authPolicies: z.optional(z.array(zTerminalAccessPolicy))
+});
 
 export const zTerminalResponse = zTerminal.and(z.object({
-    id: z.optional(z.int()),
     date_created: z.optional(z.iso.datetime())
 }));
 
