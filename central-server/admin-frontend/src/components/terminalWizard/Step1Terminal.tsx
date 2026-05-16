@@ -15,7 +15,7 @@ interface Step1Props {
 }
 
 export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, initialAuthTypes }) => {
-  const { control, trigger, setValue } = useFormContext<TerminalCreateFormValues>();
+  const { control, watch, trigger, setValue } = useFormContext<TerminalCreateFormValues>();
   
   // Use useFieldArray directly to control the array fields cleanly
   const { fields, append, remove } = useFieldArray({
@@ -30,6 +30,12 @@ export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, i
     value: b.id
   })) || [];
 
+  const statuses = [
+    { label: "Pending", value: "pending" },
+    { label: "Active", value: "active" },
+    { label: "Revoked", value: "revoked" }
+  ]
+
   const handleNext = async () => {
     const valid = await trigger([
       "terminalDetails.name",
@@ -41,6 +47,9 @@ export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, i
     if (valid) onNext();
   };
 
+  // Determine if we are in edit mode based on the presence of a terminal ID
+  const isEditMode = !!watch("terminalDetails.id");
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Terminal Profile</h3>
@@ -49,12 +58,16 @@ export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, i
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InputField label="Terminal Name" name="terminalDetails.name" required/>
 
-        <InputField 
-          label="Activation Code" 
-          name="terminalDetails.activation_code" 
-          required 
-          inputProps={{ placeholder: "Auto-Generated", readOnly: true }}
-        />
+        { !isEditMode &&
+          <>
+            <InputField 
+              label="Activation Code" 
+              name="terminalDetails.activation_code" 
+              required 
+              inputProps={{ placeholder: "Auto-Generated", readOnly: true }}
+            />
+          </>
+        }
 
         <InputField 
           label="Branch" 
@@ -64,6 +77,19 @@ export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, i
           options={branchOptions}
           required
         />
+
+        {isEditMode && (
+          <>
+            <InputField
+            label="Status"
+            name="terminalDetails.status"
+            type="select"
+            valueType="string"
+            options={statuses}
+            required
+            />
+          </>
+        )}
       </div>
 
       {/* Authentication Capabilities Sequence Selector */}

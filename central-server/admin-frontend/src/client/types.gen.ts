@@ -1612,6 +1612,44 @@ export type CreateTerminalResponses = {
 
 export type CreateTerminalResponse = CreateTerminalResponses[keyof CreateTerminalResponses];
 
+export type UpdateTerminalData = {
+    body: TerminalCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/terminal';
+};
+
+export type UpdateTerminalErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type UpdateTerminalResponses = {
+    /**
+     * Terminal created successfully
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+    };
+};
+
+export type UpdateTerminalResponse = UpdateTerminalResponses[keyof UpdateTerminalResponses];
+
 export type DeleteTerminalData = {
     body?: never;
     path: {
@@ -1651,6 +1689,43 @@ export type DeleteTerminalResponses = {
 };
 
 export type DeleteTerminalResponse = DeleteTerminalResponses[keyof DeleteTerminalResponses];
+
+export type GetTerminalBySlugData = {
+    body?: never;
+    path: {
+        slug: string;
+    };
+    query?: never;
+    url: '/api/v1/terminal/slug/{slug}';
+};
+
+export type GetTerminalBySlugErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetTerminalBySlugResponses = {
+    /**
+     * Terminal details
+     */
+    200: TerminalCreate;
+};
+
+export type GetTerminalBySlugResponse = GetTerminalBySlugResponses[keyof GetTerminalBySlugResponses];
 
 export type TerminalAuthData = {
     body: TerminalAuthCreate;

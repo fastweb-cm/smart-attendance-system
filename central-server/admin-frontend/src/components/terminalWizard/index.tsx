@@ -9,16 +9,19 @@ import { Step2Access } from "./Step2Terminal";
 import { useState, useEffect } from "react";
 import { GroupWithSubgroupsLookup, Lookup, LookupBranch } from "@/types";
 import { getAuthTypes, getbranches, getGroupsWithSubgroups } from "@/lib/actions/lookups";
-import { useCreateTerminal } from "@/hooks/useTerminals";
+import { useCreateTerminal, useUpdateTerminal } from "@/hooks/useTerminals";
 import { Check, Copy } from "lucide-react";
 import { Button } from "../ui/button";
+import { useRouter } from "next/navigation";
+
 
 interface TerminalWizardProps {
-  initialData?: TerminalCreateFormValues & { terminalDetails: { id?: number } };
+  initialData?: TerminalCreateFormValues & { terminalDetails: { slug?: string } };
 }
 
 export const TerminalWizard: React.FC<TerminalWizardProps> = ({ initialData }) => {
-  const isEditingMode = !!initialData?.terminalDetails?.id; // Determine mode based on presence of terminal ID
+
+  const isEditingMode = !!initialData?.terminalDetails?.slug; // Determine mode based on presence of terminal slug
 
   const [step, setStep] = useState<1 | 2>(1);
   const [branches, setBranches] = useState<LookupBranch[]>([]);
@@ -68,10 +71,12 @@ export const TerminalWizard: React.FC<TerminalWizardProps> = ({ initialData }) =
 
   // terminal creation mutation hook
   const createTerminal = useCreateTerminal();
+  const updateTerminal = useUpdateTerminal();
 
   //clipboard/success state
   const [activationCode, setActivationCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
 
   const onSubmit = async (data: TerminalCreateFormValues) => {
@@ -79,21 +84,25 @@ export const TerminalWizard: React.FC<TerminalWizardProps> = ({ initialData }) =
       let res;
       if (isEditingMode) {
         // For editing, you would call an updateTerminal mutation instead of createTerminal
+        res = await updateTerminal.mutateAsync({ body: data });
+        router.push("/admin/terminals"); // Redirect back to terminals list after update
       } else{
         res = await createTerminal.mutateAsync({ body: data });
-      }
-      // Handle server results variations cleanly
-      if (res) {
-        const code = res?.activation_code || res.activationCode;
+
+        // Handle server results variations cleanly
+        if (res) {
+          const code = res?.activation_code || res.activationCode;
         
-        if (code) {
-          setActivationCode(code);
-        } else {
-          // If editing or code isn't provided, wrap execution cleanly here
-          methods.reset();
-          setStep(1);
+          if (code) {
+            setActivationCode(code);
+          } else {
+            // If editing or code isn't provided, wrap execution cleanly here
+            methods.reset();
+            setStep(1);
+          }
         }
       }
+
 
     } catch (error) {
       console.error("Error creating terminal:", error);

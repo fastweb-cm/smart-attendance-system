@@ -2,12 +2,13 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge"
-import { Trash2, EyeIcon } from "lucide-react";
+import { Trash2, EyeIcon, Edit3 } from "lucide-react";
 import { TerminalFetchResponse } from "@/client";
 
 export const terminalColumns = (
   onView: (t: TerminalFetchResponse) => void,
-  onDelete: (t: TerminalFetchResponse) => void
+  onDelete: (t: TerminalFetchResponse) => void,
+  onEdit: (t: TerminalFetchResponse) => void
 ): ColumnDef<TerminalFetchResponse>[] => [
   {
     accessorKey: "name",
@@ -94,7 +95,10 @@ export const terminalColumns = (
     header: () => <div className="text-center">Action</div>,
     cell: ({ row }) => <div className="flex items-center justify-center gap-2">
       <div title="View Details" onClick={() => onView(row.original)}>
-        <EyeIcon size={16} className="text-primary cursor-pointer" />
+        <EyeIcon size={16} className="text-text cursor-pointer" />
+      </div>
+      <div title="Edit" onClick={() => onEdit(row.original)}>
+        <Edit3 size={16} className="text-primary cursor-pointer" />
       </div>
       <div title="Delete">
         <Trash2 size={16} onClick={() => onDelete(row.original)} className="text-destructive cursor-pointer" />

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, RefreshData, RefreshErrors, RefreshResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
+import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetTerminalBySlugData, GetTerminalBySlugErrors, GetTerminalBySlugResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, RefreshData, RefreshErrors, RefreshResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateTerminalData, UpdateTerminalErrors, UpdateTerminalResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -382,12 +382,36 @@ export const createTerminal = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * Update an existing terminal
+ */
+export const updateTerminal = <ThrowOnError extends boolean = false>(options: Options<UpdateTerminalData, ThrowOnError>) => (options.client ?? client).put<UpdateTerminalResponses, UpdateTerminalErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/terminal',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Delete a terminal
  */
 export const deleteTerminal = <ThrowOnError extends boolean = false>(options: Options<DeleteTerminalData, ThrowOnError>) => (options.client ?? client).delete<DeleteTerminalResponses, DeleteTerminalErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/terminal/{id}',
+    ...options
+});
+
+/**
+ * Get terminal details by slug
+ */
+export const getTerminalBySlug = <ThrowOnError extends boolean = false>(options: Options<GetTerminalBySlugData, ThrowOnError>) => (options.client ?? client).get<GetTerminalBySlugResponses, GetTerminalBySlugErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/terminal/slug/{slug}',
     ...options
 });
 

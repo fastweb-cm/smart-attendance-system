@@ -792,6 +792,20 @@ export const zCreateTerminalData = z.object({
  */
 export const zCreateTerminalResponse = zTerminalUpsertResponse;
 
+export const zUpdateTerminalData = z.object({
+    body: zTerminalCreate,
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Terminal created successfully
+ */
+export const zUpdateTerminalResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
 export const zDeleteTerminalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -807,6 +821,19 @@ export const zDeleteTerminalResponse = z.object({
     success: z.optional(z.boolean()),
     message: z.optional(z.string())
 });
+
+export const zGetTerminalBySlugData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        slug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Terminal details
+ */
+export const zGetTerminalBySlugResponse = zTerminalCreate;
 
 export const zTerminalAuthData = z.object({
     body: zTerminalAuthCreate,

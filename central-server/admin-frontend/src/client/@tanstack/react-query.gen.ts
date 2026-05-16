@@ -4,8 +4,8 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getTerminalBySlug, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -580,6 +580,23 @@ export const createTerminalMutation = (options?: Partial<Options<CreateTerminalD
 };
 
 /**
+ * Update an existing terminal
+ */
+export const updateTerminalMutation = (options?: Partial<Options<UpdateTerminalData>>): UseMutationOptions<UpdateTerminalResponse, AxiosError<DefaultError>, Options<UpdateTerminalData>> => {
+    const mutationOptions: UseMutationOptions<UpdateTerminalResponse, AxiosError<DefaultError>, Options<UpdateTerminalData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateTerminal({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Delete a terminal
  */
 export const deleteTerminalMutation = (options?: Partial<Options<DeleteTerminalData>>): UseMutationOptions<DeleteTerminalResponse, AxiosError<DefaultError>, Options<DeleteTerminalData>> => {
@@ -595,6 +612,24 @@ export const deleteTerminalMutation = (options?: Partial<Options<DeleteTerminalD
     };
     return mutationOptions;
 };
+
+export const getTerminalBySlugQueryKey = (options: Options<GetTerminalBySlugData>) => createQueryKey('getTerminalBySlug', options);
+
+/**
+ * Get terminal details by slug
+ */
+export const getTerminalBySlugOptions = (options: Options<GetTerminalBySlugData>) => queryOptions<GetTerminalBySlugResponse, AxiosError<DefaultError>, GetTerminalBySlugResponse, ReturnType<typeof getTerminalBySlugQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getTerminalBySlug({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getTerminalBySlugQueryKey(options)
+});
 
 /**
  * Authenticate at a terminal

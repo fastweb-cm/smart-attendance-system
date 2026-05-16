@@ -35,7 +35,6 @@ const InputField = ({
           {...register(name, registerOptions)}
           {...(inputProps as React.SelectHTMLAttributes<HTMLSelectElement>)}
           className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full outline-none focus:ring-blue-500"
-          defaultValue={defaultValue}
         >
           <option value="">Select an option</option>
           {options?.map((opt) => (

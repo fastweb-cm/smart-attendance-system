@@ -95,6 +95,9 @@ class TerminalModel
                 }
             }
 
+            // enqueue users for synchronization based on the access policy
+            $this->enqueueTerminalUsersSync($this->id, $accessPolicy);
+
             $this->db->commit();
             return true;
         } catch(\Throwable $e) {
@@ -135,6 +138,9 @@ class TerminalModel
                 $this->bulkInsertPolicies($accessPolicy);
             }
 
+            // enqueue users for synchronization based on the updated access policy
+            $this->enqueueTerminalUsersSync($this->id, $accessPolicy);
+
             $this->db->commit();
             return true;
 
@@ -142,6 +148,88 @@ class TerminalModel
             $this->db->rollback();
             throw $e;
         }
+    }
+
+    /**
+    * Processes access policies to compile and enqueue user operational synchronization tasks
+    * 
+    * @param int $terminalId
+    * @param array $accessPolicies Raw array containing group_id and subgroup_id matrices
+    * @return void
+    */
+    public function enqueueTerminalUsersSync(int $terminalId, array $accessPolicies): void
+    {
+        if (empty($accessPolicies)) {
+            return;
+        }
+
+        try {
+            // We accumulate user IDs in an array to prevent duplicate queue entries 
+            // for users who might match multiple criteria across loops
+            $userIdsToSync = [];
+
+            foreach ($accessPolicies as $policy) {
+                $groupId = isset($policy['group_id']) ? (int)$policy['group_id'] : null;
+                $subgroupId = isset($policy['subgroup_id']) ? (int)$policy['subgroup_id'] : null;
+
+                if ($subgroupId) {
+                    // Scenario A: Targeted Specific Subgroup
+                    // Assuming your system links users via a 'subgroup_id' column on a user table
+                    $sql = "SELECT sm.user_id FROM tbl_subgroup_member sm 
+                                JOIN tbl_user u ON sm.user_id = u.id
+                                WHERE sm.subgroup_id = ? AND u.status = 'active'";
+                    $res = $this->db->query($sql, [$subgroupId]);
+                    $users = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+                
+                    foreach ($users as $user) {
+                        $userIdsToSync[$user['user_id']] = true;
+                    }
+                } elseif ($groupId) {
+                    // Scenario B: Broad Parent Group (Subgroup is Null)
+                    // We fetch all users belonging to ALL subgroups nesting under this parent group identifier
+                    $sql = "SELECT gm.user_id
+                            FROM tbl_group_member gm
+                            JOIN tbl_user u ON gm.user_id = u.id
+                            WHERE gm.group_id = ? AND u.status = 'active'";
+
+                    $res = $this->db->query($sql, [$groupId]);
+                    $users = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+
+                    foreach ($users as $user) {
+                        $userIdsToSync[$user['user_id']] = true;
+                    }
+                }
+            }
+
+            // If matching users were located, execute a quick bulk insert into your sync queue matrix
+            if (!empty($userIdsToSync)) {
+                $this->bulkInsertSyncQueue($terminalId, array_keys($userIdsToSync));
+            }
+
+        } catch (\Throwable $e) {
+            // Log error context or allow transaction rollback handling bubbles downstream
+            throw $e;
+        }
+    }
+
+    /**
+    * Handles batching data cleanly into your tbl_sync_queue framework
+    */
+    private function bulkInsertSyncQueue(int $terminalId, array $userIds): void
+    {
+        $values = [];
+        $placeholders = [];
+
+        foreach ($userIds as $userId) {
+            $placeholders[] = "(?, 'tbl_user', ?, 'upsert', 'pending')";
+            $values[] = $terminalId;
+            $values[] = $userId;
+        }
+
+        $sql = "INSERT INTO tbl_sync_queue (terminal_id, entity_type, entity_id, action, status) 
+                VALUES " . implode(', ', $placeholders);
+
+        $this->db->query($sql, $values);
     }
 
     /**
@@ -639,5 +727,44 @@ private function getEventsMetadata(array $eventIds): array
     {
         $result = $this->db->query("SELECT id, name FROM lkup_auth_type");
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    /**
+     * Fetch terminal details along with its relations using its unique URL slug identifier
+     * @param string $slug
+     * @return [TerminalDetails: {}, authCapabilities: [], authPolicies: []]
+     */
+    public function fetchTerminalDetailsBySlug(string $slug): array
+    {
+        $sql = "SELECT t.id, t.name, t.slug, t.activation_code, t.branch_id, t.status
+                FROM tbl_terminal t WHERE t.slug = ?";
+
+        $result = $this->db->query($sql, [$slug]);
+        if (!$result || $result->num_rows === 0) {
+            return [];
+        }
+
+        $terminalDetails = $result->fetch_assoc();
+
+        // Fetch Auth Capabilities
+        $authCapsSql = "SELECT auth_type_id, auth_step 
+                        FROM tbl_terminal_auth_capability 
+                        WHERE terminal_id = ?";
+        $authCapsResult = $this->db->query($authCapsSql, [$terminalDetails['id']]);
+        $authCapabilities = $authCapsResult ? $authCapsResult->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Fetch Access Policies
+        $accessPolicySql = "SELECT group_id, subgroup_id, auth_type_id
+                            FROM tbl_terminal_access_policy 
+                            WHERE terminal_id = ?";
+        $accessPolicyResult = $this->db->query($accessPolicySql, [$terminalDetails['id']]);
+        $authPolicies = $accessPolicyResult ? $accessPolicyResult->fetch_all(MYSQLI_ASSOC) : [];
+
+        return [
+            'terminalDetails' => $terminalDetails,
+            'authCapabilities' => $authCapabilities,
+            'authPolicies' => $authPolicies
+        ];
+
     }
 }
