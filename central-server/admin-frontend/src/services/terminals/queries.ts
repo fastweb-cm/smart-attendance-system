@@ -1,5 +1,6 @@
 'use client';
 
+import { getTerminalBySlug } from "@/client";
 import { listTerminalsOptions, listTerminalsQueryKey } from "@/client/@tanstack/react-query.gen";
 
 export type ListTerminalsFilters = {
@@ -22,4 +23,8 @@ export const terminalsQueryKey = (filters?: ListTerminalsFilters) => listTermina
         terminal_id: filters?.terminal_id,
         status: filters?.status && ["active", "pending", "revoked"].includes(filters.status) ? filters.status : undefined
     }
+})
+
+export const getTerminalDetailsBySlugQuery = (slug: string) => getTerminalBySlug({
+    path: { slug }
 })

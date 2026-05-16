@@ -8,6 +8,7 @@ export const useTerminalWizard = (defaultValues?: TerminalCreateFormValues) => {
     const [values, setValues] = useState<TerminalCreateFormValues>(
         defaultValues || {
             terminalDetails: {
+                id: null,
                 name: "",
                 branch_id: 1,
                 activation_code: "",

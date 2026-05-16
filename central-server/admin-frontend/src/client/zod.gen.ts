@@ -243,6 +243,10 @@ export const zExceptionResponse = zException.and(z.object({
 }));
 
 export const zTerminal = z.object({
+    id: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
     name: z.optional(z.string()),
     activation_code: z.optional(z.string()),
     branch_id: z.optional(z.int()),
@@ -286,14 +290,16 @@ export const zTerminalAccessPolicy = z.object({
     auth_type_id: z.optional(z.int())
 });
 
-export const zTerminalCreate = zTerminal.and(z.object({
-    auth_capabilities: z.optional(z.array(zTerminalCapabilities)),
-    access_policy: z.optional(z.array(zTerminalAccessPolicy))
-}));
+export const zTerminalCreate = z.object({
+    terminalDetails: z.optional(zTerminal.and(z.record(z.string(), z.unknown()))),
+    authCapabilities: z.optional(z.array(zTerminalCapabilities)),
+    authPolicies: z.optional(z.array(zTerminalAccessPolicy))
+});
 
-export const zTerminalResponse = zTerminal.and(z.object({
-    id: z.optional(z.int()),
-    date_created: z.optional(z.iso.datetime())
+export const zTerminalUpsertResponse = zTerminal.and(z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string()),
+    activationCode: z.optional(z.string())
 }));
 
 export const zTerminalFetchResponse = z.object({
@@ -781,6 +787,25 @@ export const zCreateTerminalData = z.object({
     query: z.optional(z.never())
 });
 
+/**
+ * Terminal created successfully
+ */
+export const zCreateTerminalResponse = zTerminalUpsertResponse;
+
+export const zUpdateTerminalData = z.object({
+    body: zTerminalCreate,
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Terminal created successfully
+ */
+export const zUpdateTerminalResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
 export const zDeleteTerminalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -796,6 +821,19 @@ export const zDeleteTerminalResponse = z.object({
     success: z.optional(z.boolean()),
     message: z.optional(z.string())
 });
+
+export const zGetTerminalBySlugData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        slug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Terminal details
+ */
+export const zGetTerminalBySlugResponse = zTerminalCreate;
 
 export const zTerminalAuthData = z.object({
     body: zTerminalAuthCreate,

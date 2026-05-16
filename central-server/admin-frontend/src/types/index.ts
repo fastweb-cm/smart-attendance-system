@@ -118,3 +118,24 @@ export interface LookupClass {
   id: number;
   class_name: string;
 }
+
+export interface LookupBranch {
+  id: number;
+  name: string;
+}
+
+export interface Lookup {
+  id: number;
+  name: string;
+}
+
+export interface SubgroupLookup {
+  id: number;
+  label: string;
+}
+
+export interface GroupWithSubgroupsLookup {
+  id: number;
+  label: string;
+  subgroups: SubgroupLookup[];
+}

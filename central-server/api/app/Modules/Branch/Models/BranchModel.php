@@ -194,5 +194,12 @@ class BranchModel extends Database {
         }
     }
 
+    public function fetchBranches(): array
+    {
+        $sql = "SELECT id, name from tbl_branch";
+        $res = $this->db->query($sql, []);
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
 
 }

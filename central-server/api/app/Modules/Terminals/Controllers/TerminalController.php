@@ -42,13 +42,13 @@ class TerminalController extends Controller {
         $data = $this->getJsonInput();
 
 
-        $this->t->setSlug($data["slug"] ?? "");
-        $this->t->setName($data["name"]);
-        $this->t->setBranchId((int)($data["branch_id"] ?? 0));
-        $this->t->setStatus($data["status"]);
+        $this->t->setSlug($data["terminalDetails"]["slug"] ?? "");
+        $this->t->setName($data["terminalDetails"]["name"]);
+        $this->t->setBranchId((int)($data["terminalDetails"]["branch_id"] ?? 0));
+        $this->t->setStatus($data["terminalDetails"]["status"]);
 
         try{
-            $this->t->save($data["auth_capabilities"], $data["access_policy"]);
+            $this->t->save($data["authCapabilities"], $data["authPolicies"]);
 
             //let get the activation code
             $code = $this->t->getActivationCode();
@@ -70,7 +70,7 @@ class TerminalController extends Controller {
     public function edit()
     {
         $data = $this->getJsonInput();
-        $id = (int)($data["id"] ?? 0);
+        $id = (int)($data["terminalDetails"]["id"] ?? 0);
 
         if ($id <= 0) {
             $this->json([
@@ -83,14 +83,14 @@ class TerminalController extends Controller {
         $updated_at = $date->format('Y-m-d H:i:s');
 
         $this->t->setId($id);
-        $this->t->setSlug($data["slug"] ?? "");
-        $this->t->setName($data["name"]);
-        $this->t->setBranchId((int)($data["branch_id"] ?? 0));
-        $this->t->setStatus($data["status"]);
+        // $this->t->setSlug($data["terminalDetails"]["slug"] ?? "");
+        $this->t->setName($data["terminalDetails"]["name"]);
+        $this->t->setBranchId((int)($data["terminalDetails"]["branch_id"] ?? 0));
+        $this->t->setStatus($data["terminalDetails"]["status"]);
         $this->t->setUpdatedAt($updated_at);
 
         try{
-            $this->t->update($data["auth_capabilities"], $data["access_policy"]);
+            $this->t->update($data["authCapabilities"], $data["authPolicies"]);
 
             $this->json([
                 "success" => true,
@@ -163,6 +163,33 @@ class TerminalController extends Controller {
             ]);
         }
 
+    }
+
+    public function getAuthTypes()
+    {
+        $authTypes = $this->t->fetchAuthTypes();
+        $this->json($authTypes);
+    }
+
+    public function getTerminalDetailsBySlug(string $slug)
+    {
+        try {
+            $data = $this->t->fetchTerminalDetailsBySlug($slug);
+            if ($data) {
+                $this->json($data);
+            } else {
+                $this->json([
+                    "success"=> false,
+                    "message"=> "Terminal not found"
+                ], 404);
+            }
+        } catch (Throwable $e) {
+            $this->json([
+                "success"=> false,
+                "message"=> $e->getMessage(),
+                "type"=> get_class($e)
+            ]);
+        }
     }
 
 }

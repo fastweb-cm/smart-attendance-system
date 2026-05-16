@@ -6,6 +6,7 @@ import { useDeleteTerminal, useTerminals } from "@/hooks/useTerminals";
 import { useState } from "react";
 import { TerminalDetailsModal } from "./modals/TerminalDetailsModal";
 import { GlobalDeleteModal } from "./modals/GlobalDeleteModal";
+import { useRouter } from "next/navigation";
 
 export default function TerminalList() {
   const { data = [], isLoading } = useTerminals();
@@ -17,6 +18,7 @@ export default function TerminalList() {
 
   const [openDelete, setOpenDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
   const handleDeleteTrigger = (terminal: TerminalFetchResponse) => {
     setSelected(terminal);
@@ -30,6 +32,11 @@ export default function TerminalList() {
   const handleView = (terminal: TerminalFetchResponse) => {
     setSelected(terminal);
     setOpen(true);
+  };
+
+  const handleEdit = (terminal: TerminalFetchResponse) => {
+    // navigate to terminal edit page
+    router.push(`/admin/terminals/${terminal.slug}/edit`);
   };
 
   const onConfirmDelete = async () => {
@@ -48,7 +55,7 @@ export default function TerminalList() {
 
   return (
     <>
-      <TerminalsTable data={data} onView={handleView} onDelete={handleDeleteTrigger} />
+      <TerminalsTable data={data} onEdit={handleEdit} onView={handleView} onDelete={handleDeleteTrigger} />
 
       <TerminalDetailsModal
         open={open}

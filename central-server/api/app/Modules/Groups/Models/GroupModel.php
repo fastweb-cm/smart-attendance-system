@@ -276,4 +276,45 @@ class GroupModel extends Database {
         return $terminalIds;
     }
 
+public function fetchGroupsAndCorrespondingSubgroups(): array
+{
+    $sql = "SELECT 
+                g.id AS group_id, 
+                g.name AS group_name, 
+                sg.id AS subgroup_id, 
+                sg.name AS subgroup_name
+            FROM tbl_group g
+            LEFT JOIN tbl_subgroup sg ON g.id = sg.group_id
+            ORDER BY g.name ASC, sg.name ASC";
+
+    $result = $this->db->query($sql);
+    $groups = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $groupId = $row['group_id'];
+
+            // Initialize the parent group structure if we haven't seen it yet
+            if (!isset($groups[$groupId])) {
+                $groups[$groupId] = [
+                    'id' => (int)$groupId,
+                    'label' => $row['group_name'], // Matches UI expectation 'label'
+                    'subgroups' => []
+                ];
+            }
+
+            // Append the subgroup entry if it exists
+            if ($row['subgroup_id'] !== null) {
+                $groups[$groupId]['subgroups'][] = [
+                    'id' => (int)$row['subgroup_id'],
+                    'label' => $row['subgroup_name'] // Matches UI expectation 'label'
+                ];
+            }
+        }
+    }
+
+    // Strip out the associative array keys to return a clean indexed array
+    return array_values($groups);
+}
+
 }

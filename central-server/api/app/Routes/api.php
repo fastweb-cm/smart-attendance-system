@@ -64,6 +64,12 @@ $router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCar
 |--------------------------
 */
 $router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
+$router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
+$router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
+$router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPolicies']);
+
+
+$router->get('/api/v1/terminal/slug/{slug}', [TerminalController::class, 'getTerminalDetailsBySlug']);
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 
