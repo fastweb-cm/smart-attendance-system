@@ -296,8 +296,10 @@ export const zTerminalCreate = z.object({
     authPolicies: z.optional(z.array(zTerminalAccessPolicy))
 });
 
-export const zTerminalResponse = zTerminal.and(z.object({
-    date_created: z.optional(z.iso.datetime())
+export const zTerminalUpsertResponse = zTerminal.and(z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string()),
+    activationCode: z.optional(z.string())
 }));
 
 export const zTerminalFetchResponse = z.object({
@@ -784,6 +786,11 @@ export const zCreateTerminalData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
+
+/**
+ * Terminal created successfully
+ */
+export const zCreateTerminalResponse = zTerminalUpsertResponse;
 
 export const zDeleteTerminalData = z.object({
     body: z.optional(z.never()),

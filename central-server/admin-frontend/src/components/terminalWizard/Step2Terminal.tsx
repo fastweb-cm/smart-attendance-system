@@ -4,7 +4,7 @@ import { useFormContext, useFieldArray } from "react-hook-form";
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "../ui/button";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { GroupWithSubgroupsLookup, Lookup } from "@/types";
 import { useAuthPolicies } from "@/hooks/useLookups";
 
@@ -15,14 +15,17 @@ interface Step2Props {
 }
 
 export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, initialAuthPolicies }) => {
-  const { control, watch } = useFormContext<TerminalCreateFormValues>();
+  const { control, watch, formState: { isSubmitting } } = useFormContext<TerminalCreateFormValues & { terminalDetails?: { id?: number } }>();
 
   const { append, remove } = useFieldArray({
     control,
     name: "authPolicies",
   });
 
-  // Watch properties using exact backend snake_case properties
+  // Determine if we are in edit mode based on the presence of a terminal ID
+  const isEditMode = !!watch("terminalDetails.id");
+
+  // Watch properties using exact schema properties
   const chosenCapabilities = watch("authCapabilities") || [];
   const policies = watch("authPolicies") || [];
 
@@ -35,7 +38,9 @@ export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, in
     };
   });
 
-  const { data: groups } = useAuthPolicies(initialAuthPolicies);
+  const { data: groupsData } = useAuthPolicies(initialAuthPolicies);
+  // Fallback to initialAuthPolicies or empty array if query data is still resolving
+  const groups = groupsData || initialAuthPolicies || [];
 
   // Helper to safely identify if a specific target assignment entry already exists
   const isPolicyChecked = (groupId: number, subgroupId: number | null, authTypeId: number) => {
@@ -48,7 +53,8 @@ export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, in
   // Toggle function that creates independent array objects for every capability chosen
   const handleTogglePolicy = (groupId: number, subgroupId: number | null, authTypeId: number) => {
     const policyIndex = policies.findIndex(
-      (p: { group_id?: number | null; subgroup_id?: number | null; auth_type_id?: number }) => p.group_id === groupId && p.subgroup_id === subgroupId && p.auth_type_id === authTypeId
+      (p: { group_id?: number | null; subgroup_id?: number | null; auth_type_id?: number }) => 
+        p.group_id === groupId && p.subgroup_id === subgroupId && p.auth_type_id === authTypeId
     );
 
     if (policyIndex !== -1) {
@@ -127,7 +133,7 @@ export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, in
             {renderRow(group.id, null, group.label, false)}
 
             {/* 2. Individual Subgroup configuration rows nested inside */}
-            {group.subgroups.length > 0 && (
+            {group.subgroups && group.subgroups.length > 0 && (
               <div className="grid grid-cols-1 gap-2 pl-4 border-l-2 border-gray-100">
                 {group.subgroups.map((sg) => 
                   renderRow(group.id, sg.id, sg.label, true)
@@ -146,15 +152,23 @@ export const Step2Access: React.FC<Step2Props> = ({ onBack, initialAuthTypes, in
           variant="outline"
           className="flex items-center gap-2"
           onClick={onBack}
+          disabled={isSubmitting}
         >
           <ArrowLeft size={16} /> Back
         </Button>
 
         <Button
           type="submit"
-          
+          variant={`${isEditMode ? "default" : "default"}`}
+          className={` text-white flex items-center gap-2 px-5`}
+          disabled={isSubmitting}
         >
-          <CheckCircle2 size={16} /> Create Terminal
+          {isSubmitting ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <CheckCircle2 size={16} />
+          )}
+          {isEditMode ? "Update Terminal" : "Create Terminal"}
         </Button>
       </div>
     </div>

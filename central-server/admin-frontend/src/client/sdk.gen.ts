@@ -371,6 +371,7 @@ export const listTerminals = <ThrowOnError extends boolean = false>(options?: Op
  * create a terminal
  */
 export const createTerminal = <ThrowOnError extends boolean = false>(options: Options<CreateTerminalData, ThrowOnError>) => (options.client ?? client).post<CreateTerminalResponses, CreateTerminalErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/terminal',
     ...options,
