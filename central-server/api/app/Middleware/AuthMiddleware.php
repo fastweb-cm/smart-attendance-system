@@ -27,7 +27,6 @@ class AuthMiddleware extends controller {
     public static function attempRefresh()
     {
         $users = new Users();
-        error_log("checking if refresh token exists: ". $_COOKIE['refresh_token'] ?? 'none');
         if (!isset($_COOKIE['refresh_token'])) {
             self::json([
                 'status'=> 'error',
@@ -39,6 +38,7 @@ class AuthMiddleware extends controller {
             $refreshToken = $_COOKIE['refresh_token']; //extract the refresh token from cookie
             $stored = $users->findValidByUserToken($refreshToken);
 
+
             if (!$stored) {
                 self::json([
                     'status' => 'error',
@@ -47,6 +47,7 @@ class AuthMiddleware extends controller {
             }
 
             $user = $users->findAdmin($stored['user_id']);
+
 
             $jwtService = new JWTService();
             $tokenService = new TokenService();
