@@ -6,8 +6,8 @@ import { useEffect, useRef } from "react";
 import { CreditCard } from "lucide-react";
 
 export default function CardVerify({ onResult, ...props }: AuthProps) {
-  // Use a ref for the buffer so it doesn't trigger re-renders while typing
   const bufferRef = useRef<string>("");
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleRequest = async (serial: string) => {
     console.log("Card serial read:", serial);
@@ -33,7 +33,7 @@ export default function CardVerify({ onResult, ...props }: AuthProps) {
       } else {
         onResult("error", `Verification failed.`);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const detail = error.response?.data?.detail;
       const errorMsg = typeof detail === 'string' 
@@ -46,32 +46,45 @@ export default function CardVerify({ onResult, ...props }: AuthProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if the user is typing in a specific input/textarea
+      // Ignore if the user is actively inside an input element elsewhere
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
-      if (e.key === "Enter") {
-        if (bufferRef.current.length > 0) {
+      // Clear any pending timeout because the reader is actively streaming keys
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Filter out utility keys (Shift, Control, Enter, etc.)
+      if (e.key.length === 1) {
+        bufferRef.current += e.key;
+
+        // INSTANT TRIGGER: Once it hits exactly 8 characters, dispatch it!
+        if (bufferRef.current.length === 8) {
           handleRequest(bufferRef.current);
-          bufferRef.current = ""; // Clear buffer after request
-        }
-      } else {
-        // Filter out non-character keys (like Shift, Control, etc.)
-        if (e.key.length === 1) {
-          bufferRef.current += e.key;
+          bufferRef.current = ""; // Reset buffer immediately
+          return; // Exit early to prevent timeout creation
         }
       }
 
-      // Optional: Clear buffer if no key pressed for 200ms 
-      // (Helps prevent manual keyboard typing from being confused with a card read)
+      // GUARD: If typing breaks for more than 200ms, assume a failed scan or manual typing
+      timeoutRef.current = setTimeout(() => {
+        if (bufferRef.current.length > 0) {
+          console.log("Scanner timeout reached. Clearing partial buffer:", bufferRef.current);
+          bufferRef.current = ""; 
+        }
+      }, 1000);
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    
+    // Clean up event listeners and active timers on unmount
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [props]); // Dependency added to keep closure props fresh
 
   return (
     <div className="flex flex-col items-center">
@@ -79,7 +92,6 @@ export default function CardVerify({ onResult, ...props }: AuthProps) {
         <CreditCard className="text-blue-600 w-12 h-12" />
       </div>
       <p className="mt-4 font-bold text-slate-600">Please scan your card</p>
-      {/* Hidden indicator to show the app is listening */}
       <span className="sr-only">Ready for card input</span>
     </div>
   );
