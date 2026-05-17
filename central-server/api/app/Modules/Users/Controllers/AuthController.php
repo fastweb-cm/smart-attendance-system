@@ -51,9 +51,8 @@ class AuthController extends controller
                         'expires' => time() + 86400 * 30, //30 days
                         'path' => '/', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
-                        // 'secure' => true, HTTPS only
-                        'samesite' => 'Strict',
-                        'secure' => false
+                        'secure' => false, //change to true in production (only send cookie over HTTPS)
+                        'samesite' => 'Lax' // change to Strict in production
                     ]
                     );
             }

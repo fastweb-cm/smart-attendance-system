@@ -38,6 +38,7 @@ class AuthMiddleware extends controller {
             $refreshToken = $_COOKIE['refresh_token']; //extract the refresh token from cookie
             $stored = $users->findValidByUserToken($refreshToken);
 
+
             if (!$stored) {
                 self::json([
                     'status' => 'error',
@@ -46,6 +47,7 @@ class AuthMiddleware extends controller {
             }
 
             $user = $users->findAdmin($stored['user_id']);
+
 
             $jwtService = new JWTService();
             $tokenService = new TokenService();
@@ -65,8 +67,7 @@ class AuthMiddleware extends controller {
                         'expires' => time() + 86400 * 30, //30 days
                         'path' => '/', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
-                        // 'secure' => true, HTTPS only
-                        'samesite' => 'Strict',
+                        'samesite' => 'Lax',
                         'secure' => false
                     ]
                     );

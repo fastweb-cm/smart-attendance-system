@@ -236,7 +236,7 @@ class Users
 
     public function findAdmin(int $userId)
     {
-        $sql = "SELECT u.*,st.*,r.role_name AS role FROM tbl_user u
+        $sql = "SELECT u.*,st.role_id,r.role_name AS role FROM tbl_user u
                 JOIN tbl_staff st ON u.id = st.user_id
                 JOIN lkup_role r ON r.id = st.role_id
                 WHERE u.id = ?";

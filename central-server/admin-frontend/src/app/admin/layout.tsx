@@ -10,44 +10,50 @@ import { useEffect } from "react";
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    const { user, isHydrating } = useAuth();
-    const router = useRouter();
-    
-    useEffect(() => {
-      if (!user && !isHydrating) {
-        router.push("/login");
-      }
-      if(user && !isHydrating) {
-        router.push('/admin');
-      }
-    }, [user, router,isHydrating]);
-    
-    if(isHydrating) return <div className="text-center">loading...</div>
-    if (!user) return null;
+  const { user, isHydrating } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    // DO NOT redirect anywhere while the application is still restoring state
+    if (isHydrating) return;
+
+    if (!user) {
+      router.push("/login");
+    }
+  }, [user, router, isHydrating]);
+  
+  // Keep showing your loading spinner until hydration finishes completely
+  if (isHydrating) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-100">
+        <div className="text-center font-medium text-gray-600">Loading your session...</div>
+      </div>
+    );
+  }
+
+  // If hydration is done and there is no user, render nothing while router.push works
+  if (!user) return null;
+
   return (
-    <>
-      <SidebarProvider>
-        <div className="flex h-screen w-full">
-          <AppSidebar />
-
-          <div className="flex flex-1 flex-col">
-            <header className="sticky top-0 z-20 flex border-b border-gray-200 shadow-sm p-4">
-              <div className="flex items-center">
-                <SidebarTrigger />
-                <div className="mx-3 h-4 w-px bg-gray-400" />
-                <DashboardBreadcrumb />
-              </div>
-            </header>
-            <main className="flex-1 overflow-y-auto px-6 py-2 bg-gray-100">
-                {children}
-            </main>
-
-            <footer className="border-t border-gray-200 bg-white text-sm px-4 py-2 text-center text-gray-500">
-              &copy; {new Date().getFullYear()} FastWEB. All rights reserved.
-            </footer>
-          </div>
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-1 flex-col">
+          <header className="sticky top-0 z-20 flex border-b border-gray-200 shadow-sm p-4">
+            <div className="flex items-center">
+              <SidebarTrigger />
+              <div className="mx-3 h-4 w-px bg-gray-400" />
+              <DashboardBreadcrumb />
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto px-6 py-2 bg-gray-100">
+              {children}
+          </main>
+          <footer className="border-t border-gray-200 bg-white text-sm px-4 py-2 text-center text-gray-500">
+            &copy; {new Date().getFullYear()} FastWEB. All rights reserved.
+          </footer>
         </div>
-      </SidebarProvider>
-    </>
-  )
+      </div>
+    </SidebarProvider>
+  );
 }
