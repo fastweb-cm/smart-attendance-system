@@ -67,6 +67,7 @@ export async function POST(request: Request) {
         face_template BLOB,
         fingerprint_template BLOB,
         card_serial_code VARCHAR(255),
+        sync_status ENUM('pending','sent','sync') DEFAULT 'sync',
         FOREIGN KEY (terminal_id) REFERENCES tbl_terminal(id) ON DELETE CASCADE
       );
     `);
@@ -87,6 +88,18 @@ export async function POST(request: Request) {
         KEY idx_event_created_by (created_by),
         CONSTRAINT fk_event_created_by 
           FOREIGN KEY (created_by) REFERENCES tbl_user(id) ON DELETE SET NULL
+      );
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS tbl_face_buffer (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        face_template BLOB NOT NULL,
+        confidence_score FLOAT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_face_buffer_user_id
+          FOREIGN KEY (user_id) REFERENCES tbl_user(id) ON DELETE CASCADE
       );
     `);
 
