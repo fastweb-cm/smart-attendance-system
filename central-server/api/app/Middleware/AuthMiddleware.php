@@ -27,6 +27,7 @@ class AuthMiddleware extends controller {
     public static function attempRefresh()
     {
         $users = new Users();
+        error_log("checking if refresh token exists: ". $_COOKIE['refresh_token'] ?? 'none');
         if (!isset($_COOKIE['refresh_token'])) {
             self::json([
                 'status'=> 'error',
@@ -65,8 +66,7 @@ class AuthMiddleware extends controller {
                         'expires' => time() + 86400 * 30, //30 days
                         'path' => '/', //only send cookie to this endpoint
                         'httponly' => true, //prevent Javascript access
-                        // 'secure' => true, HTTPS only
-                        'samesite' => 'Strict',
+                        'samesite' => 'Lax',
                         'secure' => false
                     ]
                     );

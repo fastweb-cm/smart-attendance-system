@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { loginMutation, logoutMutation } from '@/client/@tanstack/react-query.gen';
 import { tokenStore } from '@/lib/token-store';
 import { client } from '@/client/client.gen';
+import { jwtDecode } from 'jwt-decode';
 
 export type User = {
   id?: number;
@@ -66,37 +67,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // })
 
   //restore user on app load
-  useEffect(() => {
-    const restoreUser = async () => {
-      const token = tokenStore.get();
+useEffect(() => {
+  const restoreUser = async () => {
+    const accessToken = tokenStore.get();
 
-      if(!token){
-        setIsHydrating(false);
-        return
-      }
-
+    if (accessToken) {
       try {
-        const res = await client.instance.post(
-          "/api/v1/auth/refresh"
-        );
+        // Decode the access token payload
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decoded: any = jwtDecode(accessToken);
+        const currentTime = Date.now() / 1000; // Convert to seconds
 
-        const token = res.data.accessToken;
-        const user = res.data.user;
-        if (!token || !user) {
-          throw new Error("Missing User or Token");
+        // Check if the token is still valid (with a 10-second safety cushion)
+        if (decoded.exp && decoded.exp > currentTime + 10) {
+          
+          // Re-hydrate the user state directly from the JWT payload
+          setUser({
+            id: decoded.sub,
+            role: decoded.role,
+            username: decoded.username,
+            email: decoded.email,
+          });
+          setIsHydrating(false);
+          return; // Exit early! Everything is fine.
         }
-        tokenStore.set(token)
-        setUser(user)
-      } catch (error) {
-        tokenStore.clear();
-        setUser(null);
-      }finally{
-        setIsHydrating(false);
+        
+      } catch (e) {
+        console.error("[Auth] Failed to decode local token, fallback to refresh:", e);
       }
     }
-    restoreUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+
+    // If token is missing or expired, call the backend to check the HttpOnly cookie
+    try {
+      const res = await client.instance.post("/api/v1/auth/refresh", {}, {
+        withCredentials: true // Crucial for sending the cookie
+      });
+
+      const newToken = res.data.accessToken;
+      const userData = res.data.user;
+
+      if (newToken && userData) {
+        tokenStore.set(newToken);
+        setUser(userData);
+        console.log("[Auth] Session silently restored via refresh token.");
+      } else {
+        throw new Error("Invalid backend structure");
+      }
+    } catch (error) {
+      console.warn("[Auth] Refresh token session invalid or expired.");
+      tokenStore.clear();
+      setUser(null);
+    } finally {
+      setIsHydrating(false);
+    }
+  };
+
+  restoreUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const login = async (data: Login) => {
     try {
