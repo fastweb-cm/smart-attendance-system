@@ -13,8 +13,6 @@ import { Button } from "@/components/ui/button";
 import apiClient from "@/lib/axiosClient";
 import { WebcamCaptureModalProps } from "@/types";
 
-
-
 export default function WebcamCaptureModal({
   open,
   onClose,
@@ -32,39 +30,32 @@ export default function WebcamCaptureModal({
   const animationRef = useRef<number | null>(null);
 
   const capturedRef = useRef(false);
-  const lastDetectionTime = useRef<number>(0);
-
   const [loadingModels, setLoadingModels] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [attemptCount, setAttemptCount] = useState(0); // track retries
+  const [attemptCount, setAttemptCount] = useState(0); 
 
-  const DETECTION_INTERVAL = 200; // 5 fps
-
-  // helper to restart the detection loop with a delay after a failure
+  // Clean delay handler for restarting detection
   const restartDetection = (feedbackMsg: string) => {
     setTimeout(() => {
-    onFeedback(feedbackMsg);
-  }, 0);
+      onFeedback(feedbackMsg);
+    }, 0);
 
-  capturedRef.current = false;
+    capturedRef.current = false;
 
-  if (animationRef.current) {
-    cancelAnimationFrame(animationRef.current);
-  }
-
-  setTimeout(() => {
-    if (videoRef.current && open) {
-      detect();
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-  }, 2000);
-};
-  
 
+    setTimeout(() => {
+      if (videoRef.current && open) {
+        detect();
+      }
+    }, 3000); // Shorter, snappier retry delay
+  };
 
-  /*
-   Load face-api models
-  */
+  /* Load face-api models */
   useEffect(() => {
     const load = async () => {
       try {
@@ -72,98 +63,81 @@ export default function WebcamCaptureModal({
           faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
         ]);
-
         setLoadingModels(false);
       } catch (err) {
         console.error(err);
         setError("Failed to load face models.");
       }
     };
-
     load();
   }, []);
 
-  /*
-   Stop webcam
-  */
+  /* Stop webcam cleanups */
   const stopWebcam = () => {
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
-
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
   };
 
-  /*
-   Blur Detection
-  */
-const isBlurry = (canvas: HTMLCanvasElement) => {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return true;
+  /* Blur Detection */
+  const isBlurry = (canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return true;
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let sum = 0;
-  let sumSq = 0;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let sum = 0;
+    let sumSq = 0;
 
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    const gray =
-      0.299 * imageData.data[i] +
-      0.587 * imageData.data[i + 1] +
-      0.114 * imageData.data[i + 2];
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      const gray =
+        0.299 * imageData.data[i] +
+        0.587 * imageData.data[i + 1] +
+        0.114 * imageData.data[i + 2];
+      sum += gray;
+      sumSq += gray * gray;
+    }
 
-    sum += gray;
-    sumSq += gray * gray;
-  }
+    const n = imageData.data.length / 4;
+    const variance = sumSq / n - (sum / n) ** 2;
+    return variance < 350; // Lowered from 500 to be less strict on micro-movements
+  };
 
-  const n = imageData.data.length / 4;
-  const variance = sumSq / n - (sum / n) ** 2;
-
-  return variance < 500; // tweak threshold
-};
-
-  /*
-   Lighting Check
-  */
+  /* Lighting Check */
   const isTooDark = (canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return true;
 
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
     let brightness = 0;
 
     for (let i = 0; i < pixels.length; i += 4) {
       brightness += (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
     }
-
     brightness /= pixels.length / 4;
-
-    return brightness < 60;
+    return brightness < 40; // Lowered from 60 to allow normal indoor room lighting
   };
 
   const handleFailure = (message: string) => {
-  setAttemptCount((prev) => {
-    const next = prev + 1;
+    setAttemptCount((prev) => {
+      const next = prev + 1;
+      if (next >= 3) {
+        onFeedback("Too many failed attempts. Resetting...");
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        restartDetection(`${message} Retry ${next}/3`);
+      }
+      return next;
+    });
+  };
 
-    if (next >= 3) {
-      onFeedback("Too many failed attempts. Resetting...");
-      setTimeout(() => window.location.reload(), 2000);
-    } else {
-      restartDetection(`${message} Retry ${next}/3`);
-    }
-
-    return next;
-  });
-};
-
-  /*
-   Capture Image
-  */
+  /* Capture Image */
   const capture = async (video: HTMLVideoElement) => {
     const canvas = document.createElement("canvas");
-
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -173,20 +147,15 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
     // mirror correction
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-
     ctx.drawImage(video, 0, 0);
 
     if (isBlurry(canvas)) {
-      // setFeedback("Image is blurry. Please hold still.");
       onFeedback("Image is blurry. Please hold still.");
-      capturedRef.current = false;
       return restartDetection("Image is blurry. Please hold still.");
     }
 
     if (isTooDark(canvas)) {
-      // setFeedback("Lighting is too dark.");
       onFeedback("Lighting is too dark.");
-      capturedRef.current = false;
       return restartDetection("Lighting is too dark.");
     }
 
@@ -201,10 +170,6 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
         if (auth_type_id) formData.append("auth_type_id", auth_type_id.toString());
         formData.append("image", blob, "face.jpg");
 
-        // stopWebcam()
-        // onClose()
-        // onCaptureStart()
-
         try {
           const res = await apiClient.post("verify/face", formData);
           if (res.data.verified) {
@@ -212,40 +177,31 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
             onClose();
             onResult(
               "success",
-              "Verification successfull.",
+              "Verification successful.",
               res.data?.user,
               res.data?.attendance_status,
               res.data?.next_step ?? null,
               res.data?.attendance_type ?? null
             );
-          }else{
-            // onResult(
-            //   "error",
-            //   `Verification failed.`
-            // );
+          } else {
             capturedRef.current = false;
             handleFailure("Verification failed.");
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           const detail = error.response?.data?.detail;
-          // Check if detail is a string or that weird FastAPI array
           const errorMsg = typeof detail === 'string' 
             ? detail 
             : (Array.isArray(detail) ? detail[0].msg : "Verification failed");
 
-          // 404 usually means user not found, dont retry again
           if (error.response?.status === 404) {
-            stopWebcam()
-            onClose()
+            stopWebcam();
+            onClose();
             onResult("error", errorMsg);
             return;
           } else {
             handleFailure(`${errorMsg} `);
           }
-
-          // onResult("error", errorMsg);
-          // capturedRef.current = false;
         }
       },
       "image/jpeg",
@@ -253,94 +209,58 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
     );
   };
 
-  /*
-   Detection Loop
-  */
+  /* Optimized Detection Loop */
   const detect = async () => {
-  const video = videoRef.current;
+    const video = videoRef.current;
+    if (!video || capturedRef.current) return;
 
-  if (!video || capturedRef.current){
-    animationRef.current = requestAnimationFrame(detect);
-    return;
-  } 
+    const detection = await faceapi
+      .detectSingleFace(
+        video,
+        new faceapi.TinyFaceDetectorOptions({
+          inputSize: 224, // Increased from 160: much wider angles and further distance detections
+          scoreThreshold: 0.4, // Dropped to 0.4 to be less picky about lighting angles
+        })
+      )
+      .withFaceLandmarks();
 
-  const detection = await faceapi
-    .detectSingleFace(
-      video,
-      new faceapi.TinyFaceDetectorOptions({
-        inputSize: 160,
-        scoreThreshold: 0.5,
-      })
-    )
-    .withFaceLandmarks();
-
-  if (!detection) {
-    // setFeedback("No face detected.");
-    onFeedback("No face detected");
-
-    setTimeout(() => {
+    if (!detection) {
+      onFeedback("Looking for face...");
+      // Fixed loop bug: direct frame request without mixed setTimeout timelines
       animationRef.current = requestAnimationFrame(detect);
-    }, DETECTION_INTERVAL);
+      return;
+    }
 
-    return;
-  }
+    const box = detection.detection.box;
 
-  const box = detection.detection.box;
+    // Dropped to 10% sizing minimum. If they can see their face, it will process.
+    if (box.width < video.videoWidth * 0.1) {
+      onFeedback("Please move slightly closer");
+      animationRef.current = requestAnimationFrame(detect);
+      return;
+    }
 
-  // const centerX = video.videoWidth / 2;
-  // const centerY = video.videoHeight / 2;
-
-  // const faceX = box.x + box.width / 2;
-  // const faceY = box.y + box.height / 2;
-
-  // const offsetX = Math.abs(centerX - faceX);
-  // const offsetY = Math.abs(centerY - faceY);
-
-  // const threshold = video.videoWidth * 0.15;
-
-  // if (offsetX > threshold || offsetY > threshold) {
-  //   // setFeedback("Center your face.");
-  //   onFeedback("Center your face")
-  //   setTimeout(() => {
-  //     animationRef.current = requestAnimationFrame(detect);
-  //   }, DETECTION_INTERVAL);
-
-  //   return;
-  // }
-
-  // setFeedback("Hold still... capturing");
-  if (box.width < video.videoWidth * 0.2) {
-    onFeedback("Move closer to the camera");
-    animationRef.current = requestAnimationFrame(detect);
-    return;
-  }
-
-  capturedRef.current = true;
-
-  setTimeout(async ()=>{
+    // Trigger instant capture step once recognized
+    capturedRef.current = true;
+    onFeedback("Capturing...");
     await capture(video);
-  },500)
-};
+  };
 
-  /*
-   Start Webcam
-  */
+  /* Start Webcam Control Loop */
   useEffect(() => {
     if (!open || loadingModels) return;
 
     const start = async () => {
       try {
         capturedRef.current = false;
-
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
         });
 
         streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-
           videoRef.current.onloadedmetadata = async () => {
             await videoRef.current?.play();
             detect();
@@ -352,7 +272,6 @@ const isBlurry = (canvas: HTMLCanvasElement) => {
     };
 
     start();
-
     return () => stopWebcam();
   }, [open, loadingModels]);
 
