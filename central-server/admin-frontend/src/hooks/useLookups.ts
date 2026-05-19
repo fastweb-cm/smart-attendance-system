@@ -51,3 +51,14 @@ export const useAuthPolicies = (initialData: GroupWithSubgroupsLookup[] = []) =>
         staleTime: 1000 * 60 * 5,
     })
 }
+
+export const useUsers = (userType: string) => {
+    return useQuery<Lookup[]>({
+        queryKey: ['users', userType],
+        queryFn: async () => {
+            const response = await apiClient.get(`/api/v1/lookup/users/${userType}`);
+            return response.data;
+        },
+        staleTime: 1000 * 60 * 5,
+    })
+}

@@ -51,3 +51,16 @@ export async function getGroupsWithSubgroups(): Promise<GroupWithSubgroupsLookup
     const data: GroupWithSubgroupsLookup[] = await response.json();
     return data as GroupWithSubgroupsLookup[];
 }
+
+export async function getUsers(userType: string): Promise<Lookup[]> {
+    const response = await fetch(`${baseUrl}/api/v1/lookup/users/${userType}`, {
+
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+    }
+
+    const data: Lookup[] = await response.json();
+    return data as Lookup[];
+}

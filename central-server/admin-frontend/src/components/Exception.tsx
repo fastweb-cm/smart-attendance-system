@@ -1,17 +1,21 @@
 "use client";
 import { INITIAL_EXCEPTIONS } from '@/lib/data';
 import { CURRENT_DATE_STRING, getDaysDifference } from '@/lib/utils';
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ExceptionCalendar from './ExceptionCalendar';
 import ExceptionList from './ExceptionList';
 import { Activity, AlertTriangle, Calendar, List, Plus } from 'lucide-react';
 import ExceptionForm from './forms/ExceptionForm';
+import { useExceptions } from '@/hooks/useExceptions';
+import { getUsers } from '@/lib/actions/lookups';
+import { Lookup } from '@/types';
 
 export default function Exception() {
-  const [exceptions, setExceptions] = useState(INITIAL_EXCEPTIONS);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [activeEditingData, setActiveEditingData] = useState(null);
+  const { data: exceptions = [], isLoading } = useExceptions();
+
 
   // Month navigation controller state for dynamic calendar
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(CURRENT_DATE_STRING));
@@ -51,6 +55,9 @@ export default function Exception() {
   const handleNavigateMonth = (offset: number) => {
     setCalendarMonth((prev: Date) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
   };
+
+  if (isLoading) return <div className="text-center">loading...</div>
+
   return (
     <div>
 

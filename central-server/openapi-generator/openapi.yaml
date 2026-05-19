@@ -553,6 +553,11 @@ components:
     #exceptions schemas
     Exception:
       type: object
+      required:
+        - title
+        - exception_type
+        - start_date
+        - end_date
       properties:
         title:
           type: string
@@ -1830,6 +1835,22 @@ paths:
       operationId: listExceptions
       summary: List all exceptions
       tags: [Exceptions]
+      parameters:
+        - in: query
+          name: exception_type
+          required: false
+          schema:
+            type: string
+            enum:
+              [
+                "public_holiday",
+                "company_event",
+                "system_maintenance",
+                "emergency_closure",
+                "term_closure",
+                "other",
+              ]
+
       responses:
         "200":
           description: List of exceptions

@@ -267,11 +267,11 @@ export type EventResponse = Event & {
 };
 
 export type Exception = {
-    title?: string;
-    exception_type?: 'public_holiday' | 'company_event' | 'system_maintenance' | 'emergency_closure' | 'term_closure' | 'other';
+    title: string;
+    exception_type: 'public_holiday' | 'company_event' | 'system_maintenance' | 'emergency_closure' | 'term_closure' | 'other';
     description?: string;
-    start_date?: string;
-    end_date?: string;
+    start_date: string;
+    end_date: string;
     /**
      * The admin who created the exception
      */
@@ -1556,7 +1556,9 @@ export type CreateExceptionResponse = CreateExceptionResponses[keyof CreateExcep
 export type ListExceptionsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        exception_type?: 'public_holiday' | 'company_event' | 'system_maintenance' | 'emergency_closure' | 'term_closure' | 'other';
+    };
     url: '/api/v1/exceptions/all';
 };
 

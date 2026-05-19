@@ -231,18 +231,18 @@ export const zEventResponse = zEvent.and(z.object({
 }));
 
 export const zException = z.object({
-    title: z.optional(z.string()),
-    exception_type: z.optional(z.enum([
+    title: z.string(),
+    exception_type: z.enum([
         'public_holiday',
         'company_event',
         'system_maintenance',
         'emergency_closure',
         'term_closure',
         'other'
-    ])),
+    ]),
     description: z.optional(z.string()),
-    start_date: z.optional(z.iso.date()),
-    end_date: z.optional(z.iso.date()),
+    start_date: z.iso.date(),
+    end_date: z.iso.date(),
     created_by: z.optional(z.int())
 });
 
@@ -787,7 +787,16 @@ export const zCreateExceptionResponse = z.object({
 export const zListExceptionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
-    query: z.optional(z.never())
+    query: z.optional(z.object({
+        exception_type: z.optional(z.enum([
+            'public_holiday',
+            'company_event',
+            'system_maintenance',
+            'emergency_closure',
+            'term_closure',
+            'other'
+        ]))
+    }))
 });
 
 /**

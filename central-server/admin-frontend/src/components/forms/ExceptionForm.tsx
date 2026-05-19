@@ -1,32 +1,41 @@
 
 import { CURRENT_DATE_STRING } from '@/lib/utils';
 import { ExceptionFormSchema, ExceptionFormValues } from '@/schema/exception.schema';
-import { AttendanceException } from '@/types'
+import { AttendanceException, Lookup } from '@/types'
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form';
 import InputField from '../ui/InputField';
 import { Button } from '../ui/button';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useUpsertException } from '@/hooks/useExceptions';
 
 export default function ExceptionForm({
     isOpen,
     onClose,
-    initialData
+    initialData,
 }: {
     isOpen: boolean,
     onClose: () => void,
-    initialData?: AttendanceException
+    initialData?: AttendanceException,
 }) {
+  const { user } = useAuth();
+  const upsertExceptionMutation = useUpsertException();
 
   const [formData, setFormData] = useState<AttendanceException>({
     id: initialData?.id || null,
     title: initialData?.title || '',
     description: initialData?.description || '',
+    created_by: initialData?.created_by || user?.id,
     start_date: initialData?.start_date || new Date().toISOString().split('T')[0],
     end_date: initialData?.end_date || new Date().toISOString().split('T')[0],
     exception_type: initialData?.exception_type || 'public_holiday'
   })
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
 
   // derive retroactive warning from start_date instead of updating state inside an effect
   const isPastWarning = formData.start_date ? formData.start_date < CURRENT_DATE_STRING : false;
@@ -45,10 +54,21 @@ export default function ExceptionForm({
     { label: 'Other', value: 'other' },
   ]
 
+
   const onSubmit =async  (data: ExceptionFormValues) => {
-    console.log('Form submitted with data:', data);
-    methods.reset();
-    onClose();
+    try {
+      setIsSubmitting(true);
+      await upsertExceptionMutation.mutateAsync({
+        body: data
+      })
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }finally {
+      setIsSubmitting(false);
+      methods.reset();
+      onClose();
+    }
+    
   }
 
   if (!isOpen) return null;
@@ -89,15 +109,15 @@ export default function ExceptionForm({
                       <InputField name='start_date' label='Start Date' type='date' required />
                       <InputField name='end_date' label='End Date' type='date' required />
                     </div>
-                    <InputField name='exception_type' type='select' options={exceptionOptions} label='Exception Type' required />
+                    <InputField name='exception_type' type='select'  options={exceptionOptions} label='Exception Type' required />
                 </div>
 
                 <div className="flex justify-end">
                   <Button variant='outline' onClick={onClose} className='mr-2'>
                     Cancel
                   </Button>
-                  <Button type='submit' className=''>
-                    {initialData ? 'Update Exception' : 'Create Exception'}
+                  <Button type='submit' className='' disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : initialData ? 'Update Exception' : 'Create Exception'}
                   </Button>
                 </div>
             </form>

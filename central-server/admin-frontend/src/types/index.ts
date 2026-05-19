@@ -156,6 +156,8 @@ export interface AttendanceException {
   exception_type: ExceptionType;
   title: string;
   description?: string;
+  created_by?: number;
+  created_by_name?: string;
   start_date: string;
   end_date: string;
 }

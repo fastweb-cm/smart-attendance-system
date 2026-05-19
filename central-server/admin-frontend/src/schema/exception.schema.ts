@@ -11,6 +11,7 @@ export const ExceptionFormSchema = z
       error: "Exception type is required.",
     }),
     description: z.string().max(500).optional(),
+    created_by: z.number().min(1, { message: "Created by field is required" }),
     start_date: z
       .string({ error: "Start date is required." })
       .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Must be YYYY-MM-DD format." }),

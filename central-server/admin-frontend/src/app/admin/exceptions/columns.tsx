@@ -20,6 +20,13 @@ export function exceptionColumns(
         </div>
     },
     {
+        accessorKey: "created_by_name",
+        header: () => <div className="text-left">Created By</div>,
+        cell: ({ row }: { row: Row<AttendanceException> }) => <div className="text-left">
+            <div className="font-medium text-sm">{row.getValue("created_by_name") || 'Unknown'}</div>
+        </div>
+    },
+    {
         accessorKey: "exception_type",
         header: () => <div className="text-center">Exception Type</div>,
         cell: ({ row }: { row: Row<AttendanceException> }) => {

@@ -554,4 +554,14 @@ public function getClasses(): array
     return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+public function getUsers(string $userType = 'student'): array
+{
+    $sql = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name
+            FROM tbl_user u
+            WHERE u.user_type = ? AND u.status = 'active'
+            ORDER BY u.fname ASC, u.lname ASC";
+    $res = $this->db->query($sql, [$userType]);
+    return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 }
