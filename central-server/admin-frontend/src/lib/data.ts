@@ -1,3 +1,4 @@
+import { AttendanceException } from "@/types";
 import {
   Home,
   Users,
@@ -6,7 +7,12 @@ import {
   AlertTriangle,
   Settings,
   Sliders,
-  IdCard
+  IdCard,
+  AlarmClock,
+  FileSpreadsheet,
+  ClipboardCheck,
+  FileCode2,
+  Activity,
 } from "lucide-react"
 
 export const sidebarMenItems = [
@@ -14,7 +20,7 @@ export const sidebarMenItems = [
     label: "Menu",
     items: [
       {
-        title: "Home",
+        title: "Dashboard",
         url: "/admin",
         icon: Home,
       },
@@ -52,23 +58,58 @@ export const sidebarMenItems = [
         ],
       },
 
+      // {
+      //   title: "Issue Cards",
+      //   url: "/admin/issue-card",
+      //   icon: IdCard,
+      // }
+    ],
+  },
+  {
+    label: "Modules",
+    items: [
       {
-        title: "Issue Cards",
+        title: "Cards",
         url: "/admin/issue-card",
         icon: IdCard,
+      },
+      {
+        title: "Exceptions",
+        url: "/admin/exceptions",
+        icon: AlarmClock,
       }
     ],
   },
-  // {
-  //   label: "Reports",
-  //   items: [
-  //     {
-  //       title: "Power Outages",
-  //       url: "/admin/poweroutages",
-  //       icon: AlertTriangle,
-  //     },
-  //   ],
-  // },
+  {
+    label: "Reports",
+    items: [
+      {
+        title: "Attendance Logs",
+        url: "/admin/issue-card",
+        icon: FileSpreadsheet,
+      },
+      {
+        title: "Attendance Summary",
+        url: "/admin/exceptions",
+        icon: ClipboardCheck,
+      }
+    ],
+  },
+  {
+    label: "Logs",
+    items: [
+      {
+        title: "System Logs",
+        url: "/admin/logs/system",
+        icon: FileCode2,
+      },
+      {
+        title: "Error Logs",
+        url: "/admin/logs/activity",
+        icon: Activity,
+      }
+    ],
+  },
   // {
   //   label: "Others",
   //   items: [
@@ -85,3 +126,46 @@ export const sidebarMenItems = [
   //   ],
   // },
 ]
+
+export const INITIAL_EXCEPTIONS: AttendanceException[] = [
+  {
+    id: 1,
+    exception_type: 'public_holiday',
+    title: 'New Year Federal Break',
+    description: 'National public holiday observed across all terminal servers.',
+    start_date: '2026-01-01',
+    end_date: '2026-01-02'
+  },
+  {
+    id: 2,
+    exception_type: 'emergency_closure',
+    title: 'Severe Blizzard Emergency',
+    description: 'City-wide transport lockout. Automated terminal check-in exempt.',
+    start_date: '2026-02-12',
+    end_date: '2026-02-13'
+  },
+  {
+    id: 3,
+    exception_type: 'system_maintenance',
+    title: 'Q2 Core Database Upgrade',
+    description: 'Scheduled backend schema migration and system terminal sync window.',
+    start_date: '2026-06-20',
+    end_date: '2026-06-21'
+  },
+  {
+    id: 4,
+    exception_type: 'company_event',
+    title: 'Strategic Leadership Summit',
+    description: 'Corporate building locked for non-executive workforce.',
+    start_date: '2026-08-14',
+    end_date: '2026-08-15'
+  },
+  {
+    id: 5,
+    exception_type: 'other',
+    title: 'Power Grid Load Shedding',
+    description: 'Pre-emptive regional power outage adjustments.',
+    start_date: '2026-11-05',
+    end_date: '2026-11-05'
+  }
+];

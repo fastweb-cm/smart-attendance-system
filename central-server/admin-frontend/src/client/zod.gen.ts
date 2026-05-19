@@ -231,15 +231,27 @@ export const zEventResponse = zEvent.and(z.object({
 }));
 
 export const zException = z.object({
-    exception_type_id: z.optional(z.int()),
+    title: z.string(),
+    exception_type: z.enum([
+        'public_holiday',
+        'company_event',
+        'system_maintenance',
+        'emergency_closure',
+        'term_closure',
+        'other'
+    ]),
     description: z.optional(z.string()),
-    start_date: z.optional(z.iso.date()),
-    end_date: z.optional(z.iso.date()),
+    start_date: z.iso.date(),
+    end_date: z.iso.date(),
     created_by: z.optional(z.int())
 });
 
-export const zExceptionResponse = zException.and(z.object({
+export const zExceptionUpsertRequest = zException.and(z.object({
     id: z.optional(z.int())
+}));
+
+export const zExceptionResponse = zExceptionUpsertRequest.and(z.object({
+    created_by_name: z.optional(z.string())
 }));
 
 export const zTerminal = z.object({
@@ -745,21 +757,70 @@ export const zDeleteEventData = z.object({
     query: z.optional(z.never())
 });
 
-export const zListExceptionsData = z.object({
+export const zOneExceptionData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
-    query: z.optional(z.never())
+    query: z.object({
+        id: z.int()
+    })
 });
 
 /**
  * List of exceptions
  */
-export const zListExceptionsResponse = z.array(zExceptionResponse);
+export const zOneExceptionResponse = z.array(zExceptionResponse);
 
 export const zCreateExceptionData = z.object({
-    body: zException,
+    body: zExceptionUpsertRequest,
     path: z.optional(z.never()),
     query: z.optional(z.never())
+});
+
+/**
+ * Exception created successfully
+ */
+export const zCreateExceptionResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
+export const zListExceptionsData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        exception_type: z.optional(z.enum([
+            'public_holiday',
+            'company_event',
+            'system_maintenance',
+            'emergency_closure',
+            'term_closure',
+            'other'
+        ]))
+    }))
+});
+
+/**
+ * List of exceptions
+ */
+export const zListExceptionsResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(z.array(zExceptionResponse))
+});
+
+export const zDeleteExceptionData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Exception deleted successfully
+ */
+export const zDeleteExceptionResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
 });
 
 export const zListTerminalsData = z.object({

@@ -553,9 +553,25 @@ components:
     #exceptions schemas
     Exception:
       type: object
+      required:
+        - title
+        - exception_type
+        - start_date
+        - end_date
       properties:
-        exception_type_id:
-          type: integer
+        title:
+          type: string
+        exception_type:
+          type: string
+          enum:
+            [
+              "public_holiday",
+              "company_event",
+              "system_maintenance",
+              "emergency_closure",
+              "term_closure",
+              "other",
+            ]
         description:
           type: string
         start_date:
@@ -568,18 +584,26 @@ components:
           type: integer
           description: The admin who created the exception
 
-    ExceptionResponse:
+    ExceptionUpsertRequest:
       allOf:
         - $ref: "#/components/schemas/Exception"
         - type: object
           required:
-            - exception_type_id
+            - title
+            - exception_type
             - start_date
             - end_date
           properties:
             id:
               type: integer
-              example: 1
+              description: Required for update, auto generated for create
+    ExceptionResponse:
+      allOf:
+        - $ref: "#/components/schemas/ExceptionUpsertRequest"
+        - type: object
+          properties:
+            created_by_name:
+              type: string
 
     #terminal schema
     Terminal:
@@ -1759,10 +1783,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Exception"
+              $ref: "#/components/schemas/ExceptionUpsertRequest"
       responses:
         "200":
           description: Exception created successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1772,9 +1804,15 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
     get:
-      operationId: listExceptions
-      summary: Get all exceptions
+      operationId: OneException
+      summary: Get exception with id as query param
       tags: [Exceptions]
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
           description: List of exceptions
@@ -1792,7 +1830,82 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /api/v1/exceptions/all:
+    get:
+      operationId: listExceptions
+      summary: List all exceptions
+      tags: [Exceptions]
+      parameters:
+        - in: query
+          name: exception_type
+          required: false
+          schema:
+            type: string
+            enum:
+              [
+                "public_holiday",
+                "company_event",
+                "system_maintenance",
+                "emergency_closure",
+                "term_closure",
+                "other",
+              ]
 
+      responses:
+        "200":
+          description: List of exceptions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExceptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/exceptions/{id}:
+    delete:
+      operationId: deleteException
+      summary: Delete an exception
+      tags: [Exceptions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exception deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/terminal:
     post:
       operationId: createTerminal

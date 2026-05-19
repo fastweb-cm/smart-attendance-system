@@ -7,7 +7,7 @@ interface Option {
 }
 export interface InputFieldProps {
   label?: string;
-  type?: "text" | "email" | "password" | "select" | "checkbox" | "radio";
+type?: React.HTMLInputTypeAttribute;
   name: string;
   required?: boolean;
   options?: Option[];
@@ -138,4 +138,26 @@ export interface GroupWithSubgroupsLookup {
   id: number;
   label: string;
   subgroups: SubgroupLookup[];
+}
+
+export const EXCEPTION_TYPES = [
+  "public_holiday",
+  "company_event",
+  "system_maintenance",
+  "emergency_closure",
+  "term_closure",
+  "other",
+] as const;
+
+export type ExceptionType = (typeof EXCEPTION_TYPES)[number];
+
+export interface AttendanceException {
+  id?: number  | null;
+  exception_type: ExceptionType;
+  title: string;
+  description?: string;
+  created_by?: number;
+  created_by_name?: string;
+  start_date: string;
+  end_date: string;
 }
