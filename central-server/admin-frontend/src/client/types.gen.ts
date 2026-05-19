@@ -267,7 +267,8 @@ export type EventResponse = Event & {
 };
 
 export type Exception = {
-    exception_type_id?: number;
+    title?: string;
+    exception_type?: 'public_holiday' | 'company_event' | 'system_maintenance' | 'emergency_closure' | 'term_closure' | 'other';
     description?: string;
     start_date?: string;
     end_date?: string;
@@ -277,8 +278,15 @@ export type Exception = {
     created_by?: number;
 };
 
-export type ExceptionResponse = Exception & {
+export type ExceptionUpsertRequest = Exception & {
+    /**
+     * Required for update, auto generated for create
+     */
     id?: number;
+};
+
+export type ExceptionResponse = ExceptionUpsertRequest & {
+    created_by_name?: string;
 };
 
 export type Terminal = {
@@ -1470,14 +1478,16 @@ export type DeleteEventResponses = {
     200: unknown;
 };
 
-export type ListExceptionsData = {
+export type OneExceptionData = {
     body?: never;
     path?: never;
-    query?: never;
+    query: {
+        id: number;
+    };
     url: '/api/v1/exceptions';
 };
 
-export type ListExceptionsErrors = {
+export type OneExceptionErrors = {
     /**
      * Invalid input
      */
@@ -1496,17 +1506,17 @@ export type ListExceptionsErrors = {
     500: unknown;
 };
 
-export type ListExceptionsResponses = {
+export type OneExceptionResponses = {
     /**
      * List of exceptions
      */
     200: Array<ExceptionResponse>;
 };
 
-export type ListExceptionsResponse = ListExceptionsResponses[keyof ListExceptionsResponses];
+export type OneExceptionResponse = OneExceptionResponses[keyof OneExceptionResponses];
 
 export type CreateExceptionData = {
-    body: Exception;
+    body: ExceptionUpsertRequest;
     path?: never;
     query?: never;
     url: '/api/v1/exceptions';
@@ -1535,8 +1545,91 @@ export type CreateExceptionResponses = {
     /**
      * Exception created successfully
      */
-    200: unknown;
+    200: {
+        success?: boolean;
+        message?: string;
+    };
 };
+
+export type CreateExceptionResponse = CreateExceptionResponses[keyof CreateExceptionResponses];
+
+export type ListExceptionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exceptions/all';
+};
+
+export type ListExceptionsErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListExceptionsResponses = {
+    /**
+     * List of exceptions
+     */
+    200: {
+        success?: boolean;
+        data?: Array<ExceptionResponse>;
+    };
+};
+
+export type ListExceptionsResponse = ListExceptionsResponses[keyof ListExceptionsResponses];
+
+export type DeleteExceptionData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/exceptions/{id}';
+};
+
+export type DeleteExceptionErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type DeleteExceptionResponses = {
+    /**
+     * Exception deleted successfully
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+    };
+};
+
+export type DeleteExceptionResponse = DeleteExceptionResponses[keyof DeleteExceptionResponses];
 
 export type ListTerminalsData = {
     body?: never;

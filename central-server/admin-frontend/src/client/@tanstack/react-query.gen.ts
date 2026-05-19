@@ -4,8 +4,8 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getTerminalBySlug, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, type Options, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getTerminalBySlug, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -509,10 +509,45 @@ export const deleteEventMutation = (options?: Partial<Options<DeleteEventData>>)
     return mutationOptions;
 };
 
+export const oneExceptionQueryKey = (options: Options<OneExceptionData>) => createQueryKey('oneException', options);
+
+/**
+ * Get exception with id as query param
+ */
+export const oneExceptionOptions = (options: Options<OneExceptionData>) => queryOptions<OneExceptionResponse, AxiosError<DefaultError>, OneExceptionResponse, ReturnType<typeof oneExceptionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await oneException({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: oneExceptionQueryKey(options)
+});
+
+/**
+ * Create an exception
+ */
+export const createExceptionMutation = (options?: Partial<Options<CreateExceptionData>>): UseMutationOptions<CreateExceptionResponse, AxiosError<DefaultError>, Options<CreateExceptionData>> => {
+    const mutationOptions: UseMutationOptions<CreateExceptionResponse, AxiosError<DefaultError>, Options<CreateExceptionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createException({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listExceptionsQueryKey = (options?: Options<ListExceptionsData>) => createQueryKey('listExceptions', options);
 
 /**
- * Get all exceptions
+ * List all exceptions
  */
 export const listExceptionsOptions = (options?: Options<ListExceptionsData>) => queryOptions<ListExceptionsResponse, AxiosError<DefaultError>, ListExceptionsResponse, ReturnType<typeof listExceptionsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -528,12 +563,12 @@ export const listExceptionsOptions = (options?: Options<ListExceptionsData>) => 
 });
 
 /**
- * Create an exception
+ * Delete an exception
  */
-export const createExceptionMutation = (options?: Partial<Options<CreateExceptionData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<CreateExceptionData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<CreateExceptionData>> = {
+export const deleteExceptionMutation = (options?: Partial<Options<DeleteExceptionData>>): UseMutationOptions<DeleteExceptionResponse, AxiosError<DefaultError>, Options<DeleteExceptionData>> => {
+    const mutationOptions: UseMutationOptions<DeleteExceptionResponse, AxiosError<DefaultError>, Options<DeleteExceptionData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await createException({
+            const { data } = await deleteException({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
