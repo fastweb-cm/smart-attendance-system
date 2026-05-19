@@ -3,6 +3,7 @@ import z from "zod"
 
 export const ExceptionFormSchema = z
   .object({
+    id: z.number().optional(),
     title: z
       .string({ error: "Title is required." })
       .min(2, { message: "Title must be at least 2 characters." })

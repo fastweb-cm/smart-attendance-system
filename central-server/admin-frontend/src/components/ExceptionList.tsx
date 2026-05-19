@@ -8,7 +8,11 @@ import { GlobalDeleteModal } from "./modals/GlobalDeleteModal";
 import { useDeleteException, useExceptions } from "@/hooks/useExceptions";
 
 
-export default function ExceptionList() {
+export default function ExceptionList({
+    onEdit
+}: {
+    onEdit: (e: AttendanceException) => void
+}) {
     const [selected, setSelected] = useState<AttendanceException | null>(null)
     
     const [openDelete, setOpenDelete] = useState(false);
@@ -21,10 +25,6 @@ export default function ExceptionList() {
     const handleDeleteTrigger = (e: AttendanceException) => {
         setSelected(e);
         setOpenDelete(true);
-    }
-
-    const handleEdit = (e: AttendanceException) => {
-        console.log(e)
     }
 
     const onConfirmDelete = async () => {
@@ -43,7 +43,7 @@ export default function ExceptionList() {
     if (isLoading) return <div className="text-center">loading...</div>
   return (
     <>
-        <ExceptionsTable data={exceptions} onEdit={handleEdit} onDelete={handleDeleteTrigger} />
+        <ExceptionsTable data={exceptions} onEdit={onEdit} onDelete={handleDeleteTrigger} />
 
         <GlobalDeleteModal
             open={openDelete}

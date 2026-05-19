@@ -8,12 +8,12 @@ import { Activity, AlertTriangle, Calendar, List, Plus } from 'lucide-react';
 import ExceptionForm from './forms/ExceptionForm';
 import { useExceptions } from '@/hooks/useExceptions';
 import { getUsers } from '@/lib/actions/lookups';
-import { Lookup } from '@/types';
+import { AttendanceException, Lookup } from '@/types';
 
 export default function Exception() {
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [activeEditingData, setActiveEditingData] = useState(null);
+  const [activeEditingData, setActiveEditingData] = useState<AttendanceException | undefined>(undefined);
   const { data: exceptions = [], isLoading } = useExceptions();
 
 
@@ -48,9 +48,14 @@ export default function Exception() {
 
   // Handler CRUD controls
   const handleAddNewClick = () => {
-    setActiveEditingData(null);
+    setActiveEditingData(undefined);
     setIsSheetOpen(true);
   };
+
+  const handleEditException = (exception: AttendanceException) => {
+    setActiveEditingData(exception);
+    setIsSheetOpen(true);
+  }
 
   const handleNavigateMonth = (offset: number) => {
     setCalendarMonth((prev: Date) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
@@ -180,7 +185,7 @@ export default function Exception() {
         {viewMode === 'list' ? (
           <div className="space-y-4">
             {/* List Table Content */}
-            <ExceptionList />
+            <ExceptionList onEdit={handleEditException}/>
           </div>
         ) : (
           /* Calendar Visual Grid Map View */
@@ -197,7 +202,7 @@ export default function Exception() {
       <ExceptionForm 
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
-        // initialData={activeEditingData}
+        initialData={activeEditingData}
       />
     </div>
   );

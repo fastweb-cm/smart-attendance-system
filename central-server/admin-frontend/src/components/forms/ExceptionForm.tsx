@@ -23,27 +23,40 @@ export default function ExceptionForm({
   const { user } = useAuth();
   const upsertExceptionMutation = useUpsertException();
 
-  const [formData, setFormData] = useState<AttendanceException>({
-    id: initialData?.id || null,
-    title: initialData?.title || '',
-    description: initialData?.description || '',
-    created_by: initialData?.created_by || user?.id,
-    start_date: initialData?.start_date || new Date().toISOString().split('T')[0],
-    end_date: initialData?.end_date || new Date().toISOString().split('T')[0],
-    exception_type: initialData?.exception_type || 'public_holiday'
-  })
+  const defaultFormValues: ExceptionFormValues = {
+  id: undefined,
+  title: '',
+  description: '',
+  created_by: user?.id ?? 0,
+  start_date: new Date().toISOString().split('T')[0],
+  end_date: new Date().toISOString().split('T')[0],
+  exception_type: 'public_holiday',
+};
+
+  const methods = useForm<ExceptionFormValues>({
+  resolver: zodResolver(ExceptionFormSchema),
+  defaultValues: defaultFormValues
+});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Update form with initial data if provided
+  React.useEffect(() => {
+    if (initialData) {
+      methods.reset({
+        id: initialData.id ?? undefined,
+        title: initialData.title,
+        description: initialData.description,
+        created_by: initialData.created_by,
+        start_date: initialData.start_date,
+        end_date: initialData.end_date,
+        exception_type: initialData.exception_type,
+      });
+    }else{
+      methods.reset(defaultFormValues);
+    }
+  }, [initialData, methods]);
 
-
-  // derive retroactive warning from start_date instead of updating state inside an effect
-  const isPastWarning = formData.start_date ? formData.start_date < CURRENT_DATE_STRING : false;
-
-  const methods = useForm<ExceptionFormValues>({
-    resolver: zodResolver(ExceptionFormSchema),
-    defaultValues: formData
-  })
 
   const exceptionOptions = [
     { label: 'Public Holiday', value: 'public_holiday' },
@@ -56,10 +69,15 @@ export default function ExceptionForm({
 
 
   const onSubmit =async  (data: ExceptionFormValues) => {
+    const payload = {
+      ...data,
+      ...(initialData?.id && { id: initialData.id }),
+    };
+    console.log("Submitting form with data:", payload);
     try {
       setIsSubmitting(true);
       await upsertExceptionMutation.mutateAsync({
-        body: data
+        body: payload
       })
     } catch (error) {
       console.error('Error submitting form:', error);
