@@ -11,6 +11,7 @@ use App\Modules\Terminals\Controllers\TerminalController;
 use App\Modules\Events\Controllers\EventsController;
 
 use App\Modules\Sync\Controller\SyncController;
+use App\Modules\Exceptions\Controllers\ExceptionController;
 
 /*
 |--------------------------
@@ -56,6 +57,11 @@ $router->get('/api/v1/users', [UserController::class, 'index']);
 $router->post('/api/v1/users/sync', [UserController::class, 'syncUsers']);
 $router->get('/api/v1/users/pending-card', [UserController::class, 'fetchUsersToIssueCard']);
 $router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCardIssued']);
+
+$router->get('/api/v1/exceptions', [ExceptionController::class, 'index']);
+$router->post('/api/v1/exceptions', [ExceptionController::class, 'store']);
+$router->delete('/api/v1/exceptions/{id}', [ExceptionController::class, 'delete']);
+$router->get('/api/v1/exceptions/all', [ExceptionController::class, 'all']);
 
 
 /*
