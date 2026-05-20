@@ -161,3 +161,12 @@ export interface AttendanceException {
   start_date: string;
   end_date: string;
 }
+
+export interface AttendanceQueryParams {
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  page?: number;
+  limit?: number
+  context?: 'daily' | 'event';
+}
