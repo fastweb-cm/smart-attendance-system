@@ -65,6 +65,7 @@ $router->delete('/api/v1/exceptions/{id}', [ExceptionController::class, 'delete'
 $router->get('/api/v1/exceptions/all', [ExceptionController::class, 'all']);
 
 $router->get('/api/v1/attendance/ledger', [AttendanceController::class, 'ledger']);
+$router->get('/api/v1/attendance/user/{id}', [AttendanceController::class, 'userDetail']);
 
 /*
 |--------------------------

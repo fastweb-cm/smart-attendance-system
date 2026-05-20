@@ -79,6 +79,134 @@ components:
               type: string
             email:
               type: string
+    PaginationMeta:
+      type: object
+      required:
+        - total_records
+        - current_page
+        - total_pages
+        - limit
+      properties:
+        total_records:
+          type: integer
+          description: Total quantity of active users matching structural selection metrics.
+          example: 142
+        current_page:
+          type: integer
+          description: The currently pulled response page offset iteration.
+          example: 1
+        total_pages:
+          type: integer
+          description: Maximum aggregate count of dynamic pagination user slices available.
+          example: 3
+        limit:
+          type: integer
+          description: Total boundary count constraint cap assigned for user blocks.
+          example: 50
+
+    AttendanceLedgerData:
+      type: object
+      required:
+        - calendarDates
+        - exceptions
+        - users
+        - initialAttendanceSummary
+      properties:
+        calendarDates:
+          type: array
+          description: Dense array list charting explicit day configurations within targeted window frames.
+          items:
+            type: object
+            properties:
+              raw:
+                type: string
+                format: date
+                example: "2026-05-20"
+              label:
+                type: string
+                example: "May 20"
+              isWeekend:
+                type: boolean
+                example: false
+              dayName:
+                type: string
+                example: "Wed"
+        exceptions:
+          type: array
+          description: Array of global infrastructure anomalies or holiday closures falling inside the matrix.
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2026-05-01"
+              name:
+                type: string
+                example: "International Workers Day"
+              type:
+                type: string
+                example: "public_holiday"
+        users:
+          type: array
+          description: Page-sliced listing of physical user entities rendered downstream inside row tracks.
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 12
+              name:
+                type: string
+                example: "Sarah Jenkins"
+              role:
+                type: string
+                example: "Lead DevOps Engineer"
+              avatarColor:
+                type: string
+                example: "bg-emerald-100"
+        initialAttendanceSummary:
+          type: array
+          description: Intertwined chronological cross-reference card layout tracking user summary performance maps.
+          items:
+            type: object
+            properties:
+              employee_id:
+                type: integer
+                description: Maps explicitly back to the unique tracking user id.
+                example: 12
+              date:
+                type: string
+                format: date
+                example: "2026-05-20"
+              first_checkin:
+                type: ["string", "null"]
+                format: date-time
+                example: "2026-05-20T09:12:00+01:00"
+              last_checkout:
+                type: ["string", "null"]
+                format: date-time
+                example: "2026-05-20T17:34:00+01:00"
+              total_hours:
+                type: number
+                format: float
+                example: 8.3
+              checkin_status:
+                type: string
+                enum: [on_time, late, absent]
+                example: "late"
+              session_status:
+                type: string
+                enum: [active, completed, missed_checkout, no_show]
+                example: "completed"
+              derived_from_session:
+                type: integer
+                enum: [0, 1]
+                example: 1
+              variance:
+                type: integer
+                description: Lateness value deviation tracked directly in minutes.
+                example: 12
 
     User:
       type: object
@@ -2091,6 +2219,84 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/attendance/ledger:
+    get:
+      operationId: getAttendanceLedger
+      summary: Retrieve the dense matrix attendance ledger grid
+      description: Returns a paginated matrix of users alongside dense day-by-day attendance profiles, system exceptions, and column metadata matching the date filters.
+      tags:
+        - Attendance
+      parameters:
+        - in: query
+          name: start_date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter range starting date (YYYY-MM-DD). Defaults to 4 days ago from today.
+          example: "2026-05-16"
+        - in: query
+          name: end_date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter range ending date (YYYY-MM-DD). Defaults to the current date.
+          example: "2026-05-20"
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+          description: Optional filter matching specific core attendance summary log status profiles.
+          example: "late"
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: The horizontal page index slice targeted for active users pagination chunks.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Total horizontal record count bounds limit of users isolated to return per request page.
+        - in: query
+          name: context
+          required: false
+          schema:
+            type: string
+            enum: ["daily", "event"]
+            default: "daily"
+          description: Attendance context filter daily or event default is daily",
+      responses:
+        "200":
+          description: Attendance matrix dataset generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AttendanceLedgerData"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalServerError"
 

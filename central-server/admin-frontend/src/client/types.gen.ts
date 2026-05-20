@@ -27,6 +27,74 @@ export type LoginResponse = {
     };
 };
 
+export type PaginationMeta = {
+    /**
+     * Total quantity of active users matching structural selection metrics.
+     */
+    total_records: number;
+    /**
+     * The currently pulled response page offset iteration.
+     */
+    current_page: number;
+    /**
+     * Maximum aggregate count of dynamic pagination user slices available.
+     */
+    total_pages: number;
+    /**
+     * Total boundary count constraint cap assigned for user blocks.
+     */
+    limit: number;
+};
+
+export type AttendanceLedgerData = {
+    /**
+     * Dense array list charting explicit day configurations within targeted window frames.
+     */
+    calendarDates: Array<{
+        raw?: string;
+        label?: string;
+        isWeekend?: boolean;
+        dayName?: string;
+    }>;
+    /**
+     * Array of global infrastructure anomalies or holiday closures falling inside the matrix.
+     */
+    exceptions: Array<{
+        date?: string;
+        name?: string;
+        type?: string;
+    }>;
+    /**
+     * Page-sliced listing of physical user entities rendered downstream inside row tracks.
+     */
+    users: Array<{
+        id?: number;
+        name?: string;
+        role?: string;
+        avatarColor?: string;
+    }>;
+    /**
+     * Intertwined chronological cross-reference card layout tracking user summary performance maps.
+     */
+    initialAttendanceSummary: Array<{
+        /**
+         * Maps explicitly back to the unique tracking user id.
+         */
+        employee_id?: number;
+        date?: string;
+        first_checkin?: string | null;
+        last_checkout?: string | null;
+        total_hours?: number;
+        checkin_status?: 'on_time' | 'late' | 'absent';
+        session_status?: 'active' | 'completed' | 'missed_checkout' | 'no_show';
+        derived_from_session?: 0 | 1;
+        /**
+         * Lateness value deviation tracked directly in minutes.
+         */
+        variance?: number;
+    }>;
+};
+
 export type User = {
     id?: number;
     fname: string;
@@ -1856,6 +1924,62 @@ export type TerminalAuthResponses = {
 };
 
 export type TerminalAuthResponse = TerminalAuthResponses[keyof TerminalAuthResponses];
+
+export type GetAttendanceLedgerData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter range starting date (YYYY-MM-DD). Defaults to 4 days ago from today.
+         */
+        start_date?: string;
+        /**
+         * Filter range ending date (YYYY-MM-DD). Defaults to the current date.
+         */
+        end_date?: string;
+        /**
+         * Optional filter matching specific core attendance summary log status profiles.
+         */
+        status?: string;
+        /**
+         * The horizontal page index slice targeted for active users pagination chunks.
+         */
+        page?: number;
+        /**
+         * Total horizontal record count bounds limit of users isolated to return per request page.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/attendance/ledger';
+};
+
+export type GetAttendanceLedgerErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAttendanceLedgerResponses = {
+    /**
+     * Attendance matrix dataset generated successfully
+     */
+    200: {
+        success?: boolean;
+        data?: AttendanceLedgerData;
+        meta?: PaginationMeta;
+    };
+};
+
+export type GetAttendanceLedgerResponse = GetAttendanceLedgerResponses[keyof GetAttendanceLedgerResponses];
 
 export type SyncAttendanceSummaryData = {
     body: Array<TerminalAttendanceSummaryCreate>;
