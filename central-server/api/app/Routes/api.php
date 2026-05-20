@@ -12,6 +12,7 @@ use App\Modules\Events\Controllers\EventsController;
 
 use App\Modules\Sync\Controller\SyncController;
 use App\Modules\Exceptions\Controllers\ExceptionController;
+use App\Modules\Attendance\Controller\AttendanceController;
 
 /*
 |--------------------------
@@ -63,6 +64,7 @@ $router->post('/api/v1/exceptions', [ExceptionController::class, 'store']);
 $router->delete('/api/v1/exceptions/{id}', [ExceptionController::class, 'delete']);
 $router->get('/api/v1/exceptions/all', [ExceptionController::class, 'all']);
 
+$router->get('/api/v1/attendance/ledger', [AttendanceController::class, 'ledger']);
 
 /*
 |--------------------------
