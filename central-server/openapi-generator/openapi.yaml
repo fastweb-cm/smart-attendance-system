@@ -2300,6 +2300,119 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/v1/attendance/user/{id}:
+    get:
+      operationId: getUserAttendanceAnalytics
+      summary: Fetch Historical User Attendance Analytics Profile
+      description: Returns chronological transactional log details alongside structural metric aggregates filtered by context.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique internal primary database identifier of the target user profile.
+        - name: context
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [daily, event]
+            default: daily
+          description: Context tracking constraint for analytics isolating structural metrics.
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 15
+      responses:
+        "200":
+          description: User analytics profile payload generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  metrics:
+                    type: object
+                    properties:
+                      expected_days:
+                        type: integer
+                        description: Adjusted target workload calendar expectations excluding granted permissions.
+                        example: 22
+                      present_days:
+                        type: integer
+                        example: 20
+                      late_arrivals:
+                        type: integer
+                        example: 3
+                      absent_days:
+                        type: integer
+                        example: 2
+                      permission_days:
+                        type: integer
+                        example: 1
+                  history:
+                    type: array
+                    description: Chronological list of user logs.
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: "2026-05-20"
+                        checkin:
+                          type: [string, "null"]
+                          format: date-time
+                        checkout:
+                          type: [string, "null"]
+                          format: date-time
+                        hours:
+                          type: number
+                          format: float
+                          example: 8.5
+                        status:
+                          type: string
+                          example: "present"
+                        terminal_id:
+                          type: string
+                          example: "hq_front_door"
+                        sync_status:
+                          type: string
+                          example: "synced"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/v1/attendance/sync:
     post:
       operationId: syncAttendanceSummary

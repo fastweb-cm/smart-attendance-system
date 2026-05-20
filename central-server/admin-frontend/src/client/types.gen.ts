@@ -1949,6 +1949,10 @@ export type GetAttendanceLedgerData = {
          * Total horizontal record count bounds limit of users isolated to return per request page.
          */
         limit?: number;
+        /**
+         * Attendance context filter daily or event default is daily",
+         */
+        context?: 'daily' | 'event';
     };
     url: '/api/v1/attendance/ledger';
 };
@@ -1980,6 +1984,76 @@ export type GetAttendanceLedgerResponses = {
 };
 
 export type GetAttendanceLedgerResponse = GetAttendanceLedgerResponses[keyof GetAttendanceLedgerResponses];
+
+export type GetUserAttendanceAnalyticsData = {
+    body?: never;
+    path: {
+        /**
+         * Unique internal primary database identifier of the target user profile.
+         */
+        id: number;
+    };
+    query?: {
+        /**
+         * Context tracking constraint for analytics isolating structural metrics.
+         */
+        context?: 'daily' | 'event';
+        start_date?: string;
+        end_date?: string;
+        page?: number;
+        limit?: number;
+    };
+    url: '/api/v1/attendance/user/{id}';
+};
+
+export type GetUserAttendanceAnalyticsErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetUserAttendanceAnalyticsResponses = {
+    /**
+     * User analytics profile payload generated successfully.
+     */
+    200: {
+        success?: boolean;
+        metrics?: {
+            /**
+             * Adjusted target workload calendar expectations excluding granted permissions.
+             */
+            expected_days?: number;
+            present_days?: number;
+            late_arrivals?: number;
+            absent_days?: number;
+            permission_days?: number;
+        };
+        /**
+         * Chronological list of user logs.
+         */
+        history?: Array<{
+            date?: string;
+            checkin?: string | null;
+            checkout?: string | null;
+            hours?: number;
+            status?: string;
+            terminal_id?: string;
+            sync_status?: string;
+        }>;
+        meta?: PaginationMeta;
+    };
+};
+
+export type GetUserAttendanceAnalyticsResponse = GetUserAttendanceAnalyticsResponses[keyof GetUserAttendanceAnalyticsResponses];
 
 export type SyncAttendanceSummaryData = {
     body: Array<TerminalAttendanceSummaryCreate>;

@@ -971,7 +971,8 @@ export const zGetAttendanceLedgerData = z.object({
         end_date: z.optional(z.iso.date()),
         status: z.optional(z.string()),
         page: z.optional(z.int().gte(1)).default(1),
-        limit: z.optional(z.int().gte(1).lte(50)).default(10)
+        limit: z.optional(z.int().gte(1).lte(50)).default(10),
+        context: z.optional(z.enum(['daily', 'event']))
     }))
 });
 
@@ -981,6 +982,50 @@ export const zGetAttendanceLedgerData = z.object({
 export const zGetAttendanceLedgerResponse = z.object({
     success: z.optional(z.boolean()),
     data: z.optional(zAttendanceLedgerData),
+    meta: z.optional(zPaginationMeta)
+});
+
+export const zGetUserAttendanceAnalyticsData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.object({
+        context: z.optional(z.enum(['daily', 'event'])),
+        start_date: z.optional(z.iso.date()),
+        end_date: z.optional(z.iso.date()),
+        page: z.optional(z.int()).default(1),
+        limit: z.optional(z.int()).default(15)
+    }))
+});
+
+/**
+ * User analytics profile payload generated successfully.
+ */
+export const zGetUserAttendanceAnalyticsResponse = z.object({
+    success: z.optional(z.boolean()),
+    metrics: z.optional(z.object({
+        expected_days: z.optional(z.int()),
+        present_days: z.optional(z.int()),
+        late_arrivals: z.optional(z.int()),
+        absent_days: z.optional(z.int()),
+        permission_days: z.optional(z.int())
+    })),
+    history: z.optional(z.array(z.object({
+        date: z.optional(z.iso.date()),
+        checkin: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        checkout: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        hours: z.optional(z.number()),
+        status: z.optional(z.string()),
+        terminal_id: z.optional(z.string()),
+        sync_status: z.optional(z.string())
+    }))),
     meta: z.optional(zPaginationMeta)
 });
 
