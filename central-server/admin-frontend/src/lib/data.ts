@@ -85,7 +85,7 @@ export const sidebarMenItems = [
     items: [
       {
         title: "Attendance Logs",
-        url: "/admin/issue-card",
+        url: "/admin/attendance",
         icon: FileSpreadsheet,
       },
       {

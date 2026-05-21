@@ -73,7 +73,7 @@ export default function Exception() {
   <div className="bg-white backdrop-blur-xl shadow-xl">
     
     {/* Top navigation content */}
-    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5 px-6 py-5">
+    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5 px-6 py-2">
       
       {/* Left contextual section */}
       <div className="min-w-0">
@@ -133,53 +133,49 @@ export default function Exception() {
   </div>
 </div>
 
-        {/* Dynamic Metric Display Tiles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Tile 1: Total Exempt Days */}
-          <div className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Calendar className="w-16 h-16 text-emerald-400" />
-            </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Exempt Active Days</p>
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className="text-3xl font-extrabold text-slate-100 tracking-tight">{metrics.totalExemptDays}</span>
-              <span className="text-xs text-slate-400">Defined System Exclusions</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              Downtime deducted automatically from annual attendance calculations.
-            </p>
+      {/* Dynamic Metric Display Tiles Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+        {/* Tile 1: Total Exempt Days (Emerald Theme) */}
+        <div className="bg-white border border-slate-200/80 hover:border-emerald-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200">
+          {/* Subtle Background Accent Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/0 to-emerald-50/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+    
+          <div className="absolute top-0 right-0 p-4 text-slate-200 group-hover:text-emerald-100 transition-colors duration-200">
+            <Calendar className="w-12 h-12 stroke-[1.5]" />
           </div>
-
-          {/* Tile 2: Upcoming Closures */}
-          <div className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <AlertTriangle className="w-16 h-16 text-amber-400" />
-            </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Upcoming Sync Window</p>
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className="text-3xl font-extrabold text-amber-400 tracking-tight">{metrics.upcomingClosures}</span>
-              <span className="text-xs text-slate-400">Events Slated</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              Declared overrides pending activation. Sync starts automatically on start date.
-            </p>
+    
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">Exempt Active Days</p>
+    
+          <div className="flex items-baseline gap-2 mt-3 relative z-10">
+            <span className="text-3xl font-black text-slate-900 tracking-tight">{metrics.totalExemptDays}</span>
+            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">System Exclusions</span>
           </div>
-
-          {/* Tile 3: Net Operating Weeks */}
-          {/* <div className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Activity className="w-16 h-16 text-sky-400" />
-            </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Adjusted Operating Weeks</p>
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className="text-3xl font-extrabold text-slate-100 tracking-tight">{metrics.netOperatingWeeks}</span>
-              <span className="text-xs text-slate-400">Weeks Remaining</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              Calculated dynamically using standard 5-day payroll weeks.
-            </p>
-          </div> */}
+    
+          <p className="text-[12px] text-slate-500 mt-3 leading-relaxed relative z-10">
+            Downtime deducted automatically from annual attendance calculations.
+          </p>
         </div>
+
+        {/* Tile 2: Upcoming Closures (Amber Warning Theme) */}
+        <div className="bg-white border border-slate-200/80 hover:border-amber-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/0 to-amber-50/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+    
+          <div className="absolute top-0 right-0 p-4 text-slate-200 group-hover:text-amber-100 transition-colors duration-200">
+            <AlertTriangle className="w-12 h-12 stroke-[1.5]" />
+          </div>
+    
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">Upcoming Sync Window</p>
+    
+          <div className="flex items-baseline gap-2 mt-3 relative z-10">
+            <span className="text-3xl font-black text-amber-600 tracking-tight">{metrics.upcomingClosures}</span>
+            <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Events Slated</span>
+          </div>
+    
+          <p className="text-[12px] text-slate-500 mt-3 leading-relaxed relative z-10">
+            Declared overrides pending activation. Sync starts automatically on start date.
+          </p>
+        </div>
+      </div>
 
         {/* Core Workspace Switch Content Area */}
         {viewMode === 'list' ? (

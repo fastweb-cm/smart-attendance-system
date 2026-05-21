@@ -162,6 +162,9 @@ components:
               role:
                 type: string
                 example: "Lead DevOps Engineer"
+              regno:
+                type: string
+                example: "STU-2026-A1B2"
               avatarColor:
                 type: string
                 example: "bg-emerald-100"
@@ -193,7 +196,7 @@ components:
                 example: 8.3
               checkin_status:
                 type: string
-                enum: [on_time, late, absent]
+                enum: [on time, late, absent]
                 example: "late"
               session_status:
                 type: string
@@ -207,6 +210,19 @@ components:
                 type: integer
                 description: Lateness value deviation tracked directly in minutes.
                 example: 12
+        metrics:
+          type: object
+          properties:
+            total_late:
+              type: integer
+              description: Total count of late arrivals recorded across the entire user base for the specified period.
+              example: 22
+            total_missed_checkout:
+              type: integer
+              example: 20
+            total_audit_override:
+              type: integer
+              example: 3
 
     User:
       type: object

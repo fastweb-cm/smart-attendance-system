@@ -71,6 +71,7 @@ export type AttendanceLedgerData = {
         id?: number;
         name?: string;
         role?: string;
+        regno?: string;
         avatarColor?: string;
     }>;
     /**
@@ -85,7 +86,7 @@ export type AttendanceLedgerData = {
         first_checkin?: string | null;
         last_checkout?: string | null;
         total_hours?: number;
-        checkin_status?: 'on_time' | 'late' | 'absent';
+        checkin_status?: 'on time' | 'late' | 'absent';
         session_status?: 'active' | 'completed' | 'missed_checkout' | 'no_show';
         derived_from_session?: 0 | 1;
         /**
@@ -93,6 +94,14 @@ export type AttendanceLedgerData = {
          */
         variance?: number;
     }>;
+    metrics?: {
+        /**
+         * Total count of late arrivals recorded across the entire user base for the specified period.
+         */
+        total_late?: number;
+        total_missed_checkout?: number;
+        total_audit_override?: number;
+    };
 };
 
 export type User = {

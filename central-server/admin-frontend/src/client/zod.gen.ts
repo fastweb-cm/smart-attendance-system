@@ -52,6 +52,7 @@ export const zAttendanceLedgerData = z.object({
         id: z.optional(z.int()),
         name: z.optional(z.string()),
         role: z.optional(z.string()),
+        regno: z.optional(z.string()),
         avatarColor: z.optional(z.string())
     })),
     initialAttendanceSummary: z.array(z.object({
@@ -67,7 +68,7 @@ export const zAttendanceLedgerData = z.object({
         ])),
         total_hours: z.optional(z.number()),
         checkin_status: z.optional(z.enum([
-            'on_time',
+            'on time',
             'late',
             'absent'
         ])),
@@ -79,6 +80,11 @@ export const zAttendanceLedgerData = z.object({
         ])),
         derived_from_session: z.optional(z.union([z.literal(0), z.literal(1)])),
         variance: z.optional(z.int())
+    })),
+    metrics: z.optional(z.object({
+        total_late: z.optional(z.int()),
+        total_missed_checkout: z.optional(z.int()),
+        total_audit_override: z.optional(z.int())
     }))
 });
 

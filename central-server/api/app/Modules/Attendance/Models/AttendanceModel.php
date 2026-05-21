@@ -74,14 +74,51 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $totalRecords = $countRes ? (int)$countRes->fetch_assoc()['total'] : 0;
         $totalPages = ceil($totalRecords / $limit);
 
+        // System metrics aggregation based on active context window
+        $metricsParams = [$attendance_context];
+        $sqlMetrics = "SELECT 
+            SUM(CASE WHEN LOWER(summary.attendance_status) = 'late' THEN 1 ELSE 0 END) AS total_late,
+            SUM(CASE WHEN LOWER(summary.attendance_status) = 'missed checkout' THEN 1 ELSE 0 END) AS total_missed_checkout,
+            SUM(CASE WHEN summary.derived_from_session = 0 THEN 1 ELSE 0 END) AS total_audit_override
+        FROM tbl_attendance_summary summary
+        WHERE summary.attendance_context = ?";
+
+        if ($attendance_context === 'event') {
+            if (!empty($eventIds)) {
+                $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+                $sqlMetrics .= " AND summary.event_id IN ($eventPlaceholders)";
+                $metricsParams = array_merge($metricsParams, $eventIds);
+            } else {
+                $sqlMetrics .= " AND 1=0";
+            }
+        } else {
+            $sqlMetrics .= " AND summary.attendance_date BETWEEN ? AND ?";
+            $metricsParams[] = $start_date;
+            $metricsParams[] = $end_date;
+        }
+
+        $metricsRes = $this->db->query($sqlMetrics, $metricsParams);
+        $rawMetrics = $metricsRes ? $metricsRes->fetch_assoc() : null;
+
+        $globalMetrics = [
+            'total_late'            => (int)($rawMetrics['total_late'] ?? 0),
+            'total_missed_checkout' => (int)($rawMetrics['total_missed_checkout'] ?? 0),
+            'total_audit_override'  => (int)($rawMetrics['total_audit_override'] ?? 0)
+        ];
+
         // 4. Fetch ONLY the specific chunk of users for the current page
         $sqlUsers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
                         CASE 
                             WHEN u.user_type = 'staff' THEN r.role_name
                             ELSE 'Student'
-                        END AS role
+                        END AS role,
+                        CASE
+                            WHEN u.user_type = 'staff' THEN s.sregno
+                            ELSE st.regno
+                        END AS regno
                     FROM tbl_user u
                     LEFT JOIN tbl_staff s ON u.id = s.user_id
+                    LEFT JOIN tbl_student st ON u.id = st.user_id
                     LEFT JOIN lkup_role r ON s.role_id = r.id
                     WHERE u.status = 'active'
                     ORDER BY u.fname, u.lname
@@ -107,13 +144,14 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
 
         $pageUserIds = array_column($rawUsers, 'id');
         
-        $colors = ['bg-emerald-100', 'bg-sky-100', 'bg-yellow-100', 'bg-pink-100', 'bg-purple-100', 'bg-orange-100'];
+        $colors = ['bg-emerald-500','bg-indigo-500','bg-amber-500','bg-rose-500'];
         $formattedUsers = [];
         foreach ($rawUsers as $index => $user) {
             $formattedUsers[] = [
                 'id' => $user['id'],
                 'name' => $user['name'],
                 'role' => $user['role'],
+                'regno' => $user['regno'],
                 'avatarColor' => $colors[$index % count($colors)]
             ];
         }
@@ -226,6 +264,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             'exceptions' => $attendanceExceptions,
             'users' => $formattedUsers,
             'initialAttendanceSummary' => $initialAttendanceSummary,
+            'metrics' => $globalMetrics,
             'meta' => [
                 'total_records' => $totalRecords,
                 'current_page' => $page,

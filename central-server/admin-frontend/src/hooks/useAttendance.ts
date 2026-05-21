@@ -13,6 +13,8 @@ export const useAttendanceLedger = (
             users: response.data?.users || [],
             exceptions: response.data?.exceptions || [],
             attendanceSummary: response.data?.initialAttendanceSummary || [],
+            calendarDates: response.data?.calendarDates || [],
+            metrics: response?.data?.metrics || {},
             meta: response.meta
         }
     }
