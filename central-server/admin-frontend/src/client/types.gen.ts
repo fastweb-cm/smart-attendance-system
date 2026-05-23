@@ -78,6 +78,7 @@ export type AttendanceLedgerData = {
      * Intertwined chronological cross-reference card layout tracking user summary performance maps.
      */
     initialAttendanceSummary: Array<{
+        id?: number | null;
         /**
          * Maps explicitly back to the unique tracking user id.
          */
@@ -2065,6 +2066,61 @@ export type GetUserAttendanceAnalyticsResponses = {
 };
 
 export type GetUserAttendanceAnalyticsResponse = GetUserAttendanceAnalyticsResponses[keyof GetUserAttendanceAnalyticsResponses];
+
+export type PartialEditAttendanceData = {
+    body: {
+        /**
+         * The unique row identification key pointing to `tbl_attendance_summary`.
+         */
+        id: number;
+        /**
+         * The targeted administrative status classification override.
+         */
+        status: 'present' | 'absent' | 'on permission';
+        /**
+         * Number of recognized working session hours (automatically forced to 0.0 if status is absent).
+         */
+        hours: number;
+        context?: 'daily' | 'event';
+        userId?: number;
+        date?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance';
+};
+
+export type PartialEditAttendanceErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PartialEditAttendanceResponses = {
+    /**
+     * Attendance override was successful.
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+        userId?: number;
+    };
+};
+
+export type PartialEditAttendanceResponse = PartialEditAttendanceResponses[keyof PartialEditAttendanceResponses];
 
 export type SyncAttendanceSummaryData = {
     body: Array<TerminalAttendanceSummaryCreate>;

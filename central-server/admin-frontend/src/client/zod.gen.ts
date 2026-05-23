@@ -56,6 +56,10 @@ export const zAttendanceLedgerData = z.object({
         avatarColor: z.optional(z.string())
     })),
     initialAttendanceSummary: z.array(z.object({
+        id: z.optional(z.union([
+            z.int(),
+            z.null()
+        ])),
         employee_id: z.optional(z.int()),
         date: z.optional(z.iso.date()),
         first_checkin: z.optional(z.union([
@@ -1039,6 +1043,32 @@ export const zGetUserAttendanceAnalyticsResponse = z.object({
         sync_status: z.optional(z.string())
     }))),
     meta: z.optional(zPaginationMeta)
+});
+
+export const zPartialEditAttendanceData = z.object({
+    body: z.object({
+        id: z.int(),
+        status: z.enum([
+            'present',
+            'absent',
+            'on permission'
+        ]),
+        hours: z.number(),
+        context: z.optional(z.enum(['daily', 'event'])),
+        userId: z.optional(z.int()),
+        date: z.optional(z.iso.date())
+    }),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Attendance override was successful.
+ */
+export const zPartialEditAttendanceResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string()),
+    userId: z.optional(z.int())
 });
 
 export const zSyncAttendanceSummaryData = z.object({

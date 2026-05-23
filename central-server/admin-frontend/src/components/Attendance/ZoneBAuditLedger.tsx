@@ -1,6 +1,6 @@
 "use client";
 
-import { useAttendanceLedger } from "@/hooks/useAttendance";
+import { useAttendanceLedger, useUpdateAttendance } from "@/hooks/useAttendance";
 import { getPreviousDay } from "@/lib/utils";
 import { AttendanceTableProps, ZoneBAuditLedgerProps } from "@/types";
 import { Edit3, Info, Save, X } from "lucide-react";
@@ -64,16 +64,24 @@ export default function ZoneBAuditLedger({
     e.stopPropagation(); // Avoid triggering row table selection events
     setEditingDate(record.date ?? null);
     setEditHours(record.total_hours ?? 0);
-    setEditStatus(record.session_status ?? "");
+    setEditStatus(record.attendance_status ?? "");
   };
 
-  const handleSaveCorrection = (date: string) => {
-    console.log("Committed state data structures:", {
-      date,
+  const saveCorrectionMutation = useUpdateAttendance();
+
+  const handleSaveCorrection = async (id: number) => {
+    const reqBody = {
+      id: id,
+      status: editStatus as "absent" | "present" | "on permission",
       hours: editHours,
-      status: editStatus,
-      derived_from_session: 0
-    });
+      userId: userId,
+      date: selectedAuditDate,
+      context: queryParams.context
+    }
+    await saveCorrectionMutation.mutateAsync({
+        body: reqBody
+      })
+
     setEditingDate(null);
   };
 
@@ -194,7 +202,7 @@ export default function ZoneBAuditLedger({
                     {isEditing ? (
                       <div className="flex gap-1 justify-center">
                         <button 
-                          onClick={() => handleSaveCorrection(record.date!)}
+                          onClick={() => handleSaveCorrection(record.id ?? 0)}
                           className="p-1 bg-emerald-50 border border-emerald-300 text-emerald-700 rounded hover:bg-emerald-100 transition shadow-sm cursor-pointer"
                           title="Commit Override (derived_from_session = 0)"
                         >

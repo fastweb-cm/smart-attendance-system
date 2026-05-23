@@ -18,11 +18,11 @@ export default function ZoneAMetrics({
 
   // search attendance for this only this user
   const { data, isLoading } = useAttendanceLedger(params)
-  
-  // filter out user attendance status marked as absent
-  const absentAttendance = data?.attendanceSummary.filter(at => at.attendance_status === "absent");
 
-  absent_days = absentAttendance?.length;
+  absent_days = (data?.attendanceSummary?.filter(at => at.attendance_status === "absent")?.length ?? 0) - (data?.exceptions?.length ?? 0);
+  expected_days = (data?.attendanceSummary?.length ?? 0) - (data?.exceptions?.length ?? 0);
+  present_days = data?.attendanceSummary?.filter(at => at.attendance_status === "present")?.length ?? 0;
+  late_arrivals = data?.attendanceSummary?.filter(at => at.checkin_status === "late")?.length ?? 0;
 
   if (isLoading) (
     <div className="flex flex-col justify-center items-center text-center p-8">

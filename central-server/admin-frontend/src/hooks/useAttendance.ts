@@ -1,6 +1,9 @@
+import { queryClient } from "@/lib/queryClient";
+import { updateAttendanceMutation } from "@/services/attendance/mutation";
 import { getAttendanceLedgerQuery, attendanceLedgerQueryKey, getUserAttendanceAnalyticsQuery, UserAttendanceAnalyticsQueryKey } from "@/services/attendance/queries";
 import { AttendanceQueryParams } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 // get attendance records with optional filters
 export const useAttendanceLedger = (
@@ -35,3 +38,28 @@ export const useUserAttendanceAnalytics = (
         }
     }
 })
+
+// update attendance status and invalidate stale record
+export const useUpdateAttendance = () => {
+    return useMutation({
+        ...updateAttendanceMutation(),
+        onSuccess: async (res) => {
+            toast.success(res.message || "Attendance system override was successfull")
+
+            // invalidate global ledger matrix
+            await queryClient.invalidateQueries({
+                queryKey: attendanceLedgerQueryKey()
+            })
+
+            // Clear out targeted raw terminal trails (Zone C) if the backend returns the scoped userId
+            if (res?.userId) {
+                await queryClient.invalidateQueries({
+                    queryKey: UserAttendanceAnalyticsQueryKey(res.userId),
+                });
+            }
+        },
+        onError: (error) => {
+            toast.error(error.message || "Error performing system override on attendance record")
+        }
+    })
+}

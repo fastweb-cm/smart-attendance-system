@@ -197,6 +197,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $userIdPlaceholders = implode(',', array_fill(0, count($pageUserIds), '?'));
         
         $sqlSummary = "SELECT 
+                summary.id,
                 summary.user_id, 
                 summary.attendance_date AS date, 
                 summary.event_id, 
@@ -265,6 +266,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                     $isAbsent = ($record['attendance_status'] === 'absent');
 
                     $initialAttendanceSummary[] = [
+                        'id'                   => $record['id'],
                         'employee_id'          => $uId,
                         'date'                 => $attendance_context === 'event' ? $record['date'] : $lookupKey,
                         'event_id'             => $attendance_context === 'event' ? (int)$lookupKey : null,
@@ -279,6 +281,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                     ];
                 } else {
                     $initialAttendanceSummary[] = [
+                        'id'                   => null,
                         'employee_id'          => $uId,
                         'date'                 => $attendance_context === 'event' ? null : $lookupKey,
                         'event_id'             => $attendance_context === 'event' ? (int)$lookupKey : null,
@@ -331,6 +334,7 @@ public function getUserAttendanceDetails(int $userId, ?string $startDate = null,
         $offset = ($page - 1) * $limit;
 
         // 1. Fetch Aggregated Metrics with context checking constraint
+        $sqlMetricsParams = [$userId, $attendance_context];
         $sqlMetrics = "SELECT 
             COUNT(summary.id) AS total_expected_days,
             SUM(CASE WHEN LOWER(summary.attendance_status) IN ('present', 'missed checkout', 'late') THEN 1 ELSE 0 END) AS present_days,
@@ -342,8 +346,15 @@ public function getUserAttendanceDetails(int $userId, ?string $startDate = null,
             ON summary.user_id = sess.user_id 
             AND summary.first_checkin = sess.checkin_timestamp
         WHERE summary.user_id = ? AND summary.attendance_context = ?";
+
+        // Push strings directly into the root array container
+        if ($startDate && $endDate) {
+            $sqlMetrics .= " AND summary.attendance_date BETWEEN ? AND ?"; // Explicitly scope table namespace
+            $sqlMetricsParams[] = $startDate;
+            $sqlMetricsParams[] = $endDate;
+        }
         
-        $metricsRes = $this->db->query($sqlMetrics, [$userId, $attendance_context]);
+        $metricsRes = $this->db->query($sqlMetrics, $sqlMetricsParams);
         $metrics = $metricsRes ? $metricsRes->fetch_assoc() : [
             'total_expected_days' => 0, 'present_days' => 0, 
             'late_arrivals' => 0, 'absent_days' => 0, 'permission_days' => 0
@@ -366,6 +377,7 @@ public function getUserAttendanceDetails(int $userId, ?string $startDate = null,
 
         // 3. Detailed Itemized Transaction History Query
         $sqlLogs = "SELECT 
+                        summary.id,
                         summary.attendance_date AS date,
                         summary.first_checkin AS checkin,
                         summary.last_checkout AS checkout,
@@ -425,6 +437,36 @@ public function getUserAttendanceDetails(int $userId, ?string $startDate = null,
                 'limit'         => $limit
             ]
         ];
+    } catch (Throwable $e) {
+        throw $e;
+    }
+}
+
+public function updateAttendanceById(int $id, string $status, float $hours): bool
+{
+    try {
+        $sql = "UPDATE tbl_attendance_summary SET attendance_status = ?, total_hours = ?, derived_from_session = ?
+                WHERE id = ?";
+        $this->db->query($sql, [$status, $hours, 0, $id]);
+
+        return true;
+    } catch (Throwable $e) {
+        throw $e;
+    }
+}
+
+public function createManualAttendanceSummary(int $userId, string $date, string $status, float $hours, string $context): bool
+{
+    try {
+        $sql = "INSERT INTO tbl_attendance_summary 
+                (user_id, attendance_date, attendance_context, attendance_status, total_hours, derived_from_session)
+                VALUES (?, ?, ?, ?, ?, 0)";
+        
+        // Executes query statement safely
+        $this->db->query($sql, [$userId, $date, $context, $status, $hours]);
+
+        // If it didn't throw an exception, the insert was successful
+        return true;
     } catch (Throwable $e) {
         throw $e;
     }

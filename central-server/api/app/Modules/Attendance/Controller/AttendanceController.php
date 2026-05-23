@@ -102,4 +102,59 @@ public function userDetail(int $id)
         ]);
     }
 }
+
+public function partialEdit()
+{
+    $data = $this->getJsonInput();
+
+    // The unique database record key (0 if synthetic fallback row)
+    $id = (int)$data['id']; 
+    
+    // The actual targeted employee identity key
+    $userId = (int)$data['userId']; 
+    
+    $status = $data['status'];
+    $hours = (float)$data['hours'];
+    $context = $data['context'];
+    $date = $data['date']; // Target ledger date from frontend mapping ("YYYY-MM-DD")
+
+    try {
+        // CASE A: Record doesn't exist yet -> Execute Insert
+        if ($id === 0) {
+            if ($this->a->createManualAttendanceSummary($userId, $date, $status, $hours, $context)) {
+                $this->json([
+                    "success" => true,
+                    "message" => "Attendance summary created successfully",
+                    "userId"  => $userId // Returns target worker id to trigger TanStack invalidation
+                ]);
+            } else {
+                $this->json([
+                    "success" => false,
+                    "message" => "Failed to create operational summary entry"
+                ]);
+            }
+            return;
+        }
+
+        // CASE B: Record exists -> Execute normal Update row mutation
+        if ($this->a->updateAttendanceById($id, $status, $hours)) {
+            $this->json([
+                "success" => true,
+                "message" => "Attendance override was successful",
+                "userId"  => $userId
+            ]);
+        } else {
+            $this->json([
+                "success" => false,
+                "message" => "Failed to perform override mutation"
+            ]);
+        }
+    } catch (Throwable $e) {
+        $this->json([
+            "success" => false,
+            "message" => "Failed to aggregate user analytics profile",
+            "error"   => $e->getMessage()
+        ]);
+    }
+}
 }

@@ -4,8 +4,8 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -809,6 +809,23 @@ export const getUserAttendanceAnalyticsInfiniteOptions = (options: Options<GetUs
     },
     queryKey: getUserAttendanceAnalyticsInfiniteQueryKey(options)
 });
+
+/**
+ * Partially edit/override an explicit attendance record
+ */
+export const partialEditAttendanceMutation = (options?: Partial<Options<PartialEditAttendanceData>>): UseMutationOptions<PartialEditAttendanceResponse, AxiosError<DefaultError>, Options<PartialEditAttendanceData>> => {
+    const mutationOptions: UseMutationOptions<PartialEditAttendanceResponse, AxiosError<DefaultError>, Options<PartialEditAttendanceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await partialEditAttendance({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 /**
  * Sync attendance summary to central database

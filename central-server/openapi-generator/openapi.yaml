@@ -174,6 +174,8 @@ components:
           items:
             type: object
             properties:
+              id:
+                type: ["integer", "null"]
               employee_id:
                 type: integer
                 description: Maps explicitly back to the unique tracking user id.
@@ -2437,6 +2439,67 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/v1/attendance:
+    patch:
+      operationId: partialEditAttendance
+      summary: Partially edit/override an explicit attendance record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - status
+                - hours
+              properties:
+                id:
+                  type: integer
+                  example: 1428
+                  description: The unique row identification key pointing to `tbl_attendance_summary`.
+                status:
+                  type: string
+                  enum: [present, absent, on permission]
+                  example: present
+                  description: The targeted administrative status classification override.
+                hours:
+                  type: number
+                  format: float
+                  example: 8.5
+                  description: Number of recognized working session hours (automatically forced to 0.0 if status is absent).
+                context:
+                  type: string
+                  enum: ["daily", "event"]
+                userId:
+                  type: integer
+                date:
+                  type: string
+                  format: date
+      responses:
+        "200":
+          description: Attendance override was successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Administrative attendance override processed successfully.
+                  userId:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/attendance/sync:
     post:
       operationId: syncAttendanceSummary
