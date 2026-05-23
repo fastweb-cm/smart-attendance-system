@@ -1962,6 +1962,7 @@ export type GetAttendanceLedgerData = {
          * Attendance context filter daily or event default is daily",
          */
         context?: 'daily' | 'event';
+        search?: string;
     };
     url: '/api/v1/attendance/ledger';
 };

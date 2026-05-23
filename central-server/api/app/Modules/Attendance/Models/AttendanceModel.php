@@ -13,7 +13,7 @@ class AttendanceModel extends Database
         $this->db = Database::connect();
     }
 
-public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, $limit = 10, string $attendance_context = 'daily'): ?array
+public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, $limit = 10, string $attendance_context = 'daily', ?string $searchQuery = null): ?array
 {
     try {
         $page = max(1, (int)$page);
@@ -68,9 +68,27 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             $attendanceExceptions = $exceptionsRes ? $exceptionsRes->fetch_all(MYSQLI_ASSOC) : [];
         }
 
-        // 3. PAGINATION META: Get total matching active users
-        $sqlCount = "SELECT COUNT(*) as total FROM tbl_user u WHERE u.status = 'active'";
-        $countRes = $this->db->query($sqlCount);
+        // ==========================================
+        // 3. PAGINATION META WITH DYNAMIC SEARCH
+        // ==========================================
+        $countParams = [];
+        $sqlCount = "SELECT COUNT(*) as total 
+                     FROM tbl_user u 
+                     LEFT JOIN tbl_staff s ON u.id = s.user_id
+                     LEFT JOIN tbl_student st ON u.id = st.user_id
+                     LEFT JOIN lkup_role r ON s.role_id = r.id
+                     WHERE u.status = 'active'";
+                     
+        if ($searchQuery !== null) {
+            $sqlCount .= " AND (CONCAT(u.fname, ' ', u.lname) LIKE ? 
+                            OR s.sregno LIKE ? 
+                            OR st.regno LIKE ? 
+                            OR r.role_name LIKE ?)";
+            $likeSearch = '%' . $searchQuery . '%';
+            $countParams = [$likeSearch, $likeSearch, $likeSearch, $likeSearch];
+        }
+
+        $countRes = $this->db->query($sqlCount, $countParams);
         $totalRecords = $countRes ? (int)$countRes->fetch_assoc()['total'] : 0;
         $totalPages = ceil($totalRecords / $limit);
 
@@ -106,7 +124,10 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             'total_audit_override'  => (int)($rawMetrics['total_audit_override'] ?? 0)
         ];
 
-        // 4. Fetch ONLY the specific chunk of users for the current page
+        // ==========================================
+        // 4. FETCH ONLY THE MATCHING SEARCH CHUNK OF USERS
+        // ==========================================
+        $userParams = [];
         $sqlUsers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
                         CASE 
                             WHEN u.user_type = 'staff' THEN r.role_name
@@ -120,11 +141,22 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                     LEFT JOIN tbl_staff s ON u.id = s.user_id
                     LEFT JOIN tbl_student st ON u.id = st.user_id
                     LEFT JOIN lkup_role r ON s.role_id = r.id
-                    WHERE u.status = 'active'
-                    ORDER BY u.fname, u.lname
-                    LIMIT ? OFFSET ?";
+                    WHERE u.status = 'active'";
 
-        $usersRes = $this->db->query($sqlUsers, [$limit, $offset]);
+        if ($searchQuery !== null) {
+            $sqlUsers .= " AND (CONCAT(u.fname, ' ', u.lname) LIKE ? 
+                            OR s.sregno LIKE ? 
+                            OR st.regno LIKE ? 
+                            OR r.role_name LIKE ?)";
+            $likeSearch = '%' . $searchQuery . '%';
+            $userParams = [$likeSearch, $likeSearch, $likeSearch, $likeSearch];
+        }
+
+        $sqlUsers .= " ORDER BY u.fname, u.lname LIMIT ? OFFSET ?";
+        $userParams[] = $limit;
+        $userParams[] = $offset;
+
+        $usersRes = $this->db->query($sqlUsers, $userParams);
         $rawUsers = $usersRes ? $usersRes->fetch_all(MYSQLI_ASSOC) : [];
 
         if (empty($rawUsers) || empty($calendarDates)) {
@@ -164,7 +196,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $sqlSummary = "SELECT 
                 summary.user_id, 
                 summary.attendance_date AS date, 
-                summary.event_id, /* Make sure this column lives in your tbl_attendance_summary if matching events */
+                summary.event_id, 
                 summary.first_checkin, 
                 summary.last_checkout,
                 summary.total_hours, 
@@ -189,7 +221,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                 $sqlSummary .= " AND summary.event_id IN ($eventPlaceholders)";
                 $summaryParams = array_merge($summaryParams, $eventIds);
             } else {
-                $sqlSummary .= " AND 1=0"; // Force empty if no events exist
+                $sqlSummary .= " AND 1=0"; 
             }
         } else {
             $sqlSummary .= " AND summary.attendance_date BETWEEN ? AND ?";
@@ -220,7 +252,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             $uId = $user['id'];
 
             foreach ($calendarDates as $calDate) {
-                $lookupKey = $calDate['raw']; // Dates (YYYY-MM-DD) OR Event IDs ("14")
+                $lookupKey = $calDate['raw']; 
 
                 if (isset($indexedSummary[$uId][$lookupKey])) {
                     $record = $indexedSummary[$uId][$lookupKey];
@@ -242,7 +274,6 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'variance'             => ($record['attendance_status'] === 'late') ? 15 : 0 
                     ];
                 } else {
-                    // This handles users who did not attend an event or were absent on a calendar date
                     $initialAttendanceSummary[] = [
                         'employee_id'          => $uId,
                         'date'                 => $attendance_context === 'event' ? null : $lookupKey,

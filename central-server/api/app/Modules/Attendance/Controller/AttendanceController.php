@@ -28,6 +28,9 @@ public function ledger()
     $status     = isset($_GET['status']) && !empty($_GET['status']) ? $_GET['status'] : null;
     $attendance_context = isset($_GET['context']) && !empty($_GET['context']) ? $_GET['context'] : "daily"; // Default to daily context if not provided
     
+    // Extract the dynamic search string query parameter
+    $searchQuery = isset($_GET['search']) && trim($_GET['search']) !== '' ? trim($_GET['search']) : null;
+    
     $page  = isset($_GET['page'])  ? max(1, (int)$_GET['page'])   : 1;
     $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit'])  : 10;
 
@@ -40,7 +43,7 @@ public function ledger()
     }
 
     try {
-        $result = $this->a->getAttendanceLedger($start_date, $end_date, $status, $page, $limit, $attendance_context);
+        $result = $this->a->getAttendanceLedger($start_date, $end_date, $status, $page, $limit, $attendance_context, $searchQuery);
         
         $meta = $result['meta'] ?? null;
         unset($result['meta']); 

@@ -978,7 +978,8 @@ export const zGetAttendanceLedgerData = z.object({
         status: z.optional(z.string()),
         page: z.optional(z.int().gte(1)).default(1),
         limit: z.optional(z.int().gte(1).lte(50)).default(10),
-        context: z.optional(z.enum(['daily', 'event']))
+        context: z.optional(z.enum(['daily', 'event'])),
+        search: z.optional(z.string())
     }))
 });
 

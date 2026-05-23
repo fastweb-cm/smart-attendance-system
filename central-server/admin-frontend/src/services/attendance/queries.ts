@@ -9,7 +9,8 @@ export const getAttendanceLedgerQuery = (filters?: AttendanceQueryParams) => get
         status: filters?.status,
         page: filters?.page,
         limit: filters?.limit,
-        context: filters?.context
+        context: filters?.context,
+        search: filters?.search
     }
 })
 
@@ -21,7 +22,8 @@ export const attendanceLedgerQueryKey = (filters?: AttendanceQueryParams) => get
         status: filters?.status,
         page: filters?.page,
         limit: filters?.limit,
-        context: filters?.context
+        context: filters?.context,
+        search: filters?.search
     }
 })
 

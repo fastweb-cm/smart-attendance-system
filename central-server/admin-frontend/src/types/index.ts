@@ -186,7 +186,13 @@ export interface AttendanceQueryParams {
   search?: string;
 }
 
-
+export interface PaginationMetaProps {
+  total_records: number;
+  current_page: number;
+  total_pages: number;
+  limit: number;
+  onPageChange: (page: number) => void;
+}
 export interface AttendanceFilterBarProps {
   filters: AttendanceQueryParams;
   onFilterChange: (key: keyof AttendanceQueryParams, value: string) => void;
@@ -205,7 +211,15 @@ export interface AttendanceTableProps {
   exceptions: AttendanceLedgerData['exceptions'];
   attendanceSummary: AttendanceLedgerData['initialAttendanceSummary'];
   context: 'daily' | 'event';
-  onRowClick?: (filteredEmployee: AttendanceLedgerData['users'][number], context: 'daily' | 'event') => void;
+  onRowClick: (id: number) => void;
+  paginationMeta: PaginationMetaProps;
+}
+
+export interface IndividualReportSheetProps {
+    isOpen: boolean;
+    onClose: () => void;
+    filteredEmployee: AttendanceLedgerData['users'][number];
+    queryParams: AttendanceQueryParams;
 }
 
 export interface AttendanceStatusCellProps {
@@ -221,3 +235,16 @@ export interface AttendanceUserAnalyticsMetrics {
   absent_days?: number;
   permission_days?: number;
 }
+
+export interface ZoneBAuditLedgerProps {
+  userId: number;
+  queryParams: AttendanceQueryParams;
+  onRowClick?: (date: string) => void;
+}
+
+export interface ZoneCRawTrailsProps {
+  userId: number;
+  selectedAuditDate: string;
+  queryParams: AttendanceQueryParams;
+}
+

@@ -2294,6 +2294,11 @@ paths:
             enum: ["daily", "event"]
             default: "daily"
           description: Attendance context filter daily or event default is daily",
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Attendance matrix dataset generated successfully
