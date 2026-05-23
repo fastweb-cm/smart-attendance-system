@@ -37,15 +37,24 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
 
             foreach ($rawEvents as $evt) {
                 $calendarDates[] = [
-                    'raw'       => (string)$evt['id'], // Use Event ID as the target lookup handle
-                    'label'     => $evt['name'],       // Display name of the event as the column header
+                    'raw'       => (string)$evt['id'], 
+                    'label'     => $evt['name'],       
                     'isWeekend' => false,
                     'dayName'   => date('M d', strtotime($evt['date_only']))
                 ];
                 $eventIds[] = $evt['id'];
             }
+            
+            // SHORT-CIRCUIT ROUTE: If no events are found in this date window, stop here
+            if (empty($eventIds)) {
+                return [
+                    'calendarDates' => [], 'exceptions' => [], 'users' => [], 
+                    'initialAttendanceSummary' => [], 'metrics' => ['total_late' => 0, 'total_missed_checkout' => 0, 'total_audit_override' => 0],
+                    'meta' => ['total_records' => 0, 'current_page' => $page, 'total_pages' => 0, 'limit' => $limit]
+                ];
+            }
         } else {
-            // Standard Daily Logic: Generate array of calendar dates for column headers
+            // Standard Daily Logic
             $current = strtotime($start_date);
             $last = strtotime($end_date);
             while ($current <= $last) {
@@ -59,7 +68,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             }
         }
 
-        //  Fetch global calendar exceptions (Only meaningful for standard daily schedules)
+        // Fetch global calendar exceptions (Only meaningful for standard daily schedules)
         $attendanceExceptions = [];
         if ($attendance_context === 'daily') {
             $sqlExceptions = "SELECT start_date AS date, title AS name, exception_type AS type FROM tbl_exception
@@ -68,16 +77,33 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             $attendanceExceptions = $exceptionsRes ? $exceptionsRes->fetch_all(MYSQLI_ASSOC) : [];
         }
 
-        // ==========================================
-        //  PAGINATION META WITH DYNAMIC SEARCH
-        // ==========================================
+        // =========================================================
+        //  PAGINATION META WITH DYNAMIC SEARCH & POLICY FILTERING
+        // =========================================================
         $countParams = [];
-        $sqlCount = "SELECT COUNT(*) as total 
-                     FROM tbl_user u 
-                     LEFT JOIN tbl_staff s ON u.id = s.user_id
-                     LEFT JOIN tbl_student st ON u.id = st.user_id
-                     LEFT JOIN lkup_role r ON s.role_id = r.id
-                     WHERE u.status = 'active'";
+        
+        if ($attendance_context === 'event') {
+            // Only count active users assigned to the matching events via group/subgroup policies
+            $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+            $sqlCount = "SELECT COUNT(DISTINCT u.id) as total 
+                         FROM tbl_user u 
+                         INNER JOIN tbl_event_access_policy pol ON u.status = 'active'
+                         LEFT JOIN tbl_group_member gm ON pol.group_id = gm.group_id AND gm.user_id = u.id
+                         LEFT JOIN tbl_subgroup_member sgm ON pol.subgroup_id = sgm.subgroup_id AND sgm.user_id = u.id
+                         LEFT JOIN tbl_staff s ON u.id = s.user_id
+                         LEFT JOIN tbl_student st ON u.id = st.user_id
+                         LEFT JOIN lkup_role r ON s.role_id = r.id
+                         WHERE pol.event_id IN ($eventPlaceholders)
+                         AND (gm.user_id IS NOT NULL OR sgm.user_id IS NOT NULL)";
+            $countParams = $eventIds;
+        } else {
+            $sqlCount = "SELECT COUNT(*) as total 
+                         FROM tbl_user u 
+                         LEFT JOIN tbl_staff s ON u.id = s.user_id
+                         LEFT JOIN tbl_student st ON u.id = st.user_id
+                         LEFT JOIN lkup_role r ON s.role_id = r.id
+                         WHERE u.status = 'active'";
+        }
                      
         if ($searchQuery !== null) {
             $sqlCount .= " AND (CONCAT(u.fname, ' ', u.lname) LIKE ? 
@@ -85,7 +111,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                             OR st.regno LIKE ? 
                             OR r.role_name LIKE ?)";
             $likeSearch = '%' . $searchQuery . '%';
-            $countParams = [$likeSearch, $likeSearch, $likeSearch, $likeSearch];
+            array_push($countParams, $likeSearch, $likeSearch, $likeSearch, $likeSearch);
         }
 
         $countRes = $this->db->query($sqlCount, $countParams);
@@ -105,13 +131,9 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         WHERE summary.attendance_context = ?";
 
         if ($attendance_context === 'event') {
-            if (!empty($eventIds)) {
-                $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
-                $sqlMetrics .= " AND summary.event_id IN ($eventPlaceholders)";
-                $metricsParams = array_merge($metricsParams, $eventIds);
-            } else {
-                $sqlMetrics .= " AND 1=0";
-            }
+            $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+            $sqlMetrics .= " AND summary.event_id IN ($eventPlaceholders)";
+            $metricsParams = array_merge($metricsParams, $eventIds);
         } else {
             $sqlMetrics .= " AND summary.attendance_date BETWEEN ? AND ?";
             $metricsParams[] = $start_date;
@@ -127,24 +149,48 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             'total_audit_override'  => (int)($rawMetrics['total_audit_override'] ?? 0)
         ];
 
-        // ==========================================
-        // FETCH ONLY THE MATCHING SEARCH CHUNK OF USERS
-        // ==========================================
+        // =========================================================
+        // FETCH ONLY THE POLICY-FILTERED + CHUNKED SELECTION OF USERS
+        // =========================================================
         $userParams = [];
-        $sqlUsers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
-                        CASE 
-                            WHEN u.user_type = 'staff' THEN r.role_name
-                            ELSE 'Student'
-                        END AS role,
-                        CASE
-                            WHEN u.user_type = 'staff' THEN s.sregno
-                            ELSE st.regno
-                        END AS regno
-                    FROM tbl_user u
-                    LEFT JOIN tbl_staff s ON u.id = s.user_id
-                    LEFT JOIN tbl_student st ON u.id = st.user_id
-                    LEFT JOIN lkup_role r ON s.role_id = r.id
-                    WHERE u.status = 'active'";
+        
+        if ($attendance_context === 'event') {
+            $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+            $sqlUsers = "SELECT DISTINCT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
+                            CASE 
+                                WHEN u.user_type = 'staff' THEN r.role_name
+                                ELSE 'Student'
+                            END AS role,
+                            CASE
+                                WHEN u.user_type = 'staff' THEN s.sregno
+                                ELSE st.regno
+                            END AS regno
+                        FROM tbl_user u
+                        INNER JOIN tbl_event_access_policy pol ON u.status = 'active'
+                        LEFT JOIN tbl_group_member gm ON pol.group_id = gm.group_id AND gm.user_id = u.id
+                        LEFT JOIN tbl_subgroup_member sgm ON pol.subgroup_id = sgm.subgroup_id AND sgm.user_id = u.id
+                        LEFT JOIN tbl_staff s ON u.id = s.user_id
+                        LEFT JOIN tbl_student st ON u.id = st.user_id
+                        LEFT JOIN lkup_role r ON s.role_id = r.id
+                        WHERE pol.event_id IN ($eventPlaceholders)
+                        AND (gm.user_id IS NOT NULL OR sgm.user_id IS NOT NULL)";
+            $userParams = $eventIds;
+        } else {
+            $sqlUsers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
+                            CASE 
+                                WHEN u.user_type = 'staff' THEN r.role_name
+                                ELSE 'Student'
+                            END AS role,
+                            CASE
+                                WHEN u.user_type = 'staff' THEN s.sregno
+                                ELSE st.regno
+                            END AS regno
+                        FROM tbl_user u
+                        LEFT JOIN tbl_staff s ON u.id = s.user_id
+                        LEFT JOIN tbl_student st ON u.id = st.user_id
+                        LEFT JOIN lkup_role r ON s.role_id = r.id
+                        WHERE u.status = 'active'";
+        }
 
         if ($searchQuery !== null) {
             $sqlUsers .= " AND (CONCAT(u.fname, ' ', u.lname) LIKE ? 
@@ -152,7 +198,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                             OR st.regno LIKE ? 
                             OR r.role_name LIKE ?)";
             $likeSearch = '%' . $searchQuery . '%';
-            $userParams = [$likeSearch, $likeSearch, $likeSearch, $likeSearch];
+            array_push($userParams, $likeSearch, $likeSearch, $likeSearch, $likeSearch);
         }
 
         $sqlUsers .= " ORDER BY u.fname, u.lname LIMIT ? OFFSET ?";
@@ -162,7 +208,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $usersRes = $this->db->query($sqlUsers, $userParams);
         $rawUsers = $usersRes ? $usersRes->fetch_all(MYSQLI_ASSOC) : [];
 
-        if (empty($rawUsers) || empty($calendarDates)) {
+        if (empty($rawUsers)) {
             return [
                 'calendarDates' => $calendarDates,
                 'exceptions' => $attendanceExceptions,
@@ -189,6 +235,32 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                 'regno' => $user['regno'],
                 'avatarColor' => $colors[$index % count($colors)]
             ];
+        }
+
+        // =================================================================
+        // FETCH INDIVIDUAL MATRICES OF POLICY SCOPES TO FLAG FALSE POSITIVES
+        // =================================================================
+        $userEventMap = [];
+        if ($attendance_context === 'event') {
+            $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+            $userIdPlaceholders = implode(',', array_fill(0, count($pageUserIds), '?'));
+
+            $sqlPolicies = "SELECT DISTINCT pol.event_id, u.id as user_id
+                            FROM tbl_event_access_policy pol
+                            INNER JOIN tbl_user u ON u.status = 'active'
+                            LEFT JOIN tbl_group_member gm ON pol.group_id = gm.group_id AND gm.user_id = u.id
+                            LEFT JOIN tbl_subgroup_member sgm ON pol.subgroup_id = sgm.subgroup_id AND sgm.user_id = u.id
+                            WHERE pol.event_id IN ($eventPlaceholders) 
+                            AND u.id IN ($userIdPlaceholders)
+                            AND (gm.user_id IS NOT NULL OR sgm.user_id IS NOT NULL)";
+
+            $policyParams = array_merge($eventIds, $pageUserIds);
+            $policyRes = $this->db->query($sqlPolicies, $policyParams);
+            $rawPolicies = $policyRes ? $policyRes->fetch_all(MYSQLI_ASSOC) : [];
+
+            foreach ($rawPolicies as $policy) {
+                $userEventMap[$policy['user_id']][$policy['event_id']] = true;
+            }
         }
 
         // ==========================================
@@ -218,15 +290,10 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $summaryParams = [$attendance_context];
         $summaryParams = array_merge($summaryParams, $pageUserIds);
 
-        // Add date or event constraints depending on context
         if ($attendance_context === 'event') {
-            if (!empty($eventIds)) {
-                $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
-                $sqlSummary .= " AND summary.event_id IN ($eventPlaceholders)";
-                $summaryParams = array_merge($summaryParams, $eventIds);
-            } else {
-                $sqlSummary .= " AND 1=0"; 
-            }
+            $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+            $sqlSummary .= " AND summary.event_id IN ($eventPlaceholders)";
+            $summaryParams = array_merge($summaryParams, $eventIds);
         } else {
             $sqlSummary .= " AND summary.attendance_date BETWEEN ? AND ?";
             $summaryParams[] = $start_date;
@@ -241,7 +308,6 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $summaryRes = $this->db->query($sqlSummary, $summaryParams);
         $rawSummary = $summaryRes ? $summaryRes->fetch_all(MYSQLI_ASSOC) : [];
 
-        // Index the records using either event_id or date string as key
         $indexedSummary = [];
         foreach ($rawSummary as $row) {
             $lookupKey = ($attendance_context === 'event') ? (string)$row['event_id'] : $row['date'];
@@ -280,6 +346,9 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'variance'             => ($record['attendance_status'] === 'late') ? 15 : 0 
                     ];
                 } else {
+                    // Check if this particular grid cell intersects with an event they shouldn't be at
+                    $isNotApplicable = ($attendance_context === 'event' && !isset($userEventMap[$uId][$lookupKey]));
+
                     $initialAttendanceSummary[] = [
                         'id'                   => null,
                         'employee_id'          => $uId,
@@ -288,9 +357,9 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'first_checkin'        => null,
                         'last_checkout'        => null,
                         'total_hours'          => 0.0,
-                        'checkin_status'       => 'absent',
-                        'session_status'       => 'no_show',
-                        'attendance_status'    => 'absent',
+                        'checkin_status'       => $isNotApplicable ? 'not_applicable' : 'absent',
+                        'session_status'       => $isNotApplicable ? 'not_applicable' : 'no_show',
+                        'attendance_status'    => $isNotApplicable ? 'not_applicable' : 'absent',
                         'derived_from_session' => 1,
                         'variance'             => 0
                     ];

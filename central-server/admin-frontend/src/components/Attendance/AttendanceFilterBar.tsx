@@ -58,7 +58,7 @@ export function AttendanceFilterBar({
           </div>
 
           {/* 3. Status Select Box Dropdown Tool */}
-          <div className="w-full">
+          {/* <div className="w-full">
             <Select
               value={filters.status}
               onValueChange={(val) => onFilterChange("status", val)}
@@ -72,12 +72,11 @@ export function AttendanceFilterBar({
               <SelectContent className="rounded-xl bg-slate-800 border-slate-700 text-slate-300">
                 <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">Status: All Records</SelectItem>
                 <SelectItem value="present" className="focus:bg-slate-700 focus:text-white">Present</SelectItem>
-                <SelectItem value="missed checkout" className="focus:bg-slate-700 focus:text-white">Missed Checkout</SelectItem>
                 <SelectItem value="absent" className="focus:bg-slate-700 focus:text-white">Absent</SelectItem>
                 <SelectItem value="on permission" className="focus:bg-slate-700 focus:text-white">On Permission</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           {/* 4. Start Date Tracking Input Parameter */}
           <div className="relative">

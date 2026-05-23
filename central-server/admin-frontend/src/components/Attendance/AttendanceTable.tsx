@@ -14,6 +14,7 @@ export default function AttendanceTable({
     paginationMeta
 }: AttendanceTableProps) {
     const EmptyColSpan = calendarDates.length + 2;
+    console.log(attendanceSummary)
   return (
     <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-112.5">
         {/* table title and action header */}
