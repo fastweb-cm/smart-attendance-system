@@ -202,6 +202,9 @@ components:
                 type: string
                 enum: [active, completed, missed_checkout, no_show]
                 example: "completed"
+              attendance_status:
+                type: string
+                enum: [present, absent, on permission]
               derived_from_session:
                 type: integer
                 enum: [0, 1]

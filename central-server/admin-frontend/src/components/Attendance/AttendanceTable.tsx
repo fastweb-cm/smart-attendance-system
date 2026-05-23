@@ -24,7 +24,7 @@ export default function AttendanceTable({
             </div>
             <div className="flex items-center gap-2">
             <span className="bg-blue-50 text-blue-600 border border-blue-100 text-[10px] px-2 py-1 rounded font-mono flex items-center gap-1.5 font-semibold">
-                <Database className="w-3 h-3" /> Live Sync Session Active
+                <Database className="w-3 h-3" /> Live Attendance Summary Report
             </span>
             </div>
         </div>

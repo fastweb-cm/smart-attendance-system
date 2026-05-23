@@ -1,12 +1,35 @@
-import { AttendanceUserAnalyticsMetrics } from "@/types";
+import { useAttendanceLedger } from "@/hooks/useAttendance";
+import { AttendanceQueryParams, AttendanceUserAnalyticsMetrics } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function ZoneAMetrics({ 
   expected_days, 
   present_days, 
   late_arrivals, 
   absent_days, 
-  permission_days 
+  permission_days,
+  queryParams,
+  user
 }: AttendanceUserAnalyticsMetrics) {
+  const params: AttendanceQueryParams = {
+    ...queryParams,
+    search: user
+  }
+
+  // search attendance for this only this user
+  const { data, isLoading } = useAttendanceLedger(params)
+  
+  // filter out user attendance status marked as absent
+  const absentAttendance = data?.attendanceSummary.filter(at => at.attendance_status === "absent");
+
+  absent_days = absentAttendance?.length;
+
+  if (isLoading) (
+    <div className="flex flex-col justify-center items-center text-center p-8">
+        <Loader2  className="w-9 h-9 text-blue-600 animate-spin mb-3"/>
+        <p className="text-xs text-slate-400 mt-1 max-w-xs">Loading {user} attendance metrics </p>
+    </div>
+  )
   return (
     <div>
       <div className="flex items-center justify-between mb-2">

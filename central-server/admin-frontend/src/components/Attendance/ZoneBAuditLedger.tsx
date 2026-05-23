@@ -96,7 +96,7 @@ export default function ZoneBAuditLedger({
               <th className="p-2.5 w-[16%]">First In</th>
               <th className="p-2.5 w-[16%]">Last Out</th>
               <th className="p-2.5 w-[15%] text-center">Hours</th>
-              <th className="p-2.5 text-center w-[23%]">Status Class</th>
+              <th className="p-2.5 text-center w-[23%]">Att. Status</th>
               <th className="p-2.5 text-center w-[12%]">Action</th>
             </tr>
           </thead>
@@ -146,7 +146,6 @@ export default function ZoneBAuditLedger({
                   {/* Hours Dynamic Input Adjuster */}
                   <td className="p-2.5 text-center text-slate-700">
                     {isEditing ? (
-                      record.session_status === 'missed_checkout' || record.session_status === 'no_show' ? (
                         <input 
                           type="number" 
                           value={editHours}
@@ -157,9 +156,6 @@ export default function ZoneBAuditLedger({
                           className="w-12 bg-white border border-slate-300 rounded px-1 text-center font-bold text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500 py-0.5"
                           onClick={(e) => e.stopPropagation()}
                         />
-                      ) : (
-                        <span>{record.total_hours}</span>
-                      )
                     ) : (
                       <span className={record.session_status === 'missed_checkout' ? 'text-amber-700 underline decoration-dotted font-bold' : ''}>
                         {record.total_hours}h
@@ -181,15 +177,14 @@ export default function ZoneBAuditLedger({
                       </select>
                     ) : (
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold font-mono w-full text-center ${
-                        record.checkin_status === 'on time' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        record.checkin_status === 'late' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        record.checkin_status === 'absent' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                        record.attendance_status === 'present' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                        record.attendance_status === 'on permission' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                        record.attendance_status === 'absent' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                         'bg-slate-100 text-slate-600 border border-slate-200'
                       }`}>
-                        {record.checkin_status === 'on time' ? 'On Time' :
-                         record.checkin_status === 'late' ? 'Late' :
-                         record.checkin_status === 'absent' ? 'Absent' :
-                         record.checkin_status === 'excused' ? 'Excused' : 'Exempt'}
+                        {record.attendance_status === 'present' ? 'Present' :
+                         record.attendance_status === 'absent' ? 'Absent' :
+                         record.attendance_status === 'on permission' ? 'On Permission' : 'Exempt'}
                       </span>
                     )}
                   </td>

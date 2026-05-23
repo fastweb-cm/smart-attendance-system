@@ -88,6 +88,7 @@ export type AttendanceLedgerData = {
         total_hours?: number;
         checkin_status?: 'on time' | 'late' | 'absent';
         session_status?: 'active' | 'completed' | 'missed_checkout' | 'no_show';
+        attendance_status?: 'present' | 'absent' | 'on permission';
         derived_from_session?: 0 | 1;
         /**
          * Lateness value deviation tracked directly in minutes.

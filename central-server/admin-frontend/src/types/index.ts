@@ -234,6 +234,8 @@ export interface AttendanceUserAnalyticsMetrics {
   late_arrivals?: number;
   absent_days?: number;
   permission_days?: number;
+  queryParams: AttendanceQueryParams;
+  user: string;
 }
 
 export interface ZoneBAuditLedgerProps {

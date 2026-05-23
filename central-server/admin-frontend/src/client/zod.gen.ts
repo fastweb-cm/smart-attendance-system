@@ -78,6 +78,11 @@ export const zAttendanceLedgerData = z.object({
             'missed_checkout',
             'no_show'
         ])),
+        attendance_status: z.optional(z.enum([
+            'present',
+            'absent',
+            'on permission'
+        ])),
         derived_from_session: z.optional(z.union([z.literal(0), z.literal(1)])),
         variance: z.optional(z.int())
     })),

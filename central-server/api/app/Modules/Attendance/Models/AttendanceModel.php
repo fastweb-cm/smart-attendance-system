@@ -21,7 +21,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $offset = ($page - 1) * $limit;
 
         // ==========================================
-        // 1. GENERATE COLUMNS BASED ON CONTEXT
+        //  GENERATE COLUMNS BASED ON CONTEXT
         // ==========================================
         $calendarDates = [];
         $eventIds = [];
@@ -59,7 +59,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             }
         }
 
-        // 2. Fetch global calendar exceptions (Only meaningful for standard daily schedules)
+        //  Fetch global calendar exceptions (Only meaningful for standard daily schedules)
         $attendanceExceptions = [];
         if ($attendance_context === 'daily') {
             $sqlExceptions = "SELECT start_date AS date, title AS name, exception_type AS type FROM tbl_exception
@@ -69,7 +69,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         }
 
         // ==========================================
-        // 3. PAGINATION META WITH DYNAMIC SEARCH
+        //  PAGINATION META WITH DYNAMIC SEARCH
         // ==========================================
         $countParams = [];
         $sqlCount = "SELECT COUNT(*) as total 
@@ -95,10 +95,13 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         // System metrics aggregation based on active context window
         $metricsParams = [$attendance_context];
         $sqlMetrics = "SELECT 
-            SUM(CASE WHEN LOWER(summary.attendance_status) = 'late' THEN 1 ELSE 0 END) AS total_late,
-            SUM(CASE WHEN LOWER(summary.attendance_status) = 'missed checkout' THEN 1 ELSE 0 END) AS total_missed_checkout,
+            SUM(CASE WHEN LOWER(sess.checkin_status) = 'late' THEN 1 ELSE 0 END) AS total_late,
+            SUM(CASE WHEN LOWER(sess.session_status) = 'missed checkout' THEN 1 ELSE 0 END) AS total_missed_checkout,
             SUM(CASE WHEN summary.derived_from_session = 0 THEN 1 ELSE 0 END) AS total_audit_override
         FROM tbl_attendance_summary summary
+        LEFT JOIN tbl_attendance_session sess 
+            ON summary.user_id = sess.user_id 
+            AND summary.first_checkin = sess.checkin_timestamp
         WHERE summary.attendance_context = ?";
 
         if ($attendance_context === 'event') {
@@ -125,7 +128,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         ];
 
         // ==========================================
-        // 4. FETCH ONLY THE MATCHING SEARCH CHUNK OF USERS
+        // FETCH ONLY THE MATCHING SEARCH CHUNK OF USERS
         // ==========================================
         $userParams = [];
         $sqlUsers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.user_type,
@@ -189,7 +192,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         }
 
         // ==========================================
-        // 5. FETCH ATTENDANCE SUMMARY RECORDS
+        // FETCH ATTENDANCE SUMMARY RECORDS
         // ==========================================
         $userIdPlaceholders = implode(',', array_fill(0, count($pageUserIds), '?'));
         
@@ -245,7 +248,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         }
 
         // ==========================================
-        // 6. SYNTHESIZE DENSE ATTENDANCE MATRIX
+        // SYNTHESIZE DENSE ATTENDANCE MATRIX
         // ==========================================
         $initialAttendanceSummary = [];
         foreach ($formattedUsers as $user) {
@@ -270,6 +273,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'total_hours'          => (float)$record['total_hours'],
                         'checkin_status'       => $isAbsent ? 'absent' : str_replace(' ', '_', $record['checkin_status']), 
                         'session_status'       => $isAbsent ? 'no_show' : str_replace(' ', '_', $record['session_status']),
+                        'attendance_status'    => $record['attendance_status'],
                         'derived_from_session' => (int)$record['derived_from_session'],
                         'variance'             => ($record['attendance_status'] === 'late') ? 15 : 0 
                     ];
@@ -283,6 +287,7 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'total_hours'          => 0.0,
                         'checkin_status'       => 'absent',
                         'session_status'       => 'no_show',
+                        'attendance_status'    => 'absent',
                         'derived_from_session' => 1,
                         'variance'             => 0
                     ];
