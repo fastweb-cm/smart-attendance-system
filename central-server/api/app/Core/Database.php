@@ -4,6 +4,7 @@ namespace App\Core;
 
 use mysqli;
 use mysqli_sql_exception;
+use App\Core\Logger;
 
 class Database
 {
@@ -31,6 +32,10 @@ class Database
             );
             $this->conn->set_charset('utf8mb4');
         } catch (mysqli_sql_exception $e) {
+            Logger::log('database', 'critical', 'Database connection aborted: ' . $e->getMessage(), null, [
+                'host' => $config['host'],
+                'port' => $config['port']
+            ]);
             throw new \RuntimeException('Database connection error: ' . $e->getMessage());
         }
     }
