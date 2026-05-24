@@ -12,7 +12,8 @@ export default function ZoneBAuditLedger({
   onRowClick
 }: ZoneBAuditLedgerProps) {
 
-  const [editingDate, setEditingDate] = useState<string | null>(null);
+  // We are now tracking the unique composite string identity (date or event-date combination)
+  const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   
   // Track currently active audit selection line
   const [selectedAuditDate, setSelectedAuditDate] = useState<string>(() => getPreviousDay());
@@ -24,65 +25,89 @@ export default function ZoneBAuditLedger({
   // Pull records from cache
   const { data, isLoading } = useAttendanceLedger(queryParams);
 
+  const isEventContext = queryParams.context === 'event';
+
   const chronologicalAuditLedger = useMemo(() => {
     if (!data) return [];
 
     type AttendanceRecord = AttendanceTableProps["attendanceSummary"] extends Array<infer U> ? U : never;
-    type AuditLedgerRecord = AttendanceRecord & { isHolidayShift: boolean; holidayName?: string };
+    // We attach a unique 'rowKey' to completely eliminate React key collisions on multi-day events
+    type AuditLedgerRecord = AttendanceRecord & { isHolidayShift: boolean; holidayName?: string; rowKey: string; displayLabel: string };
 
     const userRecords = data.attendanceSummary.filter(u => u.employee_id === userId);
 
     return data.calendarDates.reduce<AuditLedgerRecord[]>((acc, cd) => {
-      const exception = data.exceptions.find((ex) => ex.date === cd.raw);
-      const record = userRecords.find(r => r.date === cd.raw) || {
+      // Safely extract string constants with guaranteed fallbacks to appease the compiler
+      const targetExactDate = cd.exact_date ?? "";
+      const targetRaw = cd.raw ?? "";
+      const targetDisplayLabel = cd.dayName ?? cd.label ?? "";
+
+      const exception = data.exceptions?.find((ex) => ex.date === targetExactDate);
+      
+      // Match records using BOTH date and event validation parameters accurately
+      const record = userRecords.find(r => {
+        if (isEventContext) {
+          return String(r.event_id) === targetRaw && r.date === targetExactDate;
+        }
+        return r.date === targetRaw;
+      }) || {
+        id: null,
         employee_id: userId,
-        date: cd.raw,
+        date: targetExactDate,
+        event_id: isEventContext ? parseInt(targetRaw !== "" ? targetRaw : "0") : undefined,
         first_checkin: null,
         last_checkout: null,
         total_hours: 0,
         checkin_status: 'absent',
         session_status: 'no_show',
         derived_from_session: 1,
+        attendance_status: 'absent',
         variance: 0
       };
 
-      if (exception) {
-        acc.push({ ...record, isHolidayShift: true, holidayName: exception.name });
-      } else {
-        acc.push({ ...record, isHolidayShift: false });
-      }
+      // Create a truly unique DOM key identifier (e.g., "13_2026-05-20" or "2026-05-20")
+      const uniqueRowKey = isEventContext ? `${targetRaw}_${targetExactDate}` : targetExactDate;
+
+      acc.push({
+        ...record,
+        isHolidayShift: !!exception,
+        holidayName: exception?.name ?? "",
+        rowKey: uniqueRowKey,
+        displayLabel: targetDisplayLabel
+      });
 
       return acc;
     }, []);
-  }, [data, userId]);
-
+  }, [data, userId, isEventContext]);
   // Safely intercept and populate inputs when editing mode is triggered
   const startEditingRow = (
     e: React.MouseEvent,
-    record: AttendanceTableProps["attendanceSummary"][number]
+    record: AttendanceTableProps["attendanceSummary"][number] & { rowKey: string }
   ) => {
-    e.stopPropagation(); // Avoid triggering row table selection events
-    setEditingDate(record.date ?? null);
+    e.stopPropagation(); 
+    setEditingRowKey(record.rowKey);
     setEditHours(record.total_hours ?? 0);
     setEditStatus(record.attendance_status ?? "");
   };
 
   const saveCorrectionMutation = useUpdateAttendance();
 
-  const handleSaveCorrection = async (id: number) => {
+  const handleSaveCorrection = async (id: number, targetDate: string, eventId: number | null) => {
     const reqBody = {
       id: id,
       status: editStatus as "absent" | "present" | "on permission",
       hours: editHours,
       userId: userId,
-      date: selectedAuditDate,
-      context: queryParams.context
-    }
+      date: targetDate, // Passes down the exact single-day date slice of that event
+      context: queryParams.context,
+      eventId: eventId // Matches backend input parsing key expectation name
+    };
+    
     await saveCorrectionMutation.mutateAsync({
         body: reqBody
-      })
+    });
 
-    setEditingDate(null);
+    setEditingRowKey(null);
   };
 
   if (isLoading) {
@@ -100,23 +125,23 @@ export default function ZoneBAuditLedger({
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sticky top-0 z-10 font-bold font-mono text-slate-500 tracking-wider">
-              <th className="p-2.5 w-[18%]">Date</th>
+              <th className="p-2.5 w-[22%]">Date</th>
               <th className="p-2.5 w-[16%]">First In</th>
               <th className="p-2.5 w-[16%]">Last Out</th>
-              <th className="p-2.5 w-[15%] text-center">Hours</th>
-              <th className="p-2.5 text-center w-[23%]">Att. Status</th>
+              <th className="p-2.5 w-[13%] text-center">Hours</th>
+              <th className="p-2.5 text-center w-[21%]">Att. Status</th>
               <th className="p-2.5 text-center w-[12%]">Action</th>
             </tr>
           </thead>
           
           <tbody className="divide-y divide-slate-100">
             {chronologicalAuditLedger.map((record) => {
-              const isEditing = editingDate === record.date;
+              const isEditing = editingRowKey === record.rowKey;
               const isSelected = selectedAuditDate === record.date;
 
               return (
                 <tr 
-                  key={record.date} 
+                  key={record.rowKey} // FIX 2: Completely resolves duplicate key warnings
                   className={`transition text-[11px] font-mono cursor-pointer relative ${
                     isSelected ? 'bg-blue-50/70 text-slate-900 font-medium' : 'hover:bg-slate-50 text-slate-600'
                   }`}
@@ -131,7 +156,8 @@ export default function ZoneBAuditLedger({
                   {/* Date Column */}
                   <td className="p-2.5 font-bold text-slate-900 relative">
                     <div className="flex flex-col">
-                      <span>{record.date ? record.date.substring(5) : ""}</span>
+                      {/* FIX 3: Safely display readable day names for events without string slice errors */}
+                      <span>{isEventContext ? record.displayLabel : (record.date ? record.date.substring(5) : "")}</span>
                       {record.isHolidayShift && (
                         <span className="text-[8px] text-blue-600 font-bold truncate tracking-tight">{record.holidayName}</span>
                       )}
@@ -202,14 +228,14 @@ export default function ZoneBAuditLedger({
                     {isEditing ? (
                       <div className="flex gap-1 justify-center">
                         <button 
-                          onClick={() => handleSaveCorrection(record.id ?? 0)}
+                          onClick={() => handleSaveCorrection(record.id ?? 0, record.date ?? "", record.event_id ?? null)}
                           className="p-1 bg-emerald-50 border border-emerald-300 text-emerald-700 rounded hover:bg-emerald-100 transition shadow-sm cursor-pointer"
                           title="Commit Override (derived_from_session = 0)"
                         >
                           <Save className="w-3.5 h-3.5" />
                         </button>
                         <button 
-                          onClick={() => setEditingDate(null)}
+                          onClick={() => setEditingRowKey(null)}
                           className="p-1 bg-slate-50 border border-slate-200 text-slate-600 rounded hover:bg-slate-100 transition shadow-sm cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />

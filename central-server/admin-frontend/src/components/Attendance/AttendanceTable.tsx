@@ -14,7 +14,7 @@ export default function AttendanceTable({
     paginationMeta
 }: AttendanceTableProps) {
     const EmptyColSpan = calendarDates.length + 2;
-    console.log(attendanceSummary)
+
   return (
     <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-112.5">
         {/* table title and action header */}
@@ -39,7 +39,7 @@ export default function AttendanceTable({
                         <th className="sticky left-0 edit-z z-20 p-6 border-r border-b border-slate-200 bg-slate-50 font-bold w-70 text-slate-700">EMPLOYEE CREDENTIALS</th>
 
                         { calendarDates.map(cd => {
-                            const isHoliday = exceptions.some(ex => ex.date === cd.raw);
+                            const isHoliday = exceptions.some(ex => ex.date === cd.exact_date);
 
                             return (
                                 <th key={cd.raw} className={`p-3 border-r border-b border-slate-200 text-center text-xs uppercase tracking-wide ${isHoliday ? "bg-blue-50/50" : ""}`}>
@@ -93,8 +93,8 @@ export default function AttendanceTable({
 
                                 {/* matrix cell rendering dynamically */}
                                 {calendarDates.map(cd => {
-                                    const record = records.find(r => r.date === cd.raw)
-                                    const isHoliday = exceptions.some(ex => ex.date === cd.raw)
+                                    const record = records.find(r => r.date === cd.exact_date)
+                                    const isHoliday = exceptions.some(ex => ex.date === cd.exact_date)
                                     const dayNormalized = cd?.dayName?.toLowerCase() || '';
                                     const isWeekend = dayNormalized.includes('sat') || dayNormalized.includes('sun');
 

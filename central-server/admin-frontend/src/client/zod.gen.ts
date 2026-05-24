@@ -41,7 +41,8 @@ export const zAttendanceLedgerData = z.object({
         raw: z.optional(z.iso.date()),
         label: z.optional(z.string()),
         isWeekend: z.optional(z.boolean()),
-        dayName: z.optional(z.string())
+        dayName: z.optional(z.string()),
+        exact_date: z.optional(z.iso.date())
     })),
     exceptions: z.array(z.object({
         date: z.optional(z.iso.date()),
@@ -62,6 +63,7 @@ export const zAttendanceLedgerData = z.object({
         ])),
         employee_id: z.optional(z.int()),
         date: z.optional(z.iso.date()),
+        event_id: z.optional(z.int()),
         first_checkin: z.optional(z.union([
             z.iso.datetime(),
             z.null()
@@ -1056,7 +1058,11 @@ export const zPartialEditAttendanceData = z.object({
         hours: z.number(),
         context: z.optional(z.enum(['daily', 'event'])),
         userId: z.optional(z.int()),
-        date: z.optional(z.iso.date())
+        date: z.optional(z.iso.date()),
+        event_id: z.optional(z.union([
+            z.int(),
+            z.null()
+        ]))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())

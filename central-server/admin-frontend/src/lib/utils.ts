@@ -63,3 +63,8 @@ export function getPreviousDay() {
   
   return `${year}-${month}-${day}`;
 }
+
+// return attendance start date
+export function getStartDate() {
+  return new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+}

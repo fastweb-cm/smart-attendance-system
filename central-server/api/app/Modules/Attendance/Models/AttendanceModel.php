@@ -27,25 +27,35 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $eventIds = [];
 
         if ($attendance_context === 'event') {
-            // Fetch real events that fall within the range
-            $sqlEvents = "SELECT id, name, DATE(start_datetime) as date_only 
+            // Pull events overlapping with the range (even if they started before or end after)
+            $sqlEvents = "SELECT id, name, DATE(start_datetime) as start_date_only, DATE(end_datetime) as end_date_only 
                           FROM tbl_event 
-                          WHERE start_datetime BETWEEN ? AND ? 
+                          WHERE start_datetime <= ? AND end_datetime >= ? 
                           ORDER BY start_datetime ASC";
-            $eventsRes = $this->db->query($sqlEvents, [$start_date . ' 00:00:00', $end_date . ' 23:59:59']);
+            $eventsRes = $this->db->query($sqlEvents, [$end_date . ' 23:59:59', $start_date . ' 00:00:00']);
             $rawEvents = $eventsRes ? $eventsRes->fetch_all(MYSQLI_ASSOC) : [];
 
             foreach ($rawEvents as $evt) {
-                $calendarDates[] = [
-                    'raw'       => (string)$evt['id'], 
-                    'label'     => $evt['name'],       
-                    'isWeekend' => false,
-                    'dayName'   => date('M d', strtotime($evt['date_only']))
-                ];
                 $eventIds[] = $evt['id'];
+                
+                // Unroll multi-day events into individual ledger day columns
+                $evtStart = max(strtotime($start_date), strtotime($evt['start_date_only']));
+                $evtEnd = min(strtotime($end_date), strtotime($evt['end_date_only']));
+                
+                $currentDay = $evtStart;
+                while ($currentDay <= $evtEnd) {
+                    $currentDayStr = date('Y-m-d', $currentDay);
+                    $calendarDates[] = [
+                        'raw'       => (string)$evt['id'], // Target lookup handle remains event ID
+                        'label'     => $evt['name'],       
+                        'isWeekend' => in_array(date('N', $currentDay), [6, 7]),
+                        'dayName'   => date('M d', $currentDay),
+                        'exact_date'=> $currentDayStr // Tracks the specific day of a multi-day event span
+                    ];
+                    $currentDay = strtotime('+1 day', $currentDay);
+                }
             }
             
-            // SHORT-CIRCUIT ROUTE: If no events are found in this date window, stop here
             if (empty($eventIds)) {
                 return [
                     'calendarDates' => [], 'exceptions' => [], 'users' => [], 
@@ -62,7 +72,8 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                     'raw'       => date('Y-m-d', $current),
                     'label'     => date('M d', $current),
                     'isWeekend' => in_array(date('N', $current), [6, 7]),
-                    'dayName'   => date('D', $current)
+                    'dayName'   => date('D', $current),
+                    'exact_date'=> date('Y-m-d', $current)
                 ];
                 $current = strtotime('+1 day', $current);
             }
@@ -83,7 +94,6 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $countParams = [];
         
         if ($attendance_context === 'event') {
-            // Only count active users assigned to the matching events via group/subgroup policies
             $eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
             $sqlCount = "SELECT COUNT(DISTINCT u.id) as total 
                          FROM tbl_user u 
@@ -308,10 +318,13 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
         $summaryRes = $this->db->query($sqlSummary, $summaryParams);
         $rawSummary = $summaryRes ? $summaryRes->fetch_all(MYSQLI_ASSOC) : [];
 
+        // Fix 3: Index records using a composite key of user_id AND specific attendance_date
         $indexedSummary = [];
         foreach ($rawSummary as $row) {
-            $lookupKey = ($attendance_context === 'event') ? (string)$row['event_id'] : $row['date'];
-            $indexedSummary[$row['user_id']][$lookupKey] = $row;
+            $indexedSummary[$row['user_id']][$row['event_id']][$row['date']] = $row;
+            if ($attendance_context !== 'event') {
+                $indexedSummary[$row['user_id']]['daily'][$row['date']] = $row;
+            }
         }
 
         // ==========================================
@@ -322,11 +335,21 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
             $uId = $user['id'];
 
             foreach ($calendarDates as $calDate) {
-                $lookupKey = $calDate['raw']; 
+                $eventIdHandle = $calDate['raw'];
+                $targetDate = $calDate['exact_date'];
 
-                if (isset($indexedSummary[$uId][$lookupKey])) {
-                    $record = $indexedSummary[$uId][$lookupKey];
+                // Check for a precise match on User ID, Event ID, and Specific Date
+                if ($attendance_context === 'event' && isset($indexedSummary[$uId][(int)$eventIdHandle][$targetDate])) {
+                    $record = $indexedSummary[$uId][(int)$eventIdHandle][$targetDate];
+                    $hasRecord = true;
+                } else if ($attendance_context !== 'event' && isset($indexedSummary[$uId]['daily'][$targetDate])) {
+                    $record = $indexedSummary[$uId]['daily'][$targetDate];
+                    $hasRecord = true;
+                } else {
+                    $hasRecord = false;
+                }
 
+                if ($hasRecord) {
                     $firstCheckin = $record['first_checkin'] ? date('c', strtotime($record['first_checkin'])) : null;
                     $lastCheckout = $record['last_checkout'] ? date('c', strtotime($record['last_checkout'])) : null;
                     $isAbsent = ($record['attendance_status'] === 'absent');
@@ -334,8 +357,8 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                     $initialAttendanceSummary[] = [
                         'id'                   => $record['id'],
                         'employee_id'          => $uId,
-                        'date'                 => $attendance_context === 'event' ? $record['date'] : $lookupKey,
-                        'event_id'             => $attendance_context === 'event' ? (int)$lookupKey : null,
+                        'date'                 => $targetDate, // Always returns the specific calendar date of the record
+                        'event_id'             => $attendance_context === 'event' ? (int)$eventIdHandle : null,
                         'first_checkin'        => $firstCheckin,
                         'last_checkout'        => $lastCheckout,
                         'total_hours'          => (float)$record['total_hours'],
@@ -346,14 +369,13 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
                         'variance'             => ($record['attendance_status'] === 'late') ? 15 : 0 
                     ];
                 } else {
-                    // Check if this particular grid cell intersects with an event they shouldn't be at
-                    $isNotApplicable = ($attendance_context === 'event' && !isset($userEventMap[$uId][$lookupKey]));
+                    $isNotApplicable = ($attendance_context === 'event' && !isset($userEventMap[$uId][$eventIdHandle]));
 
                     $initialAttendanceSummary[] = [
                         'id'                   => null,
                         'employee_id'          => $uId,
-                        'date'                 => $attendance_context === 'event' ? null : $lookupKey,
-                        'event_id'             => $attendance_context === 'event' ? (int)$lookupKey : null,
+                        'date'                 => $targetDate, // Graceful fallback to the specific slice date string
+                        'event_id'             => $attendance_context === 'event' ? (int)$eventIdHandle : null,
                         'first_checkin'        => null,
                         'last_checkout'        => null,
                         'total_hours'          => 0.0,
@@ -524,15 +546,18 @@ public function updateAttendanceById(int $id, string $status, float $hours): boo
     }
 }
 
-public function createManualAttendanceSummary(int $userId, string $date, string $status, float $hours, string $context): bool
+public function createManualAttendanceSummary(int $userId, string $date, string $status, float $hours, string $context, ?int $eventId = null): bool
 {
     try {
+        // Explicitly force event_id to null if the context isn't an event
+        $targetEventId = ($context === 'event') ? $eventId : null;
+
         $sql = "INSERT INTO tbl_attendance_summary 
-                (user_id, attendance_date, attendance_context, attendance_status, total_hours, derived_from_session)
-                VALUES (?, ?, ?, ?, ?, 0)";
+                (user_id, attendance_date, event_id, attendance_context, attendance_status, total_hours, derived_from_session)
+                VALUES (?, ?, ?, ?, ?, ?, 0)";
         
-        // Executes query statement safely
-        $this->db->query($sql, [$userId, $date, $context, $status, $hours]);
+        // Executes query statement safely with the parameterized targetEventId
+        $this->db->query($sql, [$userId, $date, $targetEventId, $context, $status, $hours]);
 
         // If it didn't throw an exception, the insert was successful
         return true;

@@ -131,6 +131,9 @@ components:
               dayName:
                 type: string
                 example: "Wed"
+              exact_date:
+                type: string
+                format: date
         exceptions:
           type: array
           description: Array of global infrastructure anomalies or holiday closures falling inside the matrix.
@@ -184,6 +187,8 @@ components:
                 type: string
                 format: date
                 example: "2026-05-20"
+              event_id:
+                type: integer
               first_checkin:
                 type: ["string", "null"]
                 format: date-time
@@ -2476,6 +2481,8 @@ paths:
                 date:
                   type: string
                   format: date
+                event_id:
+                  type: ["integer", "null"]
       responses:
         "200":
           description: Attendance override was successful.

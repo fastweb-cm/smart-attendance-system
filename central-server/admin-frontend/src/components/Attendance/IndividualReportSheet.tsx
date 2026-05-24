@@ -110,11 +110,6 @@ export default function IndividualReportSheet({
 
                     <div className={isFetching ? "opacity-75 pointer-events-none transition-opacity duration-200" : "transition-opacity duration-200"}>
                         <ZoneAMetrics
-                            expected_days={data?.metrics.expected_days}
-                            present_days={data?.metrics.present_days}
-                            late_arrivals={data?.metrics.late_arrivals}
-                            absent_days={data?.metrics.absent_days}
-                            permission_days={data?.metrics.permission_days}
                             queryParams={queryParams}
                             user={filteredEmployee.name ?? ""}
                         />

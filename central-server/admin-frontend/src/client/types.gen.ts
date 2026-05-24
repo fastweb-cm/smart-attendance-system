@@ -55,6 +55,7 @@ export type AttendanceLedgerData = {
         label?: string;
         isWeekend?: boolean;
         dayName?: string;
+        exact_date?: string;
     }>;
     /**
      * Array of global infrastructure anomalies or holiday closures falling inside the matrix.
@@ -84,6 +85,7 @@ export type AttendanceLedgerData = {
          */
         employee_id?: number;
         date?: string;
+        event_id?: number;
         first_checkin?: string | null;
         last_checkout?: string | null;
         total_hours?: number;
@@ -2084,6 +2086,7 @@ export type PartialEditAttendanceData = {
         context?: 'daily' | 'event';
         userId?: number;
         date?: string;
+        event_id?: number | null;
     };
     path?: never;
     query?: never;

@@ -117,11 +117,14 @@ public function partialEdit()
     $hours = (float)$data['hours'];
     $context = $data['context'];
     $date = $data['date']; // Target ledger date from frontend mapping ("YYYY-MM-DD")
+    
+    // Extract eventId safely if passed from frontend payload, default to null
+    $eventId = isset($data['eventId']) && $data['eventId'] !== null ? (int)$data['eventId'] : null;
 
     try {
         // CASE A: Record doesn't exist yet -> Execute Insert
         if ($id === 0) {
-            if ($this->a->createManualAttendanceSummary($userId, $date, $status, $hours, $context)) {
+            if ($this->a->createManualAttendanceSummary($userId, $date, $status, $hours, $context, $eventId)) {
                 $this->json([
                     "success" => true,
                     "message" => "Attendance summary created successfully",
