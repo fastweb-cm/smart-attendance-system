@@ -14,6 +14,7 @@ use App\Modules\Sync\Controller\SyncController;
 use App\Modules\Exceptions\Controllers\ExceptionController;
 use App\Modules\Attendance\Controller\AttendanceController;
 
+use App\Modules\Logger\Controllers\LoggerController;
 /*
 |--------------------------
 |  Public Routes
@@ -100,4 +101,7 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->get('/api/v1/attendance/user/{id}', [AttendanceController::class, 'userDetail']);
     $router->patch('/api/v1/attendance', [AttendanceController::class, 'partialEdit']);
 
+    
+    $router->get('/api/v1/logs', [LoggerController::class, 'index']);
 });
+
