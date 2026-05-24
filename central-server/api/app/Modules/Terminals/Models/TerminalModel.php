@@ -2,6 +2,7 @@
 namespace App\Modules\Terminals\Models;
 
 use App\Core\Database;
+use App\Core\Logger;
 
 class TerminalModel
 {
@@ -40,7 +41,6 @@ class TerminalModel
     
     public function setName(string $name): void { 
         $this->name = $name; 
-        // Automatically generate slug if not already set
         if (empty($this->slug)) {
             $this->setSlug($this->generateSlug($name));
         }
@@ -82,23 +82,31 @@ class TerminalModel
             $this->db->query($sqlTerm, $paramsTerm);
             $this->id = $this->db->lastInsertId();
 
-            // now let add the terminal capabilities and access policy
             if($this->id > 0){
-                // handle auth capabilities
                 if(!empty($authCapabilities)){
                     $this->bulkInsertCapabilities($authCapabilities);
                 }
 
-                // handle access policy
                 if (!empty($accessPolicy)) {
                     $this->bulkInsertPolicies($accessPolicy);
                 }
             }
 
-            // enqueue users for synchronization based on the access policy
             $this->enqueueTerminalUsersSync($this->id, $accessPolicy);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin registered terminal gate '%s' (ID: %d) under branch ID: %d. Generated activation code: %s", $this->name, $this->id, $this->branch_id, $activationCode),
+                null,
+                ['terminal_id' => $this->id, 'name' => $this->name, 'action' => 'terminal_register']
+            );
+
             return true;
         } catch(\Throwable $e) {
             $this->db->rollBack();
@@ -111,8 +119,6 @@ class TerminalModel
         try {
             $this->db->beginTransaction();
 
-            // Update the main terminal record
-            // We typically don't update activation_code or slug here
             $sql = "UPDATE tbl_terminal 
                     SET name = ?, slug = ?, branch_id = ?, status = ?, updated_at = ? 
                     WHERE id = ?";
@@ -126,22 +132,31 @@ class TerminalModel
                 $this->getId()
             ]);
 
-            // Sync Auth Capabilities (Delete old, Insert new)
             $this->db->query("DELETE FROM tbl_terminal_auth_capability WHERE terminal_id = ?", [$this->id]);
             if (!empty($authCapabilities)) {
                 $this->bulkInsertCapabilities($authCapabilities);
             }
 
-            // Sync Access Policies (Delete old, Insert new)
             $this->db->query("DELETE FROM tbl_terminal_access_policy WHERE terminal_id = ?", [$this->id]);
             if (!empty($accessPolicy)) {
                 $this->bulkInsertPolicies($accessPolicy);
             }
 
-            // enqueue users for synchronization based on the updated access policy
             $this->enqueueTerminalUsersSync($this->id, $accessPolicy);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin updated hardware profile and policy permissions for terminal device '%s' (ID: %d)", $this->name, $this->id),
+                null,
+                ['terminal_id' => $this->id, 'name' => $this->name, 'action' => 'terminal_update']
+            );
+
             return true;
 
         } catch (\Throwable $e) {
@@ -150,13 +165,6 @@ class TerminalModel
         }
     }
 
-    /**
-    * Processes access policies to compile and enqueue user operational synchronization tasks
-    * 
-    * @param int $terminalId
-    * @param array $accessPolicies Raw array containing group_id and subgroup_id matrices
-    * @return void
-    */
     public function enqueueTerminalUsersSync(int $terminalId, array $accessPolicies): void
     {
         if (empty($accessPolicies)) {
@@ -164,8 +172,6 @@ class TerminalModel
         }
 
         try {
-            // We accumulate user IDs in an array to prevent duplicate queue entries 
-            // for users who might match multiple criteria across loops
             $userIdsToSync = [];
 
             foreach ($accessPolicies as $policy) {
@@ -173,8 +179,6 @@ class TerminalModel
                 $subgroupId = isset($policy['subgroup_id']) ? (int)$policy['subgroup_id'] : null;
 
                 if ($subgroupId) {
-                    // Scenario A: Targeted Specific Subgroup
-                    // Assuming your system links users via a 'subgroup_id' column on a user table
                     $sql = "SELECT sm.user_id FROM tbl_subgroup_member sm 
                                 JOIN tbl_user u ON sm.user_id = u.id
                                 WHERE sm.subgroup_id = ? AND u.status = 'active'";
@@ -185,8 +189,6 @@ class TerminalModel
                         $userIdsToSync[$user['user_id']] = true;
                     }
                 } elseif ($groupId) {
-                    // Scenario B: Broad Parent Group (Subgroup is Null)
-                    // We fetch all users belonging to ALL subgroups nesting under this parent group identifier
                     $sql = "SELECT gm.user_id
                             FROM tbl_group_member gm
                             JOIN tbl_user u ON gm.user_id = u.id
@@ -201,20 +203,15 @@ class TerminalModel
                 }
             }
 
-            // If matching users were located, execute a quick bulk insert into your sync queue matrix
             if (!empty($userIdsToSync)) {
                 $this->bulkInsertSyncQueue($terminalId, array_keys($userIdsToSync));
             }
 
         } catch (\Throwable $e) {
-            // Log error context or allow transaction rollback handling bubbles downstream
             throw $e;
         }
     }
 
-    /**
-    * Handles batching data cleanly into your tbl_sync_queue framework
-    */
     private function bulkInsertSyncQueue(int $terminalId, array $userIds): void
     {
         $values = [];
@@ -232,12 +229,8 @@ class TerminalModel
         $this->db->query($sql, $values);
     }
 
-    /**
-    * Fetch terminals with their capabilities and access policies
-    */
     public function fetch(int $branchId = 0, int $terminalId = 0, string $status = ''): array
     {
-        // Build the main Terminal query dynamically
         $sqlTerminals = "SELECT t.*,b.name AS branch, th.ip_address, th.last_heartbeat,
                             CASE 
                                 WHEN th.last_heartbeat >= NOW() - INTERVAL 10 MINUTE THEN 'online'
@@ -265,8 +258,9 @@ class TerminalModel
         }
 
         if (!empty($where)) {
-            // order by id desc to show the latest created terminal first
             $sqlTerminals .= " WHERE " . implode(" AND ", $where) . " ORDER BY t.id DESC";
+        } else {
+            $sqlTerminals .= " ORDER BY t.id DESC";
         }
 
         $terminalResult = $this->db->query($sqlTerminals, $params);
@@ -279,8 +273,6 @@ class TerminalModel
         $terminalIds = array_column($terminals, 'id');
         $placeholders = implode(',', array_fill(0, count($terminalIds), '?'));
 
-        // Fetch all Auth Capabilities for these terminals
-        // JOINing with a hypothetical tbl_auth_type to get the human-readable name
         $sqlCaps = "SELECT tc.*, at.name as auth_type_name 
                     FROM tbl_terminal_auth_capability tc
                     LEFT JOIN lkup_auth_type at ON tc.auth_type_id = at.id
@@ -294,8 +286,6 @@ class TerminalModel
             }
         }
 
-        // 3. Fetch all Access Policies for these terminals
-        // JOINing with tbl_group to show which group the policy applies to
         $sqlPolicies = "SELECT tp.*, g.name as group_name, at.name as auth_type_name
                         FROM tbl_terminal_access_policy tp
                         LEFT JOIN tbl_group g ON tp.group_id = g.id
@@ -310,7 +300,6 @@ class TerminalModel
             }
         }
 
-        // 4. Map relationships back to the terminals
         foreach ($terminals as &$terminal) {
             $terminal['auth_capabilities'] = $capsByTerminal[$terminal['id']] ?? [];
             $terminal['access_policy'] = $polsByTerminal[$terminal['id']] ?? [];
@@ -319,10 +308,6 @@ class TerminalModel
         return $terminals;
     }
 
-    /**
-    * Delete a terminal and all its associated relationships
-    * @return bool
-    */
     public function delete(): bool
     {
         if (!$this->id) {
@@ -332,15 +317,25 @@ class TerminalModel
         try {
             $this->db->beginTransaction();
 
-            // 1. Delete Child Records First
             $this->db->query("DELETE FROM tbl_terminal_auth_capability WHERE terminal_id = ?", [$this->id]);
             $this->db->query("DELETE FROM tbl_terminal_access_policy WHERE terminal_id = ?", [$this->id]);
 
-            // 2. Delete the Main Terminal Record
             $sql = "DELETE FROM tbl_terminal WHERE id = ?";
             $this->db->query($sql, [$this->id]);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin purged physical hardware terminal gate maps for ID: %d from deployment topologies", $this->id),
+                null,
+                ['terminal_id' => $this->id, 'action' => 'terminal_purge']
+            );
+
             return true;
 
         } catch (\Throwable $e) {
@@ -349,239 +344,180 @@ class TerminalModel
         }
     }
 
-    /**
-     * Verifies a plain text code against the hashed code in DB
-     * Returns terminal ID on success, 0 on failre
-     * @param string $activationCode
-     * @return int
-     */
     public function verifyActivationcode(string $activationCode): int {
-        // only fetch terminal that are still pending
-        $result = $this->db->query("SELECT * FROM tbl_terminal WHERE status = ?",['pending']);
+        $result = $this->db->query("SELECT * FROM tbl_terminal WHERE status = ?", ['pending']);
 
         if($result && $result->num_rows > 0) {
             while($row = $result->fetch_assoc()) {
-                // verify the plain code again stored hash
                 if (password_verify($activationCode, $row["activation_code"])) {
                     return (int)$row["id"];
                 }
             }
         }
 
-        return 0; // no match found
+        return 0;
     }
 
-    /**
-     * Get full terminal configuration by ID
-     * Reuses the existing fetch method
-     * @param int $id
-     * @return array|null
-     */
-public function getTerminalData(int $id): ?array
-{
-    try {
-        $this->db->beginTransaction();
+    public function getTerminalData(int $id): ?array
+    {
+        try {
+            $this->db->beginTransaction();
 
-        // Update status and fetch basic terminal info
-        $this->updateStatus('active', (int)$id);
-        $result = $this->fetch(0, $id);
-        
-        if (empty($result)) return null;
-        $terminal = $result[0];
-
-        // Gather ALL users relevant to this terminal (Daily + Event)
-        // We need to fetch Daily Users AND Event Users to make sure no one is missed.
-        $dailyUsers = $this->getUsersByTerminalPolicy($id);
-        $eventUsers = $this->getUsersByEventPolicy($id); // NEW Helper (see below)
-
-        // Merge all users into one unique list (Identities)
-        $uniqueUsers = [];
-        foreach (array_merge($dailyUsers, $eventUsers) as $user) {
-            $uniqueUsers[$user['id']] = $user;
-        }
-
-        // Build the Permissions list
-        $permissions = [];
-        foreach ($uniqueUsers as $userId => $userData) {
-            // Get all contexts (daily/event) for this specific user
-            $userPerms = $this->getUserPermissions($userId, $id);
+            $this->updateStatus('active', (int)$id);
+            $result = $this->fetch(0, $id);
             
-            foreach ($userPerms as $perm) {
-                $permissions[] = [
-                    "user_id"    => $userId,
-                    "group_id"   => $perm['group_id'],
-                    "subgroup_id"=> $perm['subgroup_id'],
-                    "context"    => $perm['context'],
-                    "event_id"   => $perm['event_id']
-                ];
+            if (empty($result)) return null;
+            $terminal = $result[0];
+
+            $dailyUsers = $this->getUsersByTerminalPolicy($id);
+            $eventUsers = $this->getUsersByEventPolicy($id);
+
+            $uniqueUsers = [];
+            foreach (array_merge($dailyUsers, $eventUsers) as $user) {
+                $uniqueUsers[$user['id']] = $user;
+            }
+
+            $permissions = [];
+            foreach ($uniqueUsers as $userId => $userData) {
+                $userPerms = $this->getUserPermissions($userId, $id);
+                
+                foreach ($userPerms as $perm) {
+                    $permissions[] = [
+                        "user_id"    => $userId,
+                        "group_id"   => $perm['group_id'],
+                        "subgroup_id"=> $perm['subgroup_id'],
+                        "context"    => $perm['context'],
+                        "event_id"   => $perm['event_id']
+                    ];
+                }
+            }
+
+            $eventIds = array_filter(array_unique(array_column($permissions, 'event_id')));
+
+            $terminal["members"] = array_values($uniqueUsers);
+            $terminal["permissions"] = $permissions;
+            $terminal["events"] = !empty($eventIds) ? $this->getEventsMetadata($eventIds) : [];
+
+            $this->db->commit();
+            return $terminal;
+
+        } catch (\Throwable $e) { 
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
+    private function getUsersByEventPolicy(int $terminalId): array
+    {
+        $sql = "SELECT DISTINCT eap.group_id, eap.subgroup_id 
+                FROM tbl_event_access_policy eap
+                WHERE eap.group_id IN (
+                    SELECT group_id FROM tbl_terminal_access_policy WHERE terminal_id = ? AND group_id IS NOT NULL
+                ) OR eap.subgroup_id IN (
+                    SELECT subgroup_id FROM tbl_terminal_access_policy WHERE terminal_id = ? AND subgroup_id IS NOT NULL
+                )";
+                
+        $result = $this->db->query($sql, [$terminalId, $terminalId]);
+        
+        $groups = []; 
+        $subgroups = [];
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                if ($row['group_id']) $groups[] = $row['group_id'];
+                if ($row['subgroup_id']) $subgroups[] = $row['subgroup_id'];
             }
         }
 
-        // Extract unique event IDs from the permissions we found
-        $eventIds = array_filter(array_unique(array_column($permissions, 'event_id')));
+        if (empty($groups) && empty($subgroups)) return [];
 
-        // Finalize the structure
-        $terminal["members"] = array_values($uniqueUsers);
-        $terminal["permissions"] = $permissions;
-        // Fetch full metadata for these events
-        $terminal["events"] = !empty($eventIds) ? $this->getEventsMetadata($eventIds) : [];
+        $gUsers = !empty($groups) ? $this->getUsersByGroups(array_unique($groups)) : [];
+        $sUsers = !empty($subgroups) ? $this->getUsersBySubGroups(array_unique($subgroups)) : [];
 
-        $this->db->commit();
-        return $terminal;
-
-    } catch (\Throwable $e) { 
-        $this->db->rollback();
-        throw $e;
+        return array_merge($gUsers, $sUsers);
     }
-}
 
-private function getUsersByEventPolicy(int $terminalId): array
-{
-    // Find all groups/subgroups associated with this terminal via the Daily Policy
-    // Then find which events are linked to those same groups
-    $sql = "SELECT DISTINCT eap.group_id, eap.subgroup_id 
-            FROM tbl_event_access_policy eap
-            WHERE eap.group_id IN (
-                SELECT group_id FROM tbl_terminal_access_policy WHERE terminal_id = ? AND group_id IS NOT NULL
-            ) OR eap.subgroup_id IN (
-                SELECT subgroup_id FROM tbl_terminal_access_policy WHERE terminal_id = ? AND subgroup_id IS NOT NULL
-            )";
-            
-    $result = $this->db->query($sql, [$terminalId, $terminalId]);
-    
-    $groups = []; 
-    $subgroups = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            if ($row['group_id']) $groups[] = $row['group_id'];
-            if ($row['subgroup_id']) $subgroups[] = $row['subgroup_id'];
+    private function getUsersByTerminalPolicy(int $terminalId): array
+    {
+        $sqlPolicy = "SELECT group_id, subgroup_id 
+                      FROM tbl_terminal_access_policy 
+                      WHERE terminal_id = ?";
+        
+        $policyResult = $this->db->query($sqlPolicy, [$terminalId]);
+        if (!$policyResult || $policyResult->num_rows === 0) return [];
+
+        $groupIds = [];
+        $subGroupIds = [];
+
+        while ($row = $policyResult->fetch_assoc()) {
+            if ($row['group_id']) $groupIds[] = $row['group_id'];
+            if ($row['subgroup_id']) $subGroupIds[] = $row['subgroup_id'];
         }
+
+        $groupUsers = !empty($groupIds) ? $this->getUsersByGroups(array_unique($groupIds)) : [];
+        $subGroupUsers = !empty($subGroupIds) ? $this->getUsersBySubGroups(array_unique($subGroupIds)) : [];
+
+        $uniqueUsers = [];
+        foreach (array_merge($groupUsers, $subGroupUsers) as $user) {
+            $uniqueUsers[$user['id']] = $user;
+        }
+
+        return array_values($uniqueUsers);
     }
-
-    // If no events are linked to these groups, return empty
-    if (empty($groups) && empty($subgroups)) return [];
-
-    $gUsers = !empty($groups) ? $this->getUsersByGroups(array_unique($groups)) : [];
-    $sUsers = !empty($subgroups) ? $this->getUsersBySubGroups(array_unique($subgroups)) : [];
-
-    return array_merge($gUsers, $sUsers);
-}
-
-/**
- * Fetches all unique users (with biometrics) that have a right to be
- * on this terminal based on the Daily Access Policy.
- */
-private function getUsersByTerminalPolicy(int $terminalId): array
-{
-    // 1. Get the Group and Subgroup IDs assigned to this terminal
-    $sqlPolicy = "SELECT group_id, subgroup_id 
-                  FROM tbl_terminal_access_policy 
-                  WHERE terminal_id = ?";
-    
-    $policyResult = $this->db->query($sqlPolicy, [$terminalId]);
-    if (!$policyResult || $policyResult->num_rows === 0) return [];
-
-    $groupIds = [];
-    $subGroupIds = [];
-
-    while ($row = $policyResult->fetch_assoc()) {
-        if ($row['group_id']) $groupIds[] = $row['group_id'];
-        if ($row['subgroup_id']) $subGroupIds[] = $row['subgroup_id'];
-    }
-
-    // 2. Reuse your existing 'Gymnastics' methods to get the users
-    // These methods already handle the Base64 encoding of templates
-    $groupUsers = !empty($groupIds) ? $this->getUsersByGroups(array_unique($groupIds)) : [];
-    $subGroupUsers = !empty($subGroupIds) ? $this->getUsersBySubGroups(array_unique($subGroupIds)) : [];
-
-    // 3. Merge them into a single list unique by User ID
-    $uniqueUsers = [];
-    foreach (array_merge($groupUsers, $subGroupUsers) as $user) {
-        $uniqueUsers[$user['id']] = $user;
-    }
-
-    return array_values($uniqueUsers);
-}
 
     private function getUserPermissions(int $userId, int $terminalId): array
-{
-    $sql = "
-        -- 1. Check for Daily Context
-        SELECT 
-            gm.group_id, 
-            sgm.subgroup_id, 
-            'daily' as context, 
-            NULL as event_id
-        FROM tbl_user u
-        LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
-        LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
-        JOIN tbl_terminal_access_policy tap ON (
-            (tap.group_id = gm.group_id) OR (tap.subgroup_id = sgm.subgroup_id)
-        )
-        WHERE u.id = ? AND tap.terminal_id = ?
+    {
+        $sql = "
+            SELECT gm.group_id, sgm.subgroup_id, 'daily' as context, NULL as event_id
+            FROM tbl_user u
+            LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
+            LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
+            JOIN tbl_terminal_access_policy tap ON ((tap.group_id = gm.group_id) OR (tap.subgroup_id = sgm.subgroup_id))
+            WHERE u.id = ? AND tap.terminal_id = ?
+            UNION
+            SELECT gm.group_id, sgm.subgroup_id, 'event' as context, eap.event_id
+            FROM tbl_user u
+            LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
+            LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
+            JOIN tbl_event_access_policy eap ON ((eap.group_id = gm.group_id) OR (eap.subgroup_id = sgm.subgroup_id))
+            WHERE u.id = ?
+        ";
 
-        UNION
-
-        -- 2. Check for Event Context
-        SELECT 
-            gm.group_id, 
-            sgm.subgroup_id, 
-            'event' as context, 
-            eap.event_id
-        FROM tbl_user u
-        LEFT JOIN tbl_group_member gm ON u.id = gm.user_id
-        LEFT JOIN tbl_subgroup_member sgm ON u.id = sgm.user_id
-        JOIN tbl_event_access_policy eap ON (
-            (eap.group_id = gm.group_id) OR (eap.subgroup_id = sgm.subgroup_id)
-        )
-        WHERE u.id = ?
-    ";
-
-    $result = $this->db->query($sql, [$userId, $terminalId, $userId]);
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-}
-
-private function getEventsMetadata(array $eventIds): array
-{
-    if (empty($eventIds)) return [];
-
-    $events = [];
-    foreach ($eventIds as $eventId) {
-        // 1. Fetch Basic Event Info
-        $sqlEvent = "SELECT * FROM tbl_event WHERE id = ?";
-        $eventReq = $this->db->query($sqlEvent, [$eventId]);
-        $event = $eventReq ? $eventReq->fetch_assoc() : null;
-
-        if ($event) {
-            // 2. Nest the Access Policy (So terminal knows which groups/auth types apply)
-            $sqlPolicy = "SELECT ev.group_id, ev.subgroup_id, ev.auth_type_id, at.name as auth_type_name
-                          FROM tbl_event_access_policy ev
-                          LEFT JOIN lkup_auth_type at ON ev.auth_type_id = at.id
-                          WHERE event_id = ?";
-            $policyReq = $this->db->query($sqlPolicy, [$eventId]);
-            $event['access_policy'] = $policyReq ? $policyReq->fetch_all(MYSQLI_ASSOC) : [];
-
-            // 3. Nest the Check-in/Out Ranges
-            $sqlRange = "SELECT checkin_start_datetime, checkin_end_datetime, 
-                                checkout_start_datetime, checkout_end_datetime 
-                         FROM tbl_event_checkin_checkout_range WHERE event_id = ?";
-            $rangeReq = $this->db->query($sqlRange, [$eventId]);
-            // Use fetch_assoc because there is usually only one range per event
-            $event['checkinout_range'] = $rangeReq ? $rangeReq->fetch_assoc() : null;
-
-            $events[] = $event;
-        }
+        $result = $this->db->query($sql, [$userId, $terminalId, $userId]);
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-    return $events;
-}
+    private function getEventsMetadata(array $eventIds): array
+    {
+        if (empty($eventIds)) return [];
 
-    /**
-     * Get active users by an array of group ids
-     * @param array $groups
-     * @return void
-     */
+        $events = [];
+        foreach ($eventIds as $eventId) {
+            $sqlEvent = "SELECT * FROM tbl_event WHERE id = ?";
+            $eventReq = $this->db->query($sqlEvent, [$eventId]);
+            $event = $eventReq ? $eventReq->fetch_assoc() : null;
+
+            if ($event) {
+                $sqlPolicy = "SELECT ev.group_id, ev.subgroup_id, ev.auth_type_id, at.name as auth_type_name
+                              FROM tbl_event_access_policy ev
+                              LEFT JOIN lkup_auth_type at ON ev.auth_type_id = at.id
+                              WHERE event_id = ?";
+                $policyReq = $this->db->query($sqlPolicy, [$eventId]);
+                $event['access_policy'] = $policyReq ? $policyReq->fetch_all(MYSQLI_ASSOC) : [];
+
+                $sqlRange = "SELECT checkin_start_datetime, checkin_end_datetime, 
+                                    checkout_start_datetime, checkout_end_datetime 
+                             FROM tbl_event_checkin_checkout_range WHERE event_id = ?";
+                $rangeReq = $this->db->query($sqlRange, [$eventId]);
+                $event['checkinout_range'] = $rangeReq ? $rangeReq->fetch_assoc() : null;
+
+                $events[] = $event;
+            }
+        }
+
+        return $events;
+    }
+
     public function getUsersByGroups(array $groupIds): array
     {
         if (empty($groupIds)) return [];
@@ -601,7 +537,6 @@ private function getEventsMetadata(array $eventIds): array
         $result = $this->db->query($sql, $cleanIds);
         $users = ($result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-        // Transform BLOBs to JSON-safe Strings
         foreach ($users as &$user) {
             $user['face_template'] = $user['face_template'] ? base64_encode($user['face_template']) : null;
             $user['fingerprint_template'] = $user['fingerprint_template'] ? base64_encode($user['fingerprint_template']) : null;
@@ -610,20 +545,13 @@ private function getEventsMetadata(array $eventIds): array
         return $users;
     }
 
-    /**
-     * Get active users by an array of sub group ids
-     * @param array $subgroups
-     * @return void
-     */
     public function getUsersBySubGroups(array $subGroupIds): array
     {
         if (empty($subGroupIds)) return [];
 
-        // Clean IDs (unique and reset keys)
         $cleanIds = array_values(array_unique($subGroupIds));
         $placeholders = implode(",", array_fill(0, count($cleanIds), "?"));
 
-        // 3. The Query (Fixed JOIN to LEFT JOIN and corrected 'group_id' typo)
         $sql = "SELECT sgm.subgroup_id, NULL AS group_id, u.id, u.fname, u.lname,
                     u.gender, u.user_type,u.created_at, u.updated_at, b.face_template,
                     b.fingerprint_template, c.card_uid AS card_serial_code
@@ -636,7 +564,6 @@ private function getEventsMetadata(array $eventIds): array
         $result = $this->db->query($sql, $cleanIds);
         $users = ($result && $result instanceof \mysqli_result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-        // Transform BLOBs to JSON-safe Strings
         foreach ($users as &$user) {
             $user['face_template'] = $user['face_template'] ? base64_encode($user['face_template']) : null;
             $user['fingerprint_template'] = $user['fingerprint_template'] ? base64_encode($user['fingerprint_template']) : null;
@@ -645,34 +572,33 @@ private function getEventsMetadata(array $eventIds): array
         return $users;
     }
 
-    /**
-     * Update terminal status
-     * returns true if update was successfull, otherwose false
-     */
     public function updateStatus(string $status, int $id): bool
     {
         $this->db->query("UPDATE tbl_terminal SET status = ? WHERE id = ?", [$status, $id]);
 
         if ($this->db->affectedRows() > 0) {
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Terminal device status modified to: '%s' (Terminal ID: %d)", strtoupper($status), $id),
+                null,
+                ['terminal_id' => $id, 'status' => $status, 'action' => 'terminal_status_change']
+            );
             return true;
         }
 
         return false;
     }
 
-    // Helper to generate a slug from the name
     private function generateSlug(string $text): string {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $text)));
     }
 
-    /**
-     * Generate the activation code and returned the hashed string
-     * @param int $length
-     * @return string
-     */
     private function generateSecureCode(int $length = 8): string 
     {
-        // Characters that are easy to read (removed 0, O, I, 1, L)
         $chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
         $code = '';
         $max = strlen($chars) - 1;
@@ -684,9 +610,6 @@ private function getEventsMetadata(array $eventIds): array
         return $code;
     }
 
-    /**
-    * Bulk insert helper for Terminal Auth Capabilities
-    */
     private function bulkInsertCapabilities(array $data): void {
         $placeholders = [];
         $params = [];
@@ -700,9 +623,6 @@ private function getEventsMetadata(array $eventIds): array
         $this->db->query($sql, $params);
     }
 
-    /**
-    * Bulk insert helper for Terminal Access Policies
-    */
     private function bulkInsertPolicies(array $data): void {
         $placeholders = [];
         $params = [];
@@ -711,7 +631,6 @@ private function getEventsMetadata(array $eventIds): array
             $params[] = $this->id;
             $params[] = $row['group_id'];
 
-            // Ensure we pass null, not an empty string or 0
             $subgroup = (!isset($row['subgroup_id']) || $row['subgroup_id'] === '') 
                         ? null 
                         : (int)$row['subgroup_id'];
@@ -729,11 +648,6 @@ private function getEventsMetadata(array $eventIds): array
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-    /**
-     * Fetch terminal details along with its relations using its unique URL slug identifier
-     * @param string $slug
-     * @return [TerminalDetails: {}, authCapabilities: [], authPolicies: []]
-     */
     public function fetchTerminalDetailsBySlug(string $slug): array
     {
         $sql = "SELECT t.id, t.name, t.slug, t.activation_code, t.branch_id, t.status
@@ -746,14 +660,12 @@ private function getEventsMetadata(array $eventIds): array
 
         $terminalDetails = $result->fetch_assoc();
 
-        // Fetch Auth Capabilities
         $authCapsSql = "SELECT auth_type_id, auth_step 
                         FROM tbl_terminal_auth_capability 
                         WHERE terminal_id = ?";
         $authCapsResult = $this->db->query($authCapsSql, [$terminalDetails['id']]);
         $authCapabilities = $authCapsResult ? $authCapsResult->fetch_all(MYSQLI_ASSOC) : [];
 
-        // Fetch Access Policies
         $accessPolicySql = "SELECT group_id, subgroup_id, auth_type_id
                             FROM tbl_terminal_access_policy 
                             WHERE terminal_id = ?";
@@ -765,6 +677,5 @@ private function getEventsMetadata(array $eventIds): array
             'authCapabilities' => $authCapabilities,
             'authPolicies' => $authPolicies
         ];
-
     }
 }

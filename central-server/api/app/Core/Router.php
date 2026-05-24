@@ -101,6 +101,12 @@ class Router
                     $user = null;
                     foreach ($data['middleware'] as $middleware) {
                         $user = $middleware::handle();
+
+
+                        // IF THE MIDDLEWARE FOUND A VALID USER, SAVE IT GLOBALLY!
+                        if (!empty($user) && is_array($user)) {
+                            \App\Core\AppContext::setUser($user);
+                        }
                     }
 
                     [$controller, $methodName] = $data['action'];

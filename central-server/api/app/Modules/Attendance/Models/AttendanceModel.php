@@ -559,9 +559,40 @@ public function createManualAttendanceSummary(int $userId, string $date, string 
         // Executes query statement safely with the parameterized targetEventId
         $this->db->query($sql, [$userId, $date, $targetEventId, $context, $status, $hours]);
 
-        // If it didn't throw an exception, the insert was successful
+        // -------------------------------------------------------------------------
+        // AUDIT LOG INTEGRATION
+        // -------------------------------------------------------------------------
+        // Construct a descriptive human-readable message for the audit ledger trail
+        $description = sprintf(
+            "Created manual %s attendance override for Employee ID %d on date %s (Status: %s, Hours: %g)",
+            $context,
+            $userId,
+            $date,
+            strtoupper($status),
+            $hours
+        );
+
+        // Capture contextual payload array details for deeper trace visibility
+        $contextData = [
+            'target_employee_id' => $userId,
+            'attendance_date'    => $date,
+            'attendance_context' => $context,
+            'status_assigned'    => $status,
+            'hours_assigned'     => $hours,
+            'event_id'           => $targetEventId,
+            'action_type'        => 'manual_override_create'
+        ];
+
+        // Save into your database logs matrix using 'info' level under the 'attendance' category
+        // Note: Replace null below with your current authenticated Admin User ID if available in session
+        \App\Core\Logger::log('system', 'info', $description, null, $contextData);
+        // -------------------------------------------------------------------------
+
         return true;
     } catch (Throwable $e) {
+        // We do not log operational exception entries locally here.
+        // We throw it so it bubbles up to Router.php, where it gets caught and 
+        // logged automatically as a system-wide database error context!
         throw $e;
     }
 }

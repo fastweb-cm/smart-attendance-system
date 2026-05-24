@@ -2,7 +2,9 @@
 namespace App\Modules\Events\Models;
 
 use App\Core\Database;
+use App\Core\Logger;
 use Throwable;
+
 class EventsModel
 {
     protected Database $db;
@@ -68,11 +70,23 @@ class EventsModel
             $this->db->query($sqlEvent, $paramsEvent);
             $this->id = $this->db->lastInsertId();
 
-            //event access policies
+            // Event access policies and bounds mappings
             $this->bulkinsertPolicies($accessPolicy);
             $this->checkInOutInsert($checkinOutRange);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin created scheduled tracking event: '%s' (ID: %d) set from %s to %s", $this->name, $this->id, $this->start_datetime, $this->end_datetime),
+                $this->created_by,
+                ['event_id' => $this->id, 'name' => $this->name, 'action' => 'event_create']
+            );
+
             return true;
         } catch (Throwable $e) {
             $this->db->rollback();
@@ -85,7 +99,6 @@ class EventsModel
         try {
             $this->db->beginTransaction();
 
-            //update the main event record
             $sql = "UPDATE tbl_event
                     SET name = ?, start_datetime = ?, end_datetime = ?, affects_attendance = ?, created_by = ?, handshake = ?, updated_at = ?
                     WHERE id = ?";
@@ -101,19 +114,31 @@ class EventsModel
                 $this->id
             ]);
 
-            // sync access policy (delete old, insert new)
+            // Sync access policy (delete old, insert new)
             $this->db->query("DELETE FROM tbl_event_access_policy WHERE event_id = ?", [$this->id]);
             if (!empty($accessPolicy)) {
                 $this->bulkinsertPolicies($accessPolicy);
             }
 
-            //sync check in out ranges (Delete old, insert new)
+            // Sync check in out ranges (Delete old, insert new)
             $this->db->query("DELETE FROM tbl_event_checkin_checkout_range WHERE event_id = ?", [$this->id]);
             if (!empty($checkinOutRange)) {
                 $this->checkInOutInsert($checkinOutRange);
             }
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin updated configuration for tracking event: '%s' (ID: %d)", $this->name, $this->id),
+                $this->created_by,
+                ['event_id' => $this->id, 'name' => $this->name, 'action' => 'event_update']
+            );
+
             return true;
         } catch (Throwable $e) {
             $this->db->rollback();
@@ -123,6 +148,7 @@ class EventsModel
 
     public function fetch(int $eventId = 0): array
     {
+        // Read-only metrics do not require system audit trails
         $sqlEvs = "SELECT e.*, u.fname, u.lname FROM tbl_event e
                     JOIN tbl_user u ON e.created_by = u.id";
 
@@ -147,7 +173,6 @@ class EventsModel
         $eventsId = array_column($events, 'id');
         $placeholders = implode(', ', array_fill(0, count($events), '?'));
 
-        //fetch all events policies
         $sqlPolicies = "SELECT ep.*, g.name as group_name, at.name as auth_type_name
                         FROM tbl_event_access_policy ep
                         LEFT JOIN tbl_group g ON ep.group_id = g.id
@@ -162,7 +187,6 @@ class EventsModel
             }
         }
 
-        // fetch all events checkin checkout ranges
         $sqlCheckInOut = "SELECT * FROM tbl_event_checkin_checkout_range WHERE event_id IN ($placeholders)";
         $checkInOutRes = $this->db->query($sqlCheckInOut, $eventsId);
         $checkInOutByEvent = [];
@@ -172,8 +196,6 @@ class EventsModel
             }
         }
 
-        //map relationship back to events
-        // & is used to ensure we modify the original event array by reference, not a copy
         foreach ($events as &$ev) {
             $ev['access_policy'] = $polByEvent[$ev['id']] ?? [];
             $ev['checkin_checkout_ranges'] = $checkInOutByEvent[$ev['id']] ?? [];
@@ -187,16 +209,23 @@ class EventsModel
         try {
             $this->db->beginTransaction();
 
-            //delete access policies
             $this->db->query("DELETE FROM tbl_event_access_policy WHERE event_id = ?", [$eventId]);
-
-            //delete checkin checkout ranges
             $this->db->query("DELETE FROM tbl_event_checkin_checkout_range WHERE event_id = ?", [$eventId]);
-
-            //delete the main event record
             $this->db->query("DELETE FROM tbl_event WHERE id = ?", [$eventId]);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin deleted event ID: %d and unlinked all associated relational policies and tracking ranges", $eventId),
+                null, // Passing null here since dynamic user context isn't tracked on local object properties for delete
+                ['event_id' => $eventId, 'action' => 'event_delete']
+            );
+
             return true;
         } catch (Throwable $e) {
             $this->db->rollback();
@@ -213,11 +242,9 @@ class EventsModel
 
         foreach ($data as $row) {
             $placeholders[] = "(?, ?, ?, ?)";
-        
             $params[] = $this->id;
             $params[] = $row['group_id'];
 
-            // Ensure we pass null, not an empty string or 0
             $subgroup = (!isset($row['subgroup_id']) || $row['subgroup_id'] === '') 
                         ? null 
                         : (int)$row['subgroup_id'];
@@ -226,7 +253,6 @@ class EventsModel
             $params[] = $row['auth_type_id'];
         }
 
-        // Move these TWO lines OUTSIDE the loop
         $sql = "INSERT INTO tbl_event_access_policy (event_id, group_id, subgroup_id, auth_type_id)
                 VALUES " . implode(',', $placeholders);
             
@@ -235,26 +261,19 @@ class EventsModel
 
     private function checkInOutInsert(array $checkinOutRange): void
     {
-        //event access policies
-        if ($this->id > 0) {
-            if (!empty($accessPolicy)) {
-                $this->bulkinsertPolicies($accessPolicy);
-            }
-
-            //checkin checkout time ranges
-            $sqlInOut = "INSERT INTO tbl_event_checkin_checkout_range (event_id, checkin_start_datetime,checkin_end_datetime,checkout_start_datetime,checkout_end_datetime)
+        if ($this->id > 0 && !empty($checkinOutRange)) {
+            $sqlInOut = "INSERT INTO tbl_event_checkin_checkout_range (event_id, checkin_start_datetime, checkin_end_datetime, checkout_start_datetime, checkout_end_datetime)
                         VALUES (?,?,?,?,?)";
 
             $paramInOut = [
                 $this->id,
                 $checkinOutRange[0]["checkin_start_datetime"],
                 $checkinOutRange[0]["checkin_end_datetime"],
-                (isset($checkinOutRange[0]["checkout_start_datetime"]) ? $checkinOutRange[0]["checkout_start_datetime"] : null),
-                (isset($checkinOutRange[0]["checkout_end_datetime"]) ? $checkinOutRange[0]["checkout_end_datetime"] : null)
+                ($checkinOutRange[0]["checkout_start_datetime"] ?? null),
+                ($checkinOutRange[0]["checkout_end_datetime"] ?? null)
             ];
 
             $this->db->query($sqlInOut, $paramInOut);
         }
     }
-
 }
