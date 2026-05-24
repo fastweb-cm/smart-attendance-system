@@ -250,3 +250,12 @@ export interface ZoneCRawTrailsProps {
   queryParams: AttendanceQueryParams;
 }
 
+export interface LogsQueryParams {
+  category?: 'system'|'database'|'error'|'sync';
+  level?: 'info'|'warning'|'error';
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  limit?: number;
+}
+

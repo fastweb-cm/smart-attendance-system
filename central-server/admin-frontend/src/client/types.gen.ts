@@ -2261,7 +2261,7 @@ export type FetchLogsData = {
         /**
          * Filter logs by operational category (e.g., system, error, sync, biometric).
          */
-        category?: string;
+        category?: 'system' | 'database' | 'error' | 'sync';
         /**
          * Filter logs by severity classification.
          */

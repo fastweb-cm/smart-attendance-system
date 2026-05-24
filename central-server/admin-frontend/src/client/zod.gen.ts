@@ -1145,7 +1145,12 @@ export const zFetchLogsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        category: z.optional(z.string()),
+        category: z.optional(z.enum([
+            'system',
+            'database',
+            'error',
+            'sync'
+        ])),
         level: z.optional(z.enum([
             'info',
             'warning',
