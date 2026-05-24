@@ -577,10 +577,22 @@ export type TerminalAttendanceSummaryCreate = TerminalAttendanceSummary & {
     [key: string]: unknown;
 };
 
-export type Logs = {
+export type LogEntry = {
+    id?: number;
     category?: string;
+    log_level?: string;
     description?: string;
-    user_id?: number;
+    ip_address?: string;
+    request_uri?: string;
+    /**
+     * Dynamic data snapshot properties dependent on context origin type (e.g., action types, trace stack, parameters).
+     */
+    context_data?: {
+        [key: string]: unknown;
+    } | null;
+    date_created?: string;
+    name?: string | null;
+    role_name?: string | null;
 };
 
 export type LoginData = {
@@ -2241,3 +2253,67 @@ export type FaceVerificationResponses = {
 };
 
 export type FaceVerificationResponse = FaceVerificationResponses[keyof FaceVerificationResponses];
+
+export type FetchLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter logs by operational category (e.g., system, error, sync, biometric).
+         */
+        category?: string;
+        /**
+         * Filter logs by severity classification.
+         */
+        level?: 'info' | 'warning' | 'error';
+        /**
+         * Restrict tracking to entries on or after this timestamp (Y-m-d or Y-m-d H:i:s).
+         */
+        start_date?: string;
+        /**
+         * Restrict tracking to entries on or before this date (automatically pads to 23:59:59 if time is omitted).
+         */
+        end_date?: string;
+        /**
+         * The current page index sequence offset indicator.
+         */
+        page?: number;
+        /**
+         * Maximum total rows to load within a singular pagination dataset frame (capped at 100).
+         */
+        limit?: number;
+    };
+    url: '/api/v1/logs';
+};
+
+export type FetchLogsErrors = {
+    /**
+     * Fatal backend system error or exception block dropped.
+     */
+    500: {
+        success?: boolean;
+        message?: string;
+        error?: string;
+    };
+};
+
+export type FetchLogsError = FetchLogsErrors[keyof FetchLogsErrors];
+
+export type FetchLogsResponses = {
+    /**
+     * Logs structural matrix payload successfully retrieved.
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+        meta?: {
+            total_records?: number;
+            total_pages?: number;
+            current_page?: number;
+            limit?: number;
+        };
+        data?: Array<LogEntry>;
+    };
+};
+
+export type FetchLogsResponse = FetchLogsResponses[keyof FetchLogsResponses];

@@ -4,8 +4,8 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -877,3 +877,52 @@ export const faceVerificationMutation = (options?: Partial<Options<FaceVerificat
     };
     return mutationOptions;
 };
+
+export const fetchLogsQueryKey = (options?: Options<FetchLogsData>) => createQueryKey('fetchLogs', options);
+
+/**
+ * Fetch paginated and filtered audit logs
+ *
+ * Retrieve a reverse-chronological list of logs matching optional criteria such as time windows, categories, or severities.
+ */
+export const fetchLogsOptions = (options?: Options<FetchLogsData>) => queryOptions<FetchLogsResponse, AxiosError<FetchLogsError>, FetchLogsResponse, ReturnType<typeof fetchLogsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await fetchLogs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: fetchLogsQueryKey(options)
+});
+
+export const fetchLogsInfiniteQueryKey = (options?: Options<FetchLogsData>): QueryKey<Options<FetchLogsData>> => createQueryKey('fetchLogs', options, true);
+
+/**
+ * Fetch paginated and filtered audit logs
+ *
+ * Retrieve a reverse-chronological list of logs matching optional criteria such as time windows, categories, or severities.
+ */
+export const fetchLogsInfiniteOptions = (options?: Options<FetchLogsData>) => infiniteQueryOptions<FetchLogsResponse, AxiosError<FetchLogsError>, InfiniteData<FetchLogsResponse>, QueryKey<Options<FetchLogsData>>, number | Pick<QueryKey<Options<FetchLogsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<FetchLogsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                page: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await fetchLogs({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: fetchLogsInfiniteQueryKey(options)
+});

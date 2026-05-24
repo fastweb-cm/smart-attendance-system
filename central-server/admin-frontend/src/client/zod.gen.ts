@@ -548,10 +548,26 @@ export const zTerminalAuthCompletedResponse = z.object({
 
 export const zTerminalAttendanceSummaryCreate = zTerminalAttendanceSummary.and(z.record(z.string(), z.unknown()));
 
-export const zLogs = z.object({
+export const zLogEntry = z.object({
+    id: z.optional(z.int()),
     category: z.optional(z.string()),
+    log_level: z.optional(z.string()),
     description: z.optional(z.string()),
-    user_id: z.optional(z.int())
+    ip_address: z.optional(z.ipv4()),
+    request_uri: z.optional(z.string()),
+    context_data: z.optional(z.union([
+        z.record(z.string(), z.unknown()),
+        z.null()
+    ])),
+    date_created: z.optional(z.iso.datetime()),
+    name: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    role_name: z.optional(z.union([
+        z.string(),
+        z.null()
+    ]))
 });
 
 export const zLoginData = z.object({
@@ -1124,3 +1140,35 @@ export const zFaceVerificationData = z.object({
  * face verification result
  */
 export const zFaceVerificationResponse = zBiometricFaceVerifyResponse;
+
+export const zFetchLogsData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        category: z.optional(z.string()),
+        level: z.optional(z.enum([
+            'info',
+            'warning',
+            'error'
+        ])),
+        start_date: z.optional(z.iso.date()),
+        end_date: z.optional(z.iso.date()),
+        page: z.optional(z.int().gte(1)).default(1),
+        limit: z.optional(z.int().gte(1).lte(100)).default(50)
+    }))
+});
+
+/**
+ * Logs structural matrix payload successfully retrieved.
+ */
+export const zFetchLogsResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string()),
+    meta: z.optional(z.object({
+        total_records: z.optional(z.int()),
+        total_pages: z.optional(z.int()),
+        current_page: z.optional(z.int()),
+        limit: z.optional(z.int())
+    })),
+    data: z.optional(z.array(zLogEntry))
+});

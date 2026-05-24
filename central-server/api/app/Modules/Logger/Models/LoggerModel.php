@@ -47,7 +47,7 @@ class LoggerModel
 
         if (!empty($startDate)) {
             $where[] = "l.date_created >= ?";
-            $params[] = $startDate;
+            $params[] = $startDate .' 00:00:00';
         }
 
         if (!empty($endDate)) {
