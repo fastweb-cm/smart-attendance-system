@@ -27,6 +27,87 @@ export type LoginResponse = {
     };
 };
 
+export type PaginationMeta = {
+    /**
+     * Total quantity of active users matching structural selection metrics.
+     */
+    total_records: number;
+    /**
+     * The currently pulled response page offset iteration.
+     */
+    current_page: number;
+    /**
+     * Maximum aggregate count of dynamic pagination user slices available.
+     */
+    total_pages: number;
+    /**
+     * Total boundary count constraint cap assigned for user blocks.
+     */
+    limit: number;
+};
+
+export type AttendanceLedgerData = {
+    /**
+     * Dense array list charting explicit day configurations within targeted window frames.
+     */
+    calendarDates: Array<{
+        raw?: string;
+        label?: string;
+        isWeekend?: boolean;
+        dayName?: string;
+        exact_date?: string;
+    }>;
+    /**
+     * Array of global infrastructure anomalies or holiday closures falling inside the matrix.
+     */
+    exceptions: Array<{
+        date?: string;
+        name?: string;
+        type?: string;
+    }>;
+    /**
+     * Page-sliced listing of physical user entities rendered downstream inside row tracks.
+     */
+    users: Array<{
+        id?: number;
+        name?: string;
+        role?: string;
+        regno?: string;
+        avatarColor?: string;
+    }>;
+    /**
+     * Intertwined chronological cross-reference card layout tracking user summary performance maps.
+     */
+    initialAttendanceSummary: Array<{
+        id?: number | null;
+        /**
+         * Maps explicitly back to the unique tracking user id.
+         */
+        employee_id?: number;
+        date?: string;
+        event_id?: number;
+        first_checkin?: string | null;
+        last_checkout?: string | null;
+        total_hours?: number;
+        checkin_status?: 'on time' | 'late' | 'absent';
+        session_status?: 'active' | 'completed' | 'missed_checkout' | 'no_show';
+        attendance_status?: 'present' | 'absent' | 'on permission';
+        derived_from_session?: 0 | 1;
+        /**
+         * Lateness value deviation tracked directly in minutes.
+         */
+        variance?: number;
+    }>;
+    metrics?: {
+        /**
+         * Total count of late arrivals recorded across the entire user base for the specified period.
+         */
+        total_late?: number;
+        total_missed_checkout?: number;
+        total_audit_override?: number;
+    };
+};
+
 export type User = {
     id?: number;
     fname: string;
@@ -1856,6 +1937,193 @@ export type TerminalAuthResponses = {
 };
 
 export type TerminalAuthResponse = TerminalAuthResponses[keyof TerminalAuthResponses];
+
+export type GetAttendanceLedgerData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter range starting date (YYYY-MM-DD). Defaults to 4 days ago from today.
+         */
+        start_date?: string;
+        /**
+         * Filter range ending date (YYYY-MM-DD). Defaults to the current date.
+         */
+        end_date?: string;
+        /**
+         * Optional filter matching specific core attendance summary log status profiles.
+         */
+        status?: string;
+        /**
+         * The horizontal page index slice targeted for active users pagination chunks.
+         */
+        page?: number;
+        /**
+         * Total horizontal record count bounds limit of users isolated to return per request page.
+         */
+        limit?: number;
+        /**
+         * Attendance context filter daily or event default is daily",
+         */
+        context?: 'daily' | 'event';
+        search?: string;
+    };
+    url: '/api/v1/attendance/ledger';
+};
+
+export type GetAttendanceLedgerErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAttendanceLedgerResponses = {
+    /**
+     * Attendance matrix dataset generated successfully
+     */
+    200: {
+        success?: boolean;
+        data?: AttendanceLedgerData;
+        meta?: PaginationMeta;
+    };
+};
+
+export type GetAttendanceLedgerResponse = GetAttendanceLedgerResponses[keyof GetAttendanceLedgerResponses];
+
+export type GetUserAttendanceAnalyticsData = {
+    body?: never;
+    path: {
+        /**
+         * Unique internal primary database identifier of the target user profile.
+         */
+        id: number;
+    };
+    query?: {
+        /**
+         * Context tracking constraint for analytics isolating structural metrics.
+         */
+        context?: 'daily' | 'event';
+        start_date?: string;
+        end_date?: string;
+        page?: number;
+        limit?: number;
+    };
+    url: '/api/v1/attendance/user/{id}';
+};
+
+export type GetUserAttendanceAnalyticsErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetUserAttendanceAnalyticsResponses = {
+    /**
+     * User analytics profile payload generated successfully.
+     */
+    200: {
+        success?: boolean;
+        metrics?: {
+            /**
+             * Adjusted target workload calendar expectations excluding granted permissions.
+             */
+            expected_days?: number;
+            present_days?: number;
+            late_arrivals?: number;
+            absent_days?: number;
+            permission_days?: number;
+        };
+        /**
+         * Chronological list of user logs.
+         */
+        history?: Array<{
+            date?: string;
+            checkin?: string | null;
+            checkout?: string | null;
+            hours?: number;
+            status?: string;
+            terminal_id?: string;
+            sync_status?: string;
+        }>;
+        meta?: PaginationMeta;
+    };
+};
+
+export type GetUserAttendanceAnalyticsResponse = GetUserAttendanceAnalyticsResponses[keyof GetUserAttendanceAnalyticsResponses];
+
+export type PartialEditAttendanceData = {
+    body: {
+        /**
+         * The unique row identification key pointing to `tbl_attendance_summary`.
+         */
+        id: number;
+        /**
+         * The targeted administrative status classification override.
+         */
+        status: 'present' | 'absent' | 'on permission';
+        /**
+         * Number of recognized working session hours (automatically forced to 0.0 if status is absent).
+         */
+        hours: number;
+        context?: 'daily' | 'event';
+        userId?: number;
+        date?: string;
+        event_id?: number | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance';
+};
+
+export type PartialEditAttendanceErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PartialEditAttendanceResponses = {
+    /**
+     * Attendance override was successful.
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+        userId?: number;
+    };
+};
+
+export type PartialEditAttendanceResponse = PartialEditAttendanceResponses[keyof PartialEditAttendanceResponses];
 
 export type SyncAttendanceSummaryData = {
     body: Array<TerminalAttendanceSummaryCreate>;

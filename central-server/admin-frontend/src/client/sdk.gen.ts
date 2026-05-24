@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteExceptionData, DeleteExceptionErrors, DeleteExceptionResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetTerminalBySlugData, GetTerminalBySlugErrors, GetTerminalBySlugResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, OneExceptionData, OneExceptionErrors, OneExceptionResponses, RefreshData, RefreshErrors, RefreshResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateTerminalData, UpdateTerminalErrors, UpdateTerminalResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
+import type { AssignUsersToGroupData, AssignUsersToGroupErrors, AssignUsersToGroupResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreatePermissionRequestData, CreatePermissionRequestErrors, CreatePermissionRequestResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DecidePermissionRequestData, DecidePermissionRequestErrors, DecidePermissionRequestResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteExceptionData, DeleteExceptionErrors, DeleteExceptionResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, GetAttendanceLedgerData, GetAttendanceLedgerErrors, GetAttendanceLedgerResponses, GetTerminalBySlugData, GetTerminalBySlugErrors, GetTerminalBySlugResponses, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsErrors, GetUserAttendanceAnalyticsResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, OneExceptionData, OneExceptionErrors, OneExceptionResponses, PartialEditAttendanceData, PartialEditAttendanceErrors, PartialEditAttendanceResponses, RefreshData, RefreshErrors, RefreshResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateTerminalData, UpdateTerminalErrors, UpdateTerminalResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -443,6 +443,44 @@ export const terminalAuth = <ThrowOnError extends boolean = false>(options: Opti
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/terminals/auth',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve the dense matrix attendance ledger grid
+ *
+ * Returns a paginated matrix of users alongside dense day-by-day attendance profiles, system exceptions, and column metadata matching the date filters.
+ */
+export const getAttendanceLedger = <ThrowOnError extends boolean = false>(options?: Options<GetAttendanceLedgerData, ThrowOnError>) => (options?.client ?? client).get<GetAttendanceLedgerResponses, GetAttendanceLedgerErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attendance/ledger',
+    ...options
+});
+
+/**
+ * Fetch Historical User Attendance Analytics Profile
+ *
+ * Returns chronological transactional log details alongside structural metric aggregates filtered by context.
+ */
+export const getUserAttendanceAnalytics = <ThrowOnError extends boolean = false>(options: Options<GetUserAttendanceAnalyticsData, ThrowOnError>) => (options.client ?? client).get<GetUserAttendanceAnalyticsResponses, GetUserAttendanceAnalyticsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attendance/user/{id}',
+    ...options
+});
+
+/**
+ * Partially edit/override an explicit attendance record
+ */
+export const partialEditAttendance = <ThrowOnError extends boolean = false>(options: Options<PartialEditAttendanceData, ThrowOnError>) => (options.client ?? client).patch<PartialEditAttendanceResponses, PartialEditAttendanceErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attendance',
     ...options,
     headers: {
         'Content-Type': 'application/json',

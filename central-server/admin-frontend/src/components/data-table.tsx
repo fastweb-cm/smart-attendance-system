@@ -10,6 +10,7 @@ import {
   getFilteredRowModel,
   getSortedRowModel,
   RowSelectionState,
+  PaginationState,
 } from "@tanstack/react-table"
 
 import {
@@ -37,11 +38,24 @@ export function DataTable<TData, TValue>({
   enableGlobalFilter = true,
   manualFiltering = false,
   onGlobalSearchChange,
+  
+  // Destructure new backend properties with safe default fallbacks
+  manualPagination = false,
+  totalRecords,
+  pageIndex = 0,
+  pageSize = 10,
+  onPaginationChange,
 }: ExtendedDataTableProps<TData, TValue>) {
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+
+  // Local pagination state acts as a safe fallback for simple front-end rendering tables
+  const [localPagination, setLocalPagination] = useState<PaginationState>({
+    pageIndex,
+    pageSize,
+  })
 
   // Debounced global search
   const [search, setSearch] = useState("")
@@ -57,7 +71,12 @@ export function DataTable<TData, TValue>({
     }, 300)
 
     return () => clearTimeout(timeout)
-  }, [search,onGlobalSearchChange])
+  }, [search, onGlobalSearchChange])
+
+  // Figure out if pagination is controlled externally or internally
+  const activePaginationState = manualPagination 
+    ? { pageIndex, pageSize } 
+    : localPagination
 
   const table = useReactTable({
     data,
@@ -66,38 +85,55 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       rowSelection,
-      globalFilter: manualFiltering ? undefined : globalFilter
+      globalFilter: manualFiltering ? undefined : globalFilter,
+      pagination: activePaginationState, // Feed unified state source to TanStack
     },
-    initialState: {
-      pagination: {
-        pageSize: 10, // default rows per page
-      },
-    },
+    
+    // Server-side structural directives
+    manualPagination,
+    rowCount: manualPagination ? totalRecords : undefined,
+
     manualFiltering,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    
+    // Intercept pagination changes
+    onPaginationChange: (updater) => {
+      if (manualPagination && onPaginationChange) {
+        // TanStack often passes state updates as functional updaters. 
+        // Resolve it safely before passing back up to parent.
+        const nextState = typeof updater === 'function' ? updater(activePaginationState) : updater;
+        onPaginationChange(nextState);
+      } else {
+        setLocalPagination(updater);
+      }
+    },
+
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: manualFiltering ? undefined : getFilteredRowModel(),
   })
 
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
-  const total = manualFiltering
-    ? data.length
-    : table.getFilteredRowModel().rows.length
+  // Derive dynamic boundaries using the active pagination state definition
+  const actualPageIndex = activePaginationState.pageIndex;
+  const actualPageSize = activePaginationState.pageSize;
 
-  const from = total === 0 ? 0 : pageIndex * pageSize + 1
-  const to = Math.min((pageIndex + 1) * pageSize, total)
+  // Correct calculation for overall total numbers
+  const total = manualPagination
+    ? (totalRecords ?? 0)
+    : (manualFiltering ? data.length : table.getFilteredRowModel().rows.length)
+
+  const from = total === 0 ? 0 : actualPageIndex * actualPageSize + 1
+  const to = Math.min((actualPageIndex + 1) * actualPageSize, total)
 
   // Limited pagination window (max 5 pages visible)
   const pageCount = table.getPageCount()
   const maxVisible = 5
 
-  const startPage = Math.max(0, pageIndex - Math.floor(maxVisible / 2))
+  const startPage = Math.max(0, actualPageIndex - Math.floor(maxVisible / 2))
   const endPage = Math.min(pageCount, startPage + maxVisible)
 
   const pages = Array.from(
@@ -107,7 +143,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="bg-white rounded-md border shadow-sm space-y-4">
-      <h4 className="p-4 leading-none mb-0 text-primary">{label}</h4>
+      {label && <h4 className="p-4 leading-none mb-0 text-primary">{label}</h4>}
+      
       {/* Top Bar */}
       {(showSearchBar || filtersComponent) && (
         <div className="flex items-center justify-between p-4">
@@ -167,7 +204,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-red-500"
+                  className="h-24 text-center text-red-500 font-medium"
                 >
                   ** {emptyText} **
                 </TableCell>
@@ -177,7 +214,7 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination Controls */}
       <div className="flex items-center flex-col md:flex-row justify-between gap-2 px-4 py-3 border-t">
         <p className="text-xs md:text-sm text-muted-foreground">
           Showing {from} to {to} of {total} entries
@@ -196,7 +233,7 @@ export function DataTable<TData, TValue>({
           {/* Page Numbers */}
           <div className="flex items-center gap-1">
             {pages.map((page) => {
-              const isActive = page === pageIndex
+              const isActive = page === actualPageIndex
 
               return (
                 <Button

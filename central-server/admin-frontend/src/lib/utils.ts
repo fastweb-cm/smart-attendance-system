@@ -51,3 +51,20 @@ export const getDaysDifference = (start: string, end: string) => {
   const diffTime = Math.abs(eDate.getTime() - sDate.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
+
+// returns previous day date
+export function getPreviousDay() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1); // Subtract 1 day
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+// return attendance start date
+export function getStartDate() {
+  return new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+}

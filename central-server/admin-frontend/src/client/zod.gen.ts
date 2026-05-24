@@ -29,6 +29,76 @@ export const zLoginResponse = z.object({
     }))
 });
 
+export const zPaginationMeta = z.object({
+    total_records: z.int(),
+    current_page: z.int(),
+    total_pages: z.int(),
+    limit: z.int()
+});
+
+export const zAttendanceLedgerData = z.object({
+    calendarDates: z.array(z.object({
+        raw: z.optional(z.iso.date()),
+        label: z.optional(z.string()),
+        isWeekend: z.optional(z.boolean()),
+        dayName: z.optional(z.string()),
+        exact_date: z.optional(z.iso.date())
+    })),
+    exceptions: z.array(z.object({
+        date: z.optional(z.iso.date()),
+        name: z.optional(z.string()),
+        type: z.optional(z.string())
+    })),
+    users: z.array(z.object({
+        id: z.optional(z.int()),
+        name: z.optional(z.string()),
+        role: z.optional(z.string()),
+        regno: z.optional(z.string()),
+        avatarColor: z.optional(z.string())
+    })),
+    initialAttendanceSummary: z.array(z.object({
+        id: z.optional(z.union([
+            z.int(),
+            z.null()
+        ])),
+        employee_id: z.optional(z.int()),
+        date: z.optional(z.iso.date()),
+        event_id: z.optional(z.int()),
+        first_checkin: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        last_checkout: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        total_hours: z.optional(z.number()),
+        checkin_status: z.optional(z.enum([
+            'on time',
+            'late',
+            'absent'
+        ])),
+        session_status: z.optional(z.enum([
+            'active',
+            'completed',
+            'missed_checkout',
+            'no_show'
+        ])),
+        attendance_status: z.optional(z.enum([
+            'present',
+            'absent',
+            'on permission'
+        ])),
+        derived_from_session: z.optional(z.union([z.literal(0), z.literal(1)])),
+        variance: z.optional(z.int())
+    })),
+    metrics: z.optional(z.object({
+        total_late: z.optional(z.int()),
+        total_missed_checkout: z.optional(z.int()),
+        total_audit_override: z.optional(z.int())
+    }))
+});
+
 export const zUser = z.object({
     id: z.optional(z.int()),
     fname: z.string(),
@@ -909,6 +979,103 @@ export const zTerminalAuthResponse = z.union([
     zTerminalAuthInProgressResponse,
     zTerminalAuthCompletedResponse
 ]);
+
+export const zGetAttendanceLedgerData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        start_date: z.optional(z.iso.date()),
+        end_date: z.optional(z.iso.date()),
+        status: z.optional(z.string()),
+        page: z.optional(z.int().gte(1)).default(1),
+        limit: z.optional(z.int().gte(1).lte(50)).default(10),
+        context: z.optional(z.enum(['daily', 'event'])),
+        search: z.optional(z.string())
+    }))
+});
+
+/**
+ * Attendance matrix dataset generated successfully
+ */
+export const zGetAttendanceLedgerResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(zAttendanceLedgerData),
+    meta: z.optional(zPaginationMeta)
+});
+
+export const zGetUserAttendanceAnalyticsData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.object({
+        context: z.optional(z.enum(['daily', 'event'])),
+        start_date: z.optional(z.iso.date()),
+        end_date: z.optional(z.iso.date()),
+        page: z.optional(z.int()).default(1),
+        limit: z.optional(z.int()).default(15)
+    }))
+});
+
+/**
+ * User analytics profile payload generated successfully.
+ */
+export const zGetUserAttendanceAnalyticsResponse = z.object({
+    success: z.optional(z.boolean()),
+    metrics: z.optional(z.object({
+        expected_days: z.optional(z.int()),
+        present_days: z.optional(z.int()),
+        late_arrivals: z.optional(z.int()),
+        absent_days: z.optional(z.int()),
+        permission_days: z.optional(z.int())
+    })),
+    history: z.optional(z.array(z.object({
+        date: z.optional(z.iso.date()),
+        checkin: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        checkout: z.optional(z.union([
+            z.iso.datetime(),
+            z.null()
+        ])),
+        hours: z.optional(z.number()),
+        status: z.optional(z.string()),
+        terminal_id: z.optional(z.string()),
+        sync_status: z.optional(z.string())
+    }))),
+    meta: z.optional(zPaginationMeta)
+});
+
+export const zPartialEditAttendanceData = z.object({
+    body: z.object({
+        id: z.int(),
+        status: z.enum([
+            'present',
+            'absent',
+            'on permission'
+        ]),
+        hours: z.number(),
+        context: z.optional(z.enum(['daily', 'event'])),
+        userId: z.optional(z.int()),
+        date: z.optional(z.iso.date()),
+        event_id: z.optional(z.union([
+            z.int(),
+            z.null()
+        ]))
+    }),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Attendance override was successful.
+ */
+export const zPartialEditAttendanceResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string()),
+    userId: z.optional(z.int())
+});
 
 export const zSyncAttendanceSummaryData = z.object({
     body: z.array(zTerminalAttendanceSummaryCreate),

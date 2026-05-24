@@ -1,5 +1,6 @@
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, PaginationState } from "@tanstack/react-table";
+import type { AttendanceLedgerData } from "@/client";
 
 interface Option {
   label: string
@@ -74,16 +75,29 @@ export interface ExtendedDataTableProps<TData, TValue> extends DataTableProps<TD
   // custom filters
   filtersComponent?: React.ReactNode;
 
-  //enable or disable global filtering
+  // enable or disable global filtering
   enableGlobalFilter?: boolean;
 
-  //allow server side filtering
+  // allow server side filtering
   manualFiltering?: boolean;
 
-  //external search control
+  // external search control
   onGlobalSearchChange?: (value: string) => void;
-}
 
+  // ==========================================
+  // NEW: Server-Side Pagination Additions
+  // ==========================================
+  /** Turns off internal TanStack page-slicing logic */
+  manualPagination?: boolean;
+  /** Total matching records across all pages from database (meta.total_records) */
+  totalRecords?: number;
+  /** Current 0-based page index tracked by your parent state */
+  pageIndex?: number;
+  /** Number of items requested per page window frame */
+  pageSize?: number;
+  /** Callback emitted when previous/next/page number actions are clicked */
+  onPaginationChange?: (pagination: PaginationState) => void;
+}
 
 export interface TerminalFetchResponseType {
   id: number;
@@ -161,3 +175,78 @@ export interface AttendanceException {
   start_date: string;
   end_date: string;
 }
+
+export interface AttendanceQueryParams {
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  page?: number;
+  limit?: number
+  context?: 'daily' | 'event';
+  search?: string;
+}
+
+export interface PaginationMetaProps {
+  total_records: number;
+  current_page: number;
+  total_pages: number;
+  limit: number;
+  onPageChange: (page: number) => void;
+}
+export interface AttendanceFilterBarProps {
+  filters: AttendanceQueryParams;
+  onFilterChange: (key: keyof AttendanceQueryParams, value: string) => void;
+  onReset: () => void;
+}
+
+export interface AttendanceLedgerMetrics {
+  total_late?: number;
+  total_missed_checkout?: number;
+  total_audit_override?: number;
+}
+
+export interface AttendanceTableProps {
+  calendarDates: AttendanceLedgerData['calendarDates'];
+  users: AttendanceLedgerData['users'];
+  exceptions: AttendanceLedgerData['exceptions'];
+  attendanceSummary: AttendanceLedgerData['initialAttendanceSummary'];
+  context: 'daily' | 'event';
+  onRowClick: (id: number) => void;
+  paginationMeta: PaginationMetaProps;
+}
+
+export interface IndividualReportSheetProps {
+    isOpen: boolean;
+    onClose: () => void;
+    filteredEmployee: AttendanceLedgerData['users'][number];
+    queryParams: AttendanceQueryParams;
+}
+
+export interface AttendanceStatusCellProps {
+  record: AttendanceLedgerData['initialAttendanceSummary'][number] | null;
+  isHoliday: boolean;
+  isWeekend: boolean;
+}
+
+export interface AttendanceUserAnalyticsMetrics {
+  expected_days?: number;
+  present_days?: number;
+  late_arrivals?: number;
+  absent_days?: number;
+  permission_days?: number;
+  queryParams: AttendanceQueryParams;
+  user: string;
+}
+
+export interface ZoneBAuditLedgerProps {
+  userId: number;
+  queryParams: AttendanceQueryParams;
+  onRowClick?: (date: string) => void;
+}
+
+export interface ZoneCRawTrailsProps {
+  userId: number;
+  selectedAuditDate: string;
+  queryParams: AttendanceQueryParams;
+}
+

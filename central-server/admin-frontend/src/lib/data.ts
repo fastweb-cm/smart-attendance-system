@@ -84,15 +84,15 @@ export const sidebarMenItems = [
     label: "Reports",
     items: [
       {
-        title: "Attendance Logs",
-        url: "/admin/issue-card",
+        title: "Attendance Report",
+        url: "/admin/attendance",
         icon: FileSpreadsheet,
       },
-      {
-        title: "Attendance Summary",
-        url: "/admin/exceptions",
-        icon: ClipboardCheck,
-      }
+      // {
+      //   title: "Attendance Summary",
+      //   url: "/admin/exceptions",
+      //   icon: ClipboardCheck,
+      // }
     ],
   },
   {
