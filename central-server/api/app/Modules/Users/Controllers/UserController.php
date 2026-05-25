@@ -96,8 +96,9 @@ class UserController extends Controller
         $this->json($classes);
     }
 
-    public function getUsersByType(string $userType)
+    public function getUsersByType()
     {
+        $userType = $_GET['userType'] ?? null;
         $users = (new Users())->getUsers($userType);
         $this->json($users);
     }

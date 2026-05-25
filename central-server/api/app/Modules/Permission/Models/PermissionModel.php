@@ -233,21 +233,26 @@ public function findAll(array $filters = [], int $page = 1, int $limit = 10): ar
         $offset = ($page - 1) * $limit;
 
         // 3. Extract paginated dataset chunk
+        // 3. Extract paginated dataset chunk with aggregate structural string mapping
         $sql = "SELECT p.*, lk.name AS permission_type_name,
-                CONCAT(u.fname, ' ', u.lname) AS employee_name,
-                CONCAT(i.fname, ' ', i.lname) AS initiator_name,
-                app.remark AS closing_remark,
-                CONCAT(appr.fname, ' ', appr.lname) AS approver_name,
-                app.date_approved
-                FROM tbl_permission p
-                INNER JOIN lkup_permission lk ON p.permission_type_id = lk.id
-                INNER JOIN tbl_user u ON p.user_id = u.id
-                LEFT JOIN tbl_user i ON p.initiatedby = i.id
-                LEFT JOIN tbl_permission_approval app ON p.id = app.permission_id
-                LEFT JOIN tbl_user appr ON app.approver_id = appr.id 
-                WHERE 1=1 $whereClause
-                ORDER BY p.id DESC
-                LIMIT ? OFFSET ?";
+        CONCAT(u.fname, ' ', u.lname) AS employee_name,
+        CONCAT(i.fname, ' ', i.lname) AS initiator_name,
+        
+        -- PACK THE HISTORICAL PROGRESSION TRAIL INTO RAW STRING BLOCKS
+        GROUP_CONCAT(app.remark ORDER BY app.id ASC SEPARATOR '||') AS history_remarks,
+        GROUP_CONCAT(CONCAT(appr.fname, ' ', appr.lname) ORDER BY app.id ASC SEPARATOR '||') AS history_approvers,
+        GROUP_CONCAT(app.date_approved ORDER BY app.id ASC SEPARATOR '||') AS history_dates
+        
+        FROM tbl_permission p
+        INNER JOIN lkup_permission lk ON p.permission_type_id = lk.id
+        INNER JOIN tbl_user u ON p.user_id = u.id
+        LEFT JOIN tbl_user i ON p.initiatedby = i.id
+        LEFT JOIN tbl_permission_approval app ON p.id = app.permission_id
+        LEFT JOIN tbl_user appr ON app.approver_id = appr.id 
+        WHERE 1=1 $whereClause
+        GROUP BY p.id -- Ensures exactly ONE unique row per permission request
+        ORDER BY p.id DESC
+        LIMIT ? OFFSET ?";
         
         $finalParams = array_merge($params, [$limit, $offset]);
         $result = $this->db->query($sql, $finalParams);

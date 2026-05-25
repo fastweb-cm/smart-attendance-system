@@ -52,13 +52,30 @@ export const useAuthPolicies = (initialData: GroupWithSubgroupsLookup[] = []) =>
     })
 }
 
-export const useUsers = (userType: string) => {
+export const useUsers = (userType?: string) => {
     return useQuery<Lookup[]>({
-        queryKey: ['users', userType],
+        // Fallback placeholder string stabilizes cache tracking if userType is undefined
+        queryKey: ['users', userType ?? 'all'],
         queryFn: async () => {
-            const response = await apiClient.get(`/api/v1/lookup/users/${userType}`);
+            const response = await apiClient.get(`/api/v1/lookup/users`, {
+                params: {
+                    // Force text formatting or pass undefined explicitly
+                    userType: userType || undefined
+                }
+            });
             return response.data;
         },
         staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const usePermissionTypes = () => {
+    return useQuery<Lookup[]>({
+        queryKey: ['permission_types'],
+        queryFn: async () => {
+            const res = await apiClient.get("/api/v1/lookup/permissions/types");
+            return res.data.data;
+        }
     })
 }
+

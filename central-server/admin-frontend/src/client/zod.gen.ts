@@ -893,7 +893,7 @@ export const zGetAllPermissionsResponse = z.object({
     data: z.optional(z.array(zPermissionExtendedRow))
 });
 
-export const zPostApiV1PermissionsReviewData = z.object({
+export const zReviewPermissionData = z.object({
     body: z.object({
         permission_id: z.int(),
         approver_id: z.int(),
@@ -910,7 +910,7 @@ export const zPostApiV1PermissionsReviewData = z.object({
 /**
  * Operational state securely shifted.
  */
-export const zPostApiV1PermissionsReviewResponse = z.object({
+export const zReviewPermissionResponse = z.object({
     success: z.optional(z.boolean()),
     message: z.optional(z.string())
 });

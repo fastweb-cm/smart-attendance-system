@@ -1976,6 +1976,7 @@ paths:
     post:
       summary: Submit administrative review validation decision
       description: Point endpoint utilized by managing units to approve or reject an isolated staff request, documenting custom operational annotations and changing state indices.
+      operationId: reviewPermission
       requestBody:
         required: true
         content:

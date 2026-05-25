@@ -1497,7 +1497,7 @@ export type GetAllPermissionsResponses = {
 
 export type GetAllPermissionsResponse = GetAllPermissionsResponses[keyof GetAllPermissionsResponses];
 
-export type PostApiV1PermissionsReviewData = {
+export type ReviewPermissionData = {
     body: {
         permission_id: number;
         approver_id: number;
@@ -1509,7 +1509,7 @@ export type PostApiV1PermissionsReviewData = {
     url: '/api/v1/permissions/review';
 };
 
-export type PostApiV1PermissionsReviewErrors = {
+export type ReviewPermissionErrors = {
     /**
      * Invalid input
      */
@@ -1528,7 +1528,7 @@ export type PostApiV1PermissionsReviewErrors = {
     500: unknown;
 };
 
-export type PostApiV1PermissionsReviewResponses = {
+export type ReviewPermissionResponses = {
     /**
      * Operational state securely shifted.
      */
@@ -1538,7 +1538,7 @@ export type PostApiV1PermissionsReviewResponses = {
     };
 };
 
-export type PostApiV1PermissionsReviewResponse = PostApiV1PermissionsReviewResponses[keyof PostApiV1PermissionsReviewResponses];
+export type ReviewPermissionResponse = ReviewPermissionResponses[keyof ReviewPermissionResponses];
 
 export type ListAnnouncementsData = {
     body?: never;
