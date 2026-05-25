@@ -1431,7 +1431,7 @@ export type DeleteApiV1PermissionsByIdResponses = {
 
 export type DeleteApiV1PermissionsByIdResponse = DeleteApiV1PermissionsByIdResponses[keyof DeleteApiV1PermissionsByIdResponses];
 
-export type GetApiV1PermissionsAllData = {
+export type GetAllPermissionsData = {
     body?: never;
     path?: never;
     query?: {
@@ -1448,11 +1448,19 @@ export type GetApiV1PermissionsAllData = {
          * Max count entries segment block chunk returning slice.
          */
         limit?: number;
+        /**
+         * Lower boundary limits range checking filter (ISO 8601 Date format string).
+         */
+        start_date?: string;
+        /**
+         * Upper boundary limits range checking filter (ISO 8601 Date format string).
+         */
+        end_date?: string;
     };
     url: '/api/v1/permissions/all';
 };
 
-export type GetApiV1PermissionsAllErrors = {
+export type GetAllPermissionsErrors = {
     /**
      * Invalid input
      */
@@ -1471,7 +1479,7 @@ export type GetApiV1PermissionsAllErrors = {
     500: unknown;
 };
 
-export type GetApiV1PermissionsAllResponses = {
+export type GetAllPermissionsResponses = {
     /**
      * Array listing and metadata metrics maps generated.
      */
@@ -1487,7 +1495,7 @@ export type GetApiV1PermissionsAllResponses = {
     };
 };
 
-export type GetApiV1PermissionsAllResponse = GetApiV1PermissionsAllResponses[keyof GetApiV1PermissionsAllResponses];
+export type GetAllPermissionsResponse = GetAllPermissionsResponses[keyof GetAllPermissionsResponses];
 
 export type PostApiV1PermissionsReviewData = {
     body: {

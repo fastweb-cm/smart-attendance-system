@@ -1888,6 +1888,7 @@ paths:
     get:
       summary: Fetch filtered aggregate permissions ledger listing
       description: Returns an unstructured array index stream of historical permissions suited for administrative grid panels. Supports contextual tracking queries.
+      operationId: getAllPermissions
       parameters:
         - name: search
           in: query
@@ -1916,6 +1917,22 @@ paths:
           schema:
             type: integer
             default: 10
+        - name: start_date
+          in: query
+          required: false
+          description: Lower boundary limits range checking filter (ISO 8601 Date format string).
+          schema:
+            type: string
+            format: date
+            example: "2026-05-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Upper boundary limits range checking filter (ISO 8601 Date format string).
+          schema:
+            type: string
+            format: date
+            example: "2026-05-31"
       responses:
         "200":
           description: Array listing and metadata metrics maps generated.

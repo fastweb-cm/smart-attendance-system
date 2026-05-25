@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   FileCode2,
   Activity,
+  ShieldAlert,
 } from "lucide-react"
 
 export const sidebarMenItems = [
@@ -77,6 +78,11 @@ export const sidebarMenItems = [
         title: "Exceptions",
         url: "/admin/exceptions",
         icon: AlarmClock,
+      },
+      {
+        title: "Permissions",
+        url: "/admin/permissions",
+        icon: ShieldAlert
       }
     ],
   },

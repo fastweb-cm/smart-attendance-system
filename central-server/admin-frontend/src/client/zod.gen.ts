@@ -862,7 +862,7 @@ export const zDeleteApiV1PermissionsByIdResponse = z.object({
     message: z.optional(z.string())
 });
 
-export const zGetApiV1PermissionsAllData = z.object({
+export const zGetAllPermissionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
@@ -873,14 +873,16 @@ export const zGetApiV1PermissionsAllData = z.object({
             'rejected'
         ])),
         page: z.optional(z.int()).default(1),
-        limit: z.optional(z.int()).default(10)
+        limit: z.optional(z.int()).default(10),
+        start_date: z.optional(z.iso.date()),
+        end_date: z.optional(z.iso.date())
     }))
 });
 
 /**
  * Array listing and metadata metrics maps generated.
  */
-export const zGetApiV1PermissionsAllResponse = z.object({
+export const zGetAllPermissionsResponse = z.object({
     success: z.optional(z.boolean()),
     meta: z.optional(z.object({
         total_records: z.optional(z.int()),

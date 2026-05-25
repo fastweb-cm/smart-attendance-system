@@ -191,7 +191,7 @@ public function findAll(array $filters = [], int $page = 1, int $limit = 10): ar
         $where = [];
         $params = [];
 
-        // Dynamic Text Search on Employee Name (First Name or Last Name)
+        // Dynamic Text Search on Employee Name
         if (!empty($filters['search'])) {
             $where[] = "(u.fname LIKE ? OR u.lname LIKE ?)";
             $searchTerm = "%" . $filters['search'] . "%";
@@ -204,10 +204,21 @@ public function findAll(array $filters = [], int $page = 1, int $limit = 10): ar
             $params[] = $filters['status'];
         }
 
+        // Lower Date Boundary (Request extends on or after this date)
+        if (!empty($filters['start_date'])) {
+            $where[] = "p.start_date >= ?";
+            $params[] = $filters['start_date'];
+        }
+
+        // Upper Date Boundary (Request starts on or before this date)
+        if (!empty($filters['end_date'])) {
+            $where[] = "p.end_date <= ?";
+            $params[] = $filters['end_date'];
+        }
+
         $whereClause = !empty($where) ? " AND " . implode(" AND ", $where) : "";
 
-        // 1. Calculate count matching search parameters
-        // Note: INNER JOIN tbl_user u is included here so the name search clauses resolve safely
+        // 1. Calculate count matching overall criteria safely
         $countSql = "SELECT COUNT(*) as total 
                      FROM tbl_permission p 
                      INNER JOIN tbl_user u ON p.user_id = u.id 
@@ -216,7 +227,7 @@ public function findAll(array $filters = [], int $page = 1, int $limit = 10): ar
         $countResult = $this->db->query($countSql, $params);
         $totalRows = $countResult ? (int)$countResult->fetch_assoc()['total'] : 0;
 
-        // 2. Clamp bounds
+        // 2. Clamp structural bounds
         $totalPages = $totalRows > 0 ? ceil($totalRows / $limit) : 1;
         $page = max(1, min($page, $totalPages));
         $offset = ($page - 1) * $limit;

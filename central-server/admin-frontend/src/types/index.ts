@@ -1,6 +1,6 @@
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import type { AttendanceLedgerData, FetchLogsResponses } from "@/client";
+import type { AttendanceLedgerData, FetchLogsResponses, GetAllPermissionsResponses } from "@/client";
 
 interface Option {
   label: string
@@ -272,4 +272,29 @@ export interface LogsFilterBarProps {
 export interface LogsTableProps {
   logs: FetchLogsResponses["200"]["data"];
   paginationMeta: PaginationMetaProps;
+}
+
+export type permissionStatuses = 'pending' | 'approved' | 'rejected';
+export interface PermissionQueryParams {
+  search?: string;
+  status?: permissionStatuses;
+  page?: number;
+  limit?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export type PermissionRowType = NonNullable<GetAllPermissionsResponses["200"]["data"]>[number];
+export interface PermissionTableProps {
+  data?: GetAllPermissionsResponses["200"]["data"];
+  onEdit: (permission: PermissionRowType) => void;
+  onReview: (permission: PermissionRowType) => void;
+  onDelete: (permission: PermissionRowType) => void;
+  paginationMeta: PaginationMetaProps;
+}
+
+export interface PermissionFilterProps {
+  filters: PermissionQueryParams;
+  onFilterChange: (key: keyof PermissionQueryParams, value: string | undefined) => void;
+  onReset: () => void;
 }

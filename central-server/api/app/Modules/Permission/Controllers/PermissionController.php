@@ -151,8 +151,10 @@ class PermissionController extends Controller
 public function all()
 {
     $filters = [
-        'search' => $_GET['search'] ?? null, // Captures text string inputs
-        'status' => $_GET['status'] ?? null
+        'search'     => $_GET['search'] ?? null,
+        'status'     => $_GET['status'] ?? null,
+        'start_date' => $_GET['start_date'] ?? null, // Expects Y-m-d format strings
+        'end_date'   => $_GET['end_date'] ?? null
     ];
 
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
