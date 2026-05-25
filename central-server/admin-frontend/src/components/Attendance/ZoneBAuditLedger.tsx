@@ -12,39 +12,39 @@ export default function ZoneBAuditLedger({
   onRowClick
 }: ZoneBAuditLedgerProps) {
 
-  // We are now tracking the unique composite string identity (date or event-date combination)
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
-  
-  // Track currently active audit selection line
   const [selectedAuditDate, setSelectedAuditDate] = useState<string>(() => getPreviousDay());
-  
-  // Dedicated state machines initialized on operational row selection events
   const [editHours, setEditHours] = useState<number>(0);
   const [editStatus, setEditStatus] = useState<string>("");
 
-  // Pull records from cache
   const { data, isLoading } = useAttendanceLedger(queryParams);
-
   const isEventContext = queryParams.context === 'event';
 
   const chronologicalAuditLedger = useMemo(() => {
     if (!data) return [];
 
     type AttendanceRecord = AttendanceTableProps["attendanceSummary"] extends Array<infer U> ? U : never;
-    // We attach a unique 'rowKey' to completely eliminate React key collisions on multi-day events
-    type AuditLedgerRecord = AttendanceRecord & { isHolidayShift: boolean; holidayName?: string; rowKey: string; displayLabel: string };
+    type AuditLedgerRecord = AttendanceRecord & { 
+      isHolidayShift: boolean; 
+      holidayName?: string; 
+      rowKey: string; 
+      displayLabel: string; 
+      isWeekend: boolean;
+    };
 
     const userRecords = data.attendanceSummary.filter(u => u.employee_id === userId);
 
     return data.calendarDates.reduce<AuditLedgerRecord[]>((acc, cd) => {
-      // Safely extract string constants with guaranteed fallbacks to appease the compiler
       const targetExactDate = cd.exact_date ?? "";
       const targetRaw = cd.raw ?? "";
       const targetDisplayLabel = cd.dayName ?? cd.label ?? "";
 
       const exception = data.exceptions?.find((ex) => ex.date === targetExactDate);
       
-      // Match records using BOTH date and event validation parameters accurately
+      // Look at the display label or the actual date object to detect weekends
+      const lowerLabel = targetDisplayLabel.toLowerCase();
+      const isWeekendDay = lowerLabel.startsWith("sat") || lowerLabel.startsWith("sun");
+
       const record = userRecords.find(r => {
         if (isEventContext) {
           return String(r.event_id) === targetRaw && r.date === targetExactDate;
@@ -65,7 +65,6 @@ export default function ZoneBAuditLedger({
         variance: 0
       };
 
-      // Create a truly unique DOM key identifier (e.g., "13_2026-05-20" or "2026-05-20")
       const uniqueRowKey = isEventContext ? `${targetRaw}_${targetExactDate}` : targetExactDate;
 
       acc.push({
@@ -73,13 +72,14 @@ export default function ZoneBAuditLedger({
         isHolidayShift: !!exception,
         holidayName: exception?.name ?? "",
         rowKey: uniqueRowKey,
-        displayLabel: targetDisplayLabel
+        displayLabel: targetDisplayLabel,
+        isWeekend: isWeekendDay
       });
 
       return acc;
     }, []);
   }, [data, userId, isEventContext]);
-  // Safely intercept and populate inputs when editing mode is triggered
+
   const startEditingRow = (
     e: React.MouseEvent,
     record: AttendanceTableProps["attendanceSummary"][number] & { rowKey: string }
@@ -98,9 +98,9 @@ export default function ZoneBAuditLedger({
       status: editStatus as "absent" | "present" | "on permission",
       hours: editHours,
       userId: userId,
-      date: targetDate, // Passes down the exact single-day date slice of that event
+      date: targetDate,
       context: queryParams.context,
-      eventId: eventId // Matches backend input parsing key expectation name
+      eventId: eventId
     };
     
     await saveCorrectionMutation.mutateAsync({
@@ -139,9 +139,40 @@ export default function ZoneBAuditLedger({
               const isEditing = editingRowKey === record.rowKey;
               const isSelected = selectedAuditDate === record.date;
 
+              // =========================================================================
+              // PRIORITY STATUS EVALUATION (Type-Safe Fix)
+              // =========================================================================
+              const hasActiveStatus = record.attendance_status === 'present' || record.attendance_status === 'on permission';
+              const isAbsentState = record.attendance_status === 'absent';
+
+              // FIX: Explicitly type statusLabel as a generic string so it can safely accept 'exempt' and '—'
+              let statusLabel: string = record.attendance_status ?? 'absent';
+              let badgeStyle = "bg-slate-100 text-slate-600 border border-slate-200";
+
+              if (hasActiveStatus) {
+                if (record.attendance_status === 'present') {
+                  statusLabel = 'Present';
+                  badgeStyle = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                } else {
+                  statusLabel = 'On Permission';
+                  badgeStyle = 'bg-amber-50 text-amber-700 border border-amber-200';
+                }
+              } else if (isAbsentState) {
+                if (record.isHolidayShift) {
+                  statusLabel = 'Exempt';
+                  badgeStyle = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+                } else if (record.isWeekend && !isEventContext) {
+                  statusLabel = '—';
+                  badgeStyle = 'text-slate-400 font-normal py-0.5 text-center block w-full';
+                } else {
+                  statusLabel = 'Absent';
+                  badgeStyle = 'bg-rose-50 text-rose-700 border border-rose-200';
+                }
+              }
+
               return (
                 <tr 
-                  key={record.rowKey} // FIX 2: Completely resolves duplicate key warnings
+                  key={record.rowKey}
                   className={`transition text-[11px] font-mono cursor-pointer relative ${
                     isSelected ? 'bg-blue-50/70 text-slate-900 font-medium' : 'hover:bg-slate-50 text-slate-600'
                   }`}
@@ -156,10 +187,11 @@ export default function ZoneBAuditLedger({
                   {/* Date Column */}
                   <td className="p-2.5 font-bold text-slate-900 relative">
                     <div className="flex flex-col">
-                      {/* FIX 3: Safely display readable day names for events without string slice errors */}
                       <span>{isEventContext ? record.displayLabel : (record.date ? record.date.substring(5) : "")}</span>
                       {record.isHolidayShift && (
-                        <span className="text-[8px] text-blue-600 font-bold truncate tracking-tight">{record.holidayName}</span>
+                        <span className="text-[8px] text-indigo-600 font-bold truncate tracking-tight uppercase">
+                          {record.holidayName || "Holiday"}
+                        </span>
                       )}
                     </div>
                     {isSelected && (
@@ -177,7 +209,7 @@ export default function ZoneBAuditLedger({
                     {record.last_checkout ? record.last_checkout.split('T')[1].substring(0, 5) : '—'}
                   </td>
 
-                  {/* Hours Dynamic Input Adjuster */}
+                  {/* Hours */}
                   <td className="p-2.5 text-center text-slate-700">
                     {isEditing ? (
                         <input 
@@ -197,7 +229,7 @@ export default function ZoneBAuditLedger({
                     )}
                   </td>
 
-                  {/* Inline Dropdown Class Selection Status */}
+                  {/* Attendance Status Badge Cell */}
                   <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                     {isEditing ? (
                       <select 
@@ -210,27 +242,19 @@ export default function ZoneBAuditLedger({
                         <option value="on permission">On Permission</option>
                       </select>
                     ) : (
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold font-mono w-full text-center ${
-                        record.attendance_status === 'present' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        record.attendance_status === 'on permission' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        record.attendance_status === 'absent' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                        'bg-slate-100 text-slate-600 border border-slate-200'
-                      }`}>
-                        {record.attendance_status === 'present' ? 'Present' :
-                         record.attendance_status === 'absent' ? 'Absent' :
-                         record.attendance_status === 'on permission' ? 'On Permission' : 'Exempt'}
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold font-mono w-full text-center ${badgeStyle}`}>
+                        {statusLabel}
                       </span>
                     )}
                   </td>
 
-                  {/* Actions Column Controls */}
+                  {/* Actions */}
                   <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                     {isEditing ? (
                       <div className="flex gap-1 justify-center">
                         <button 
                           onClick={() => handleSaveCorrection(record.id ?? 0, record.date ?? "", record.event_id ?? null)}
                           className="p-1 bg-emerald-50 border border-emerald-300 text-emerald-700 rounded hover:bg-emerald-100 transition shadow-sm cursor-pointer"
-                          title="Commit Override (derived_from_session = 0)"
                         >
                           <Save className="w-3.5 h-3.5" />
                         </button>

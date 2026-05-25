@@ -13,6 +13,7 @@ use App\Modules\Events\Controllers\EventsController;
 use App\Modules\Sync\Controller\SyncController;
 use App\Modules\Exceptions\Controllers\ExceptionController;
 use App\Modules\Attendance\Controller\AttendanceController;
+use App\Modules\Permission\Controllers\PermissionController;
 
 use App\Modules\Logger\Controllers\LoggerController;
 /*
@@ -32,10 +33,11 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |--------------------------
 */
 $router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
-$router->get('/api/v1/lookup/users/{userType}', [UserController::class, 'getUsersByType']);
+$router->get('/api/v1/lookup/users', [UserController::class, 'getUsersByType']);
 $router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
 $router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
 $router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPolicies']);
+$router->get('/api/v1/lookup/permissions/types', [PermissionController::class, 'types']);
 
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
 
@@ -100,6 +102,13 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->get('/api/v1/attendance/ledger', [AttendanceController::class, 'ledger']);
     $router->get('/api/v1/attendance/user/{id}', [AttendanceController::class, 'userDetail']);
     $router->patch('/api/v1/attendance', [AttendanceController::class, 'partialEdit']);
+
+    // Staff Permission Request Management routes
+    $router->get('/api/v1/permissions', [PermissionController::class, 'index']);        // Fetch singular query details (?id=X)
+    $router->post('/api/v1/permissions', [PermissionController::class, 'store']);       // Handles both insertions and modification updates
+    $router->delete('/api/v1/permissions/{id}', [PermissionController::class, 'delete']); // Cancel / Drop pending requests
+    $router->get('/api/v1/permissions/all', [PermissionController::class, 'all']);      // Filtered aggregate dashboard index data listing
+    $router->post('/api/v1/permissions/review', [PermissionController::class, 'review']); // Manager validation state decision point
 
     
     $router->get('/api/v1/logs', [LoggerController::class, 'index']);

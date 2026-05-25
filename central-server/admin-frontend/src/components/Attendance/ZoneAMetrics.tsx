@@ -80,7 +80,7 @@ export default function ZoneAMetrics({
         {/* Expected working days */}
         <div className="bg-slate-100 p-2.5 rounded-lg border border-slate-200 text-center flex flex-col justify-between shadow-sm">
           <span className="text-[10px] text-slate-600 font-semibold font-mono block leading-tight">Expected Days</span>
-          <span className="text-lg font-extrabold font-mono text-slate-900 mt-1.5">{metrics.expected}d</span>
+          <span className="text-lg font-extrabold font-mono text-slate-900 mt-1.5">{metrics.expected - metrics.permissions}d</span>
           <span className="text-[9px] text-slate-400 font-mono mt-0.5">Excludes Holidays</span>
         </div>
 
