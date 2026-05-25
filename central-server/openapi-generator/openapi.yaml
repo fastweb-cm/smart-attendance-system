@@ -1855,6 +1855,7 @@ paths:
   /api/v1/permissions/{id}:
     delete:
       summary: Cancel / Drop a pending permission request
+      operationId: deletePermission
       description: Removes a request entirely from system operational lookup metrics. This operation is restricted solely to records whose state evaluates to `pending`.
       parameters:
         - name: id

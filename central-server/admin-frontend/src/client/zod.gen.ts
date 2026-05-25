@@ -846,7 +846,7 @@ export const zUpsertPermissionResponse = z.object({
     message: z.optional(z.string())
 });
 
-export const zDeleteApiV1PermissionsByIdData = z.object({
+export const zDeletePermissionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
         id: z.int()
@@ -857,7 +857,7 @@ export const zDeleteApiV1PermissionsByIdData = z.object({
 /**
  * Permission request canceled and removed successfully.
  */
-export const zDeleteApiV1PermissionsByIdResponse = z.object({
+export const zDeletePermissionResponse = z.object({
     success: z.optional(z.boolean()),
     message: z.optional(z.string())
 });

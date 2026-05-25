@@ -1391,7 +1391,7 @@ export type UpsertPermissionResponses = {
 
 export type UpsertPermissionResponse = UpsertPermissionResponses[keyof UpsertPermissionResponses];
 
-export type DeleteApiV1PermissionsByIdData = {
+export type DeletePermissionData = {
     body?: never;
     path: {
         id: number;
@@ -1400,7 +1400,7 @@ export type DeleteApiV1PermissionsByIdData = {
     url: '/api/v1/permissions/{id}';
 };
 
-export type DeleteApiV1PermissionsByIdErrors = {
+export type DeletePermissionErrors = {
     /**
      * Invalid input
      */
@@ -1419,7 +1419,7 @@ export type DeleteApiV1PermissionsByIdErrors = {
     500: unknown;
 };
 
-export type DeleteApiV1PermissionsByIdResponses = {
+export type DeletePermissionResponses = {
     /**
      * Permission request canceled and removed successfully.
      */
@@ -1429,7 +1429,7 @@ export type DeleteApiV1PermissionsByIdResponses = {
     };
 };
 
-export type DeleteApiV1PermissionsByIdResponse = DeleteApiV1PermissionsByIdResponses[keyof DeleteApiV1PermissionsByIdResponses];
+export type DeletePermissionResponse = DeletePermissionResponses[keyof DeletePermissionResponses];
 
 export type GetAllPermissionsData = {
     body?: never;
