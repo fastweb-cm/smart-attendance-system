@@ -3,6 +3,7 @@
 namespace App\Modules\Users\Models;
 
 use App\Core\Database;
+use App\Core\Logger;
 use App\Services\TokenService;
 use App\Modules\Sync\Models\SyncModel;
 use Throwable;
@@ -84,63 +85,79 @@ class Users
 
     public function createUser(): ?array
     {
-        $sqlUser = "INSERT INTO tbl_user
-            (class_id, fname, lname, email, gender, username, password_hash, user_type, status, biometric_enrollment_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $paramsUser = [
-            $this->class_id,
-            $this->fname,
-            $this->lname,
-            $this->email,
-            $this->gender,
-            $this->username,
-            $this->password_hash,
-            $this->user_type,
-            $this->status,
-            $this->biometric_enrollment_status
-        ];
+        try {
+            $this->db->beginTransaction();
 
-        $this->db->query($sqlUser, $paramsUser);
-        $this->id = $this->db->lastInsertId();
+            $sqlUser = "INSERT INTO tbl_user
+                (class_id, fname, lname, email, gender, username, password_hash, user_type, status, biometric_enrollment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $paramsUser = [
+                $this->class_id,
+                $this->fname,
+                $this->lname,
+                $this->email,
+                $this->gender,
+                $this->username,
+                $this->password_hash,
+                $this->user_type,
+                $this->status,
+                $this->biometric_enrollment_status
+            ];
 
-        // card record
-        $this->createCardRecord($this->id);
+            $this->db->query($sqlUser, $paramsUser);
+            $this->id = $this->db->lastInsertId();
 
-        if ($this->user_type === 'student') {
-            // generate unique regno if not provided
-            $regno = $this->generateUniqueRegno();
-            $sqlStudent = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
-            $this->db->query($sqlStudent, [$this->id, $regno, $this->class_id]);
-        } elseif ($this->user_type === 'staff') {
-            // generate unique sregno
-            $sregno = $this->generateUniqueRegno('STF-', 'tbl_staff', 'sregno');
-            $sqlStaff = "INSERT INTO tbl_staff (user_id, role_id, sregno) VALUES (?, ?, ?)";
-            $this->db->query($sqlStaff, [$this->id, $this->role_id, $sregno]);
+            $this->createCardRecord($this->id);
+
+            $assignedRegNo = '';
+            if ($this->user_type === 'student') {
+                $assignedRegNo = $this->generateUniqueRegno();
+                $sqlStudent = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
+                $this->db->query($sqlStudent, [$this->id, $assignedRegNo, $this->class_id]);
+            } elseif ($this->user_type === 'staff') {
+                $assignedRegNo = $this->generateUniqueRegno('STF-', 'tbl_staff', 'sregno');
+                $sqlStaff = "INSERT INTO tbl_staff (user_id, role_id, sregno) VALUES (?, ?, ?)";
+                $this->db->query($sqlStaff, [$this->id, $this->role_id, $assignedRegNo]);
+            }
+
+            // Automatically queue synchronization on creation if mapped to an active policy
+            $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+            if (!empty($terminals)) {
+                foreach ($terminals as $tId) {
+                    $this->syncModel->setTerminalId($tId);
+                    $this->syncModel->setEntityType('tbl_user');
+                    $this->syncModel->setEntityId($this->id);
+                    $this->syncModel->setAction('upsert');
+                    $this->syncModel->save();
+                }
+            }
+
+            $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Created identity profile for %s: '%s %s' (ID: %d, Registration: %s)", ucfirst($this->user_type), $this->fname, $this->lname, $this->id, $assignedRegNo),
+                null,
+                ['user_id' => $this->id, 'user_type' => $this->user_type, 'action' => 'user_create']
+            );
+
+            return $this->getUserById($this->id);
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
-
-        // find all terminals associated with the user's groups/subgroups and add to sync queue
-        // $terminals = $this->getUserGroupSubgroupTerminal($this->id);
-        // if (!empty($terminals)) {
-        //     foreach ($terminals as $tId) {
-        //         $this->syncModel->setTerminalId($tId);
-        //         $this->syncModel->setEntityType('tbl_user');
-        //         $this->syncModel->setEntityId($this->id);
-        //         $this->syncModel->setAction('upsert');
-        //         $this->syncModel->save();
-        //     }
-        // }
-
-
-        return $this->getUserById($this->id);
     }
 
     public function storeRefresh($userid, $hash)
     {
         $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 30); // 30 days
         
-        $sql = "INSERT INTO tbl_refreshtokens(user_id,token_hash,expires_at)
-            VALUES(?,?,?)";
+        $sql = "INSERT INTO tbl_refreshtokens(user_id,token_hash,expires_at) VALUES(?,?,?)";
         $params = [$userid, $hash, $expiresAt];
 
         $this->db->query($sql, $params);
@@ -150,67 +167,99 @@ class Users
     {
         if (!$this->id) return null;
 
-        $fields = [];
-        $params = [];
+        try {
+            $this->db->beginTransaction();
 
-        $props = [
-            'fname', 'lname', 'email', 'gender', 'username', 'password_hash', 
-            'status', 'biometric_enrollment_status', 'class_id', 'user_type'
-        ];
+            $fields = [];
+            $params = [];
+            $props = [
+                'fname', 'lname', 'email', 'gender', 'username', 'password_hash', 
+                'status', 'biometric_enrollment_status', 'class_id', 'user_type'
+            ];
 
-        foreach ($props as $prop) {
-            $getter = "get" . ucfirst($prop);
-            if ($this->$prop !== null) {
-                $fields[] = "$prop = ?";
-                $params[] = $this->$prop;
+            foreach ($props as $prop) {
+                if ($this->$prop !== null) {
+                    $fields[] = "$prop = ?";
+                    $params[] = $this->$prop;
+                }
             }
-        }
 
-        if (!empty($fields)) {
-            $params[] = $this->id;
-            $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
-            $this->db->query($sql, $params);
-        }
-
-        // Update student/staff table
-        if ($this->user_type === 'student') {
-            $fieldsStudent = [];
-            $paramsStudent = [];
-            if ($this->class_id !== null) {
-                $fieldsStudent[] = "class_id = ?";
-                $paramsStudent[] = $this->class_id;
+            if (!empty($fields)) {
+                $params[] = $this->id;
+                $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
+                $this->db->query($sql, $params);
             }
-            if (!empty($fieldsStudent)) {
-                $paramsStudent[] = $this->id;
-                $sqlStudent = "UPDATE tbl_student SET " . implode(", ", $fieldsStudent) . " WHERE user_id = ?";
-                $this->db->query($sqlStudent, $paramsStudent);
-            }
-        } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
-            $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
-            $this->db->query($sqlStaff, [$this->role_id, $this->id]);
-        }
 
-        // find all terminals associated with the user's groups/subgroups and add to sync queue
-        $terminals = $this->getUserGroupSubgroupTerminal($this->id);
-        if (!empty($terminals)) {
-            foreach ($terminals as $tId) {
-                $this->syncModel->setTerminalId($tId);
-                $this->syncModel->setEntityType('tbl_user');
-                $this->syncModel->setEntityId($this->id);
-                $this->syncModel->setAction('upsert');
-                $this->syncModel->save();
+            if ($this->user_type === 'student') {
+                $fieldsStudent = [];
+                $paramsStudent = [];
+                if ($this->class_id !== null) {
+                    $fieldsStudent[] = "class_id = ?";
+                    $paramsStudent[] = $this->class_id;
+                }
+                if (!empty($fieldsStudent)) {
+                    $paramsStudent[] = $this->id;
+                    $sqlStudent = "UPDATE tbl_student SET " . implode(", ", $fieldsStudent) . " WHERE user_id = ?";
+                    $this->db->query($sqlStudent, $paramsStudent);
+                }
+            } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
+                $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
+                $this->db->query($sqlStaff, [$this->role_id, $this->id]);
             }
-        }
 
-        return $this->getUserById($this->id);
+            $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+            if (!empty($terminals)) {
+                foreach ($terminals as $tId) {
+                    $this->syncModel->setTerminalId($tId);
+                    $this->syncModel->setEntityType('tbl_user');
+                    $this->syncModel->setEntityId($this->id);
+                    $this->syncModel->setAction('upsert');
+                    $this->syncModel->save();
+                }
+            }
+
+            $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Modified identity account and refreshed edge network queue data for User ID: %d", $this->id),
+                null,
+                ['user_id' => $this->id, 'action' => 'user_update']
+            );
+
+            return $this->getUserById($this->id);
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 
     public function deleteUser(): bool
     {
         if (!$this->id) return false;
+        
         $sql = "DELETE FROM tbl_user WHERE id = ?";
         $this->db->query($sql, [$this->id]);
-        return $this->db->affectedRows() > 0;
+        $affected = $this->db->affectedRows() > 0;
+
+        if ($affected) {
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Permanently dropped user record ID: %d from security infrastructure databases", $this->id),
+                null,
+                ['user_id' => $this->id, 'action' => 'user_delete']
+            );
+        }
+
+        return $affected;
     }
 
     public function getUserById(int $id): ?array
@@ -246,8 +295,7 @@ class Users
 
     public function findValidByUserToken(string $refreshToken): ?array
     {
-        $sql = "SELECT * FROM tbl_refreshtokens 
-                WHERE revoked = 0 AND expires_at > NOW()";
+        $sql = "SELECT * FROM tbl_refreshtokens WHERE revoked = 0 AND expires_at > NOW()";
         $result = $this->db->query($sql);
 
         if (!$result || $result->num_rows === 0) return null;
@@ -262,35 +310,41 @@ class Users
     }
 
     public function revokeToken(int $id): bool {
-        $sql = 'UPDATE tbl_refreshtokens
-            SET  revoked = 1, revoked_at = NOW()
-            WHERE id = ?';
+        $sql = "UPDATE tbl_refreshtokens SET revoked = 1, revoked_at = NOW() WHERE id = ?";
         $this->db->query($sql, [$id]);
+        $success = $this->db->affectedRows() > 0;
 
-        return $this->db->affectedRows() > 0;
+        if ($success) {
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log('system', 'info', sprintf("Revoked active refresh token sequence matrix record map ID: %d", $id));
+        }
+
+        return $success;
     }
 
     public function revokeByToken(string $refreshToken): bool
     {
-        // Step 1: Get all valid, non-revoked refresh tokens
         $sql = "SELECT * FROM tbl_refreshtokens WHERE revoked = 0 AND expires_at > NOW()";
         $result = $this->db->query($sql);
 
-        if (!$result || $result->num_rows === 0) {
-            return false; // nothing to revoke
-        }
+        if (!$result || $result->num_rows === 0) return false;
 
-        // Step 2: Loop through and find the matching token
         while ($row = $result->fetch_assoc()) {
             if (TokenService::verifyToken($refreshToken, $row['token_hash'])) {
-                // Step 3: Revoke this token
                 $updateSql = "UPDATE tbl_refreshtokens SET revoked = 1, revoked_at = NOW() WHERE id = ?";
                 $this->db->query($updateSql, [$row['id']]);
-                return true; // token found and revoked
+
+                // -----------------------------------------------------------------
+                // SYSTEM AUDIT LOG
+                // -----------------------------------------------------------------
+                Logger::log('system', 'info', sprintf("Explicit token authentication lifecycle revoked for User ID: %d", $row['user_id']));
+                return true;
             }
         }
 
-        return false; // token not found
+        return false;
     }
 
     public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array
@@ -321,10 +375,6 @@ class Users
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(" AND ", $conditions);
         }
-
-        // $sql .= " ORDER BY u.id DESC LIMIT ? OFFSET ?";
-        // $params[] = $limit;
-        // $params[] = $offset;
 
         $result = $this->db->query($sql, $params);
         $users = [];
@@ -361,10 +411,10 @@ class Users
 
         if ($res && $res->num_rows > 0) {
             $row = $res->fetch_assoc();
-            return (int)$row['id']; // Extract the ID and cast to int
+            return (int)$row['id'];
         }
 
-        return 0; // Return 0 if class not found
+        return 0;
     }
 
     public function syncUsersFromOnline(array $students, array $staff): array
@@ -372,12 +422,10 @@ class Users
         $synced_students = [];
         $synced_staff = [];
         try {
-            //start a transaction
             $this->db->beginTransaction();
-            if (!empty($students)) {
 
+            if (!empty($students)) {
                 foreach ($students as $s) {
-                    // collect IDS for acknowledgement
                     $synced_students[] = $s["id"];
                     $classId = $this->getClassIdFromName($s["cname"]);
 
@@ -391,21 +439,14 @@ class Users
                         VALUES (?, ?, ?, ?, ?, ?, ?)";
 
                     $paramsStu = [
-                        $classId,
-                        $s["fname"],
-                        $s["lname"],
-                        $s["gender"],
-                        "student",
-                        "active",
-                        "pending"
+                        $classId, $s["fname"], $s["lname"], $s["gender"], "student", "active", "pending"
                     ];
                     $this->db->query($sqlStu, $paramsStu);
                     $studentId = $this->db->lastInsertId();
 
                     $sqlStype = "INSERT INTO tbl_student (user_id, regno, class_id) VALUES (?, ?, ?)";
-                    $this->db->query($sqlStype, [$studentId,$s["sregnum"],$classId]);
+                    $this->db->query($sqlStype, [$studentId, $s["sregnum"], $classId]);
                     
-                    //card insert
                     $this->createCardRecord($studentId);
                 }
             }
@@ -415,28 +456,34 @@ class Users
                     $synced_staff[] = $st["id"];
 
                     $sqlStaff = "INSERT INTO tbl_user
-                        (fname,lname,user_type, gender, status,biometric_enrollment_status)
-                        VALUES (?,?,?,?,?,?)";
+                        (fname, lname, user_type, gender, status, biometric_enrollment_status)
+                        VALUES (?, ?, ?, ?, ?, ?)";
 
                     $paramsStaff = [
-                        $st["fname"],
-                        $st["lname"],
-                        "staff",
-                        "male",
-                        "active",
-                        "pending"
+                        $st["fname"], $st["lname"], "staff", "male", "active", "pending"
                     ];
                     $this->db->query($sqlStaff, $paramsStaff);
                     $staffId = $this->db->lastInsertId();
 
                     $sql = "INSERT INTO tbl_staff (user_id, role_id, sregno) VALUES (?, ?, ?)";
-                    $this->db->query($sql, [$staffId,2, $st["tregnum"]]);
+                    $this->db->query($sql, [$staffId, 2, $st["tregnum"]]);
 
                     $this->createCardRecord($staffId);
                 }
             }
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYNC AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'sync',
+                'info',
+                sprintf("Cloud sync processing complete: Saved %d students and %d staff operators locally", count($synced_students), count($synced_staff)),
+                null,
+                ['synced_student_count' => count($synced_students), 'synced_staff_count' => count($synced_staff)]
+            );
 
             return [
                 $synced_students,
@@ -449,10 +496,8 @@ class Users
         }
     }
 
-    //helper function to generate the card_uid
     public function generateCardUID(): string
     {
-        // Generates an 8-character hex string (e.g., A1B2C3D4)
         return strtoupper(bin2hex(random_bytes(4)));
     }
 
@@ -464,33 +509,37 @@ class Users
         while (!$isUnique) {
             $regno = $prefix . str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         
-            // Check if this regno is already in the target table
-            $checkSql = "SELECT COUNT(*) as count FROM $targetTable WHERE $targetColumn = ?";
+            $checkSql = "SELECT COUNT(*) as total FROM $targetTable WHERE $targetColumn = ?";
             $stmt = $this->db->query($checkSql, [$regno]);
-            $isUnique = $stmt->num_rows > 0 ? true : false;
+            $row = $stmt->fetch_assoc();
+            
+            if ((int)$row['total'] === 0) {
+                $isUnique = true;
+            }
         }
 
         return $regno;
     }
 
-    public function createCardRecord(int $userId) {
+    public function createCardRecord(int $userId) 
+    {
         $isUnique = false;
         $card_uid = '';
 
-        // Loop until we find a UID that doesn't exist yet
         while (!$isUnique) {
             $card_uid = $this->generateCardUID();
         
-            // Check if this UID is already in the table
-            $checkSql = "SELECT COUNT(*) as count FROM tbl_card WHERE card_uid = ?";
+            $checkSql = "SELECT COUNT(*) as total FROM tbl_card WHERE card_uid = ?";
             $stmt = $this->db->query($checkSql, [$card_uid]);
-            $isUnique = $stmt->num_rows > 0 ? true : false;
-
+            $row = $stmt->fetch_assoc();
+            
+            if ((int)$row['total'] === 0) {
+                $isUnique = true;
+            }
         }
-        $sql = "INSERT INTO tbl_card (user_id,card_uid) VALUES (?,?)";
+        $sql = "INSERT INTO tbl_card (user_id, card_uid) VALUES (?, ?)";
         $this->db->query($sql, [$userId, $card_uid]);
     }
-
 
     public function fetchUserCardDetails(): array
     {
@@ -512,56 +561,60 @@ class Users
         return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-public function markCardActive(array $userIds): bool
-{
-    if (empty($userIds)) return false;
+    public function markCardActive(array $userIds): bool
+    {
+        if (empty($userIds)) return false;
 
-    try {
-        // Ensure IDs are integers
-        $userIds = array_map('intval', $userIds);
-        
-        $this->db->beginTransaction();
-        
-        $issue_at = date('Y-m-d');
-        $expires_at = date('Y-m-d', strtotime('+3 years')); 
+        try {
+            $userIds = array_map('intval', $userIds);
+            $this->db->beginTransaction();
+            
+            $issue_at = date('Y-m-d');
+            $expires_at = date('Y-m-d', strtotime('+3 years')); 
 
-        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-        
-        $sql = "UPDATE tbl_card 
-                SET status = 'active', issued_at = ?, expires_at = ? 
-                WHERE user_id IN ($placeholders)";
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            
+            $sql = "UPDATE tbl_card 
+                    SET status = 'active', issued_at = ?, expires_at = ? 
+                    WHERE user_id IN ($placeholders)";
 
-        $params = array_merge([$issue_at, $expires_at], $userIds);
-        
-        $this->db->query($sql, $params);
-        
-        // Log the IDs for a quick check in your logs
-        error_log("Attempting to update IDs: " . json_encode($userIds));
-        
-        $this->db->commit();
-        return true;
-    } catch (\Throwable $e) {
-        $this->db->rollback();
-        error_log("SQL Error: " . $e->getMessage());
-        throw $e;
+            $params = array_merge([$issue_at, $expires_at], $userIds);
+            $this->db->query($sql, $params);
+            
+            $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Batch activated secure access cards for %d cardholders", count($userIds)),
+                null,
+                ['activated_user_ids' => $userIds]
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
-}
 
-public function getClasses(): array
-{
-    $sql = "SELECT id, class_name FROM tbl_class ORDER BY class_name ASC";
-    $res = $this->db->query($sql, []);
-    return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
-}
+    public function getClasses(): array
+    {
+        $sql = "SELECT id, class_name FROM tbl_class ORDER BY class_name ASC";
+        $res = $this->db->query($sql, []);
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
 
-public function getUsers(string $userType = 'student'): array
-{
-    $sql = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name
-            FROM tbl_user u
-            WHERE u.user_type = ? AND u.status = 'active'
-            ORDER BY u.fname ASC, u.lname ASC";
-    $res = $this->db->query($sql, [$userType]);
-    return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
-}
-
+    public function getUsers(string $userType = 'student'): array
+    {
+        $sql = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name
+                FROM tbl_user u
+                WHERE u.user_type = ? AND u.status = 'active'
+                ORDER BY u.fname ASC, u.lname ASC";
+        $res = $this->db->query($sql, [$userType]);
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
 }

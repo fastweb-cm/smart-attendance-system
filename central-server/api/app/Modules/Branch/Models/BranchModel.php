@@ -2,16 +2,15 @@
 namespace App\Modules\Branch\Models;
 
 use App\Core\Database;
+use App\Core\Logger;
 
 class BranchModel extends Database {
     protected Database $db;
 
     private ?int $id = null;
-
     private string $name;
     private ?string $location = null;
     private ?string $description = null;
-
     private ?string $status = 'active';
 
     public function __construct()
@@ -26,26 +25,19 @@ class BranchModel extends Database {
     public function setId(int $id): void { $this->id = $id; }
     public function getName(): string { return $this->name; }
     public function setName(string $name): void { $this->name = $name; }
-
     public function getLocation(): ?string { return $this->location; }
     public function setLocation(?string $location): void { $this->location = $location; }
-
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $description): void { $this->description = $description; }
-
     public function getStatus(): string { return $this->status; }
     public function setStatus(?string $status): void { $this->status = $status; }
 
     public function create(array $admins): bool
     {
-        try{
-            //begin transaction
+        try {
             $this->db->beginTransaction();
 
-            $sqlbranch = "INSERT INTO  tbl_branch
-            (name,location,description,status)
-            VALUES(?,?,?,?)";
-
+            $sqlbranch = "INSERT INTO tbl_branch (name, location, description, status) VALUES (?, ?, ?, ?)";
             $paramsBranch = [
                 $this->name,
                 $this->location,
@@ -56,30 +48,38 @@ class BranchModel extends Database {
             $this->db->query($sqlbranch, $paramsBranch);
             $this->id = $this->db->lastInsertId();
 
-            if(!empty($admins)){
-                forEach($admins as $admin){
-                    $sql = "INSERT INTO tbl_branch_admins(user_id,branch_id)
-                    VALUES(?,?)";
+            if (!empty($admins)) {
+                foreach ($admins as $admin) {
+                    $sql = "INSERT INTO tbl_branch_admins (user_id, branch_id) VALUES (?, ?)";
                     $params = [$admin["user_id"], $this->id];
-
                     $this->db->query($sql, $params);
                 }
             }
 
-            $this->db->commit(); // commit changes in db
+            $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system', 
+                'info', 
+                sprintf("Admin created new operational branch: '%s' (ID: %d) at %s", $this->name, $this->id, $this->location ?? 'N/A'),
+                null,
+                ['branch_id' => $this->id, 'name' => $this->name, 'action' => 'branch_create']
+            );
+
             return true;
-
-        }catch(\Throwable $e){
-            $this->db->rollback(); // error or partial create, we rollback
-
-            return false;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            // Re-throw so it bubbles up to Router.php global logger automatically
+            throw $e;
         }
-
     }
 
     public function fetch(int $branchId = 0): array
     {
-        // Fetch branches
+        // Read-only metrics do not require audit modification log injections
         $sqlBranch = "SELECT * FROM tbl_branch";
         $params = [];
 
@@ -96,7 +96,6 @@ class BranchModel extends Database {
 
         $branches = $branchResult->fetch_all(MYSQLI_ASSOC);
 
-        // Fetch admins for these branches
         $branchIds = array_column($branches, 'id');
         $placeholders = implode(',', array_fill(0, count($branchIds), '?'));
         $sqlAdmins = "SELECT ba.branch_id, u.id AS user_id, u.fname, u.lname
@@ -113,7 +112,6 @@ class BranchModel extends Database {
             }
         }
 
-        // Attach admins to branches
         foreach ($branches as &$branch) {
             $branch['admins'] = $admins[$branch['id']] ?? [];
         }
@@ -122,21 +120,29 @@ class BranchModel extends Database {
     }
 
     public function delete(int $id): bool {
-        try{
+        try {
             $this->db->beginTransaction();
 
-            // delete branch and it admins
-            // delete the branch admins
             $this->db->query("DELETE FROM tbl_branch_admins WHERE branch_id = ?", [$id]);
-
             $this->db->query("DELETE FROM tbl_branch WHERE id = ?", [$id]);
 
             $this->db->commit();
-            return true;
-        }catch(\Throwable $e){
-            $this->db->rollback();
 
-            return false;
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system', 
+                'info', 
+                sprintf("Admin deleted branch ID: %d and unlinked all administrative managers", $id),
+                null,
+                ['branch_id' => $id, 'action' => 'branch_delete']
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
     }
 
@@ -147,13 +153,9 @@ class BranchModel extends Database {
         }
 
         try {
-            // Start transaction
             $this->db->beginTransaction();
 
-            // Update branch table
-            $sqlBranch = "UPDATE tbl_branch
-                        SET name = ?, location = ?, description = ?, status = ?
-                        WHERE id = ?";
+            $sqlBranch = "UPDATE tbl_branch SET name = ?, location = ?, description = ?, status = ? WHERE id = ?";
             $paramsBranch = [
                 $this->name,
                 $this->location,
@@ -161,19 +163,11 @@ class BranchModel extends Database {
                 $this->status,
                 $this->id
             ];
-
             $this->db->query($sqlBranch, $paramsBranch);
 
-            // Update branch admins (if provided)
             if (!empty($admins)) {
+                $this->db->query("DELETE FROM tbl_branch_admins WHERE branch_id = ?", [$this->id]);
 
-                // Delete existing admins for this branch
-                $this->db->query(
-                    "DELETE FROM tbl_branch_admins WHERE branch_id = ?",
-                    [$this->id]
-                );
-
-                // Insert new admins
                 foreach ($admins as $admin) {
                     $sqlAdmin = "INSERT INTO tbl_branch_admins (user_id, branch_id) VALUES (?, ?)";
                     $paramsAdmin = [$admin['user_id'], $this->id];
@@ -181,16 +175,23 @@ class BranchModel extends Database {
                 }
             }
 
-            // Commit transaction
             $this->db->commit();
-            return true;
 
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system', 
+                'info', 
+                sprintf("Admin updated branch configuration metrics for '%s' (ID: %d)", $this->name, $this->id),
+                null,
+                ['branch_id' => $this->id, 'name' => $this->name, 'action' => 'branch_update']
+            );
+
+            return true;
         } catch (\Throwable $e) {
-            // Rollback on error
             $this->db->rollback();
-            // Optional: log the error
-            error_log("Branch update failed: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 
@@ -200,6 +201,4 @@ class BranchModel extends Database {
         $res = $this->db->query($sql, []);
         return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
     }
-
-
 }

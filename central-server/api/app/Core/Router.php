@@ -89,39 +89,59 @@ class Router
         $method = $_SERVER['REQUEST_METHOD'];
         $uri = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-        foreach ($this->routes[$method] ?? [] as $route => $data) {
-            $pattern = preg_replace('#\{([^}]+)\}#', '([^/]+)', $route);
+        try {
+            foreach ($this->routes[$method] ?? [] as $route => $data) {
+                $pattern = preg_replace('#\{([^}]+)\}#', '([^/]+)', $route);
 
-            if (preg_match("#^{$pattern}$#", $uri, $matches)) {
+                if (preg_match("#^{$pattern}$#", $uri, $matches)) {
 
-                array_shift($matches);
+                    array_shift($matches);
 
-                // Execute Middleware First
-                $user = null;
+                    // Execute Middleware First
+                    $user = null;
+                    foreach ($data['middleware'] as $middleware) {
+                        $user = $middleware::handle();
 
-                foreach ($data['middleware'] as $middleware) {
-                    $user = $middleware::handle();
+
+                        // IF THE MIDDLEWARE FOUND A VALID USER, SAVE IT GLOBALLY!
+                        if (!empty($user) && is_array($user)) {
+                            \App\Core\AppContext::setUser($user);
+                        }
+                    }
+
+                    [$controller, $methodName] = $data['action'];
+                    $instance = new $controller;
+
+                    // Pass dynamic URI segment wildcards to matching controller action
+                    call_user_func_array(
+                        [$instance, $methodName],
+                        $matches
+                    );
+
+                    return;
                 }
-
-                [$controller, $methodName] = $data['action'];
-                $instance = new $controller;
-
-                // Pass authenticated user to controller
-                // call_user_func_array(
-                //     [$instance, $methodName],
-                //     array_merge([$user], $matches)
-                // );
-                call_user_func_array(
-                    [$instance, $methodName],
-                    $matches
-                );
-
-                return;
             }
-        }
 
-        http_response_code(404);
-        echo json_encode(['error' => 'Route not found']);
+            // Fallback if no matching routing map structural signatures were matched
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Route endpoint not found']);
+
+        } catch (\Throwable $e) {
+            // 1. Automatically trap and log the full exception to tbl_logs
+            \App\Core\Logger::logException($e, 'error');
+
+            // 2. Respond with a clean, unified JSON structure so the frontend doesn't hang
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'An internal execution sequence exception occurred.',
+                'error'   => $e->getMessage(),
+                'type'    => get_class($e)
+            ]);
+            exit();
+        }
     }
 
     private function normalize(string $uri): string

@@ -1,6 +1,6 @@
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import type { AttendanceLedgerData } from "@/client";
+import type { AttendanceLedgerData, FetchLogsResponses } from "@/client";
 
 interface Option {
   label: string
@@ -215,6 +215,7 @@ export interface AttendanceTableProps {
   paginationMeta: PaginationMetaProps;
 }
 
+
 export interface IndividualReportSheetProps {
     isOpen: boolean;
     onClose: () => void;
@@ -250,3 +251,25 @@ export interface ZoneCRawTrailsProps {
   queryParams: AttendanceQueryParams;
 }
 
+export type logsCategories = 'system' | 'database' | 'error' | 'sync';
+export type logLevels = 'info'|'warning'|'error';
+export interface LogsQueryParams {
+  category?: logsCategories;
+  level?: logLevels;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface LogsFilterBarProps {
+  filters: LogsQueryParams;
+  onFilterChange: (key: keyof LogsQueryParams, value: string | undefined) => void;
+  onReset: () => void;
+  disabled: boolean;
+}
+
+export interface LogsTableProps {
+  logs: FetchLogsResponses["200"]["data"];
+  paginationMeta: PaginationMetaProps;
+}

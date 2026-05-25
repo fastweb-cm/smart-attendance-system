@@ -1164,15 +1164,45 @@ components:
             - attendance_status
 
     # logs schema
-    Logs:
+    LogEntry:
       type: object
       properties:
+        id:
+          type: integer
+          example: 7
         category:
           type: string
+          example: system
+        log_level:
+          type: string
+          example: info
         description:
           type: string
-        user_id:
-          type: integer
+          example: "[ichami] Admin purged physical hardware terminal gate maps for ID: 18 from deployment topologies"
+        ip_address:
+          type: string
+          format: ipv4
+          example: "127.0.0.1"
+        request_uri:
+          type: string
+          example: "/api/v1/terminal/18"
+        context_data:
+          type: [object, "null"]
+          description: Dynamic data snapshot properties dependent on context origin type (e.g., action types, trace stack, parameters).
+          additionalProperties: true
+          example:
+            action: terminal_purge
+            terminal_id: 18
+        date_created:
+          type: string
+          format: date-time
+          example: "2026-05-24 23:56:05"
+        name:
+          type: ["string", "null"]
+          example: "ichami brandon"
+        role_name:
+          type: ["string", "null"]
+          example: "admin"
 
 paths:
   /api/v1/auth/login:
@@ -2617,3 +2647,108 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/logs:
+    get:
+      summary: Fetch paginated and filtered audit logs
+      description: Retrieve a reverse-chronological list of logs matching optional criteria such as time windows, categories, or severities.
+      operationId: fetchLogs
+      parameters:
+        - name: category
+          in: query
+          description: Filter logs by operational category (e.g., system, error, sync, biometric).
+          required: false
+          schema:
+            type: string
+            enum: [system, database, error, sync]
+            example: system
+        - name: level
+          in: query
+          description: Filter logs by severity classification.
+          required: false
+          schema:
+            type: string
+            enum: [info, warning, error]
+            example: info
+        - name: start_date
+          in: query
+          description: Restrict tracking to entries on or after this timestamp (Y-m-d or Y-m-d H:i:s).
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Restrict tracking to entries on or before this date (automatically pads to 23:59:59 if time is omitted).
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: The current page index sequence offset indicator.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Maximum total rows to load within a singular pagination dataset frame (capped at 100).
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 50
+      responses:
+        "200":
+          description: Logs structural matrix payload successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Logs retrieved successfully.
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        type: integer
+                        example: 5
+                      total_pages:
+                        type: integer
+                        example: 1
+                      current_page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 50
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LogEntry"
+        "500":
+          description: Fatal backend system error or exception block dropped.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: An unexpected server error occurred while pulling audit records.
+                  error:
+                    type: string
+                    example: "SQLSTATE[42S22]: Column not found: 1054 Unknown column 'l.invalid' in 'where clause'"

@@ -2,7 +2,9 @@
 namespace App\Modules\Groups\Models;
 
 use App\Core\Database;
+use App\Core\Logger;
 use App\Modules\Sync\Models\SyncModel;
+
 class GroupModel extends Database {
     protected Database $db;
 
@@ -34,9 +36,9 @@ class GroupModel extends Database {
     public function setGroupTypeId(int $id): void { $this->grouptype_id = $id; }
     public function getExpectedWeeklyHours(): ?int { return $this->expected_weekly_hours; }
     public function setExpectedWeeklyHours(int $value): void { $this->expected_weekly_hours = $value; }
+    public function getGroupType_id(): ?int { return $this->grouptype_id; }
     public function getAbsenceThreshold(): ?int { return $this->absence_threshold; }
     public function setAbsenseThreshold(int $value): void { $this->absence_threshold = $value; }
-
 
     /**
      * create a group and assigned supervisors and members to the group
@@ -46,10 +48,8 @@ class GroupModel extends Database {
      */
     public function save(array $supervisors, array $members): bool {
         try{
-            //begin the transation
             $this->db->beginTransaction();
 
-            //create the group
             $sqlGroup = "INSERT INTO tbl_group(branch_id,grouptype_id,name,expected_weekly_hours,absence_threshold)
             VALUES(?,?,?,?,?)";
             $groupParams = [
@@ -62,9 +62,7 @@ class GroupModel extends Database {
             $this->db->query($sqlGroup, $groupParams);
             $this->id = $this->db->lastInsertId();
 
-            //now let insert the group supervisors and group members record
             if($this->id > 0){
-                // find all terminals tight to this group
                 $terminals = $this->getGroupTerminals($this->id);
                 foreach($members as $member) {
                     $sqlMem = "INSERT INTO tbl_group_member(group_id,user_id)
@@ -80,7 +78,7 @@ class GroupModel extends Database {
                             $this->syncModel->setAction('upsert');
                             $this->syncModel->save();
                         }
-                    }// same when a new user gets added to a group individually
+                    }
                 }
 
                 foreach($supervisors as $supervisor) {
@@ -90,22 +88,34 @@ class GroupModel extends Database {
                     $this->db->query($sqlSup, $paramsSup);
                 }
             }
+            
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin created new operational group: '%s' (ID: %d) with %d members and %d supervisors", $this->name, $this->id, count($members), count($supervisors)),
+                null, // AppContext auto-picks up active Admin User ID
+                ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_create']
+            );
+
             return true;
             
         }catch(\Throwable $e) {
+            $this->db->rollback();
             throw $e;
         }
     }
 
     /**
     * Fetch groups with their supervisors and members
-    * @param int $branchId Optional filter by branch
-    * @return array
     */
     public function fetch(int $groupId = 0, int $branchId = 0): array
     {
-        // 1. Fetch the main Group records
+        // Read operations do not require mutation log tracking
         $sqlGroups = "SELECT * FROM tbl_group";
         $where = [];
         $params = [];
@@ -118,7 +128,7 @@ class GroupModel extends Database {
         if ($groupId > 0) {
             $where[] = "id = ?";
             $params[] = $groupId;
-        } // limit result just to this group
+        }
 
         if(!empty($where)){
             $sqlGroups .= " WHERE " . implode(" AND ", $where);
@@ -134,7 +144,6 @@ class GroupModel extends Database {
         $groupIds = array_column($groups, 'id');
         $placeholders = implode(',', array_fill(0, count($groupIds), '?'));
 
-        // 2. Fetch all Supervisors for these groups in one go
         $sqlSupervisors = "SELECT gs.group_id, u.id AS user_id, u.fname, u.lname 
                         FROM tbl_group_supervisor gs
                         JOIN tbl_user u ON gs.user_id = u.id
@@ -148,7 +157,6 @@ class GroupModel extends Database {
             }
         }
 
-        // 3. Fetch all Members for these groups in one go
         $sqlMembers = "SELECT gm.group_id, u.id AS user_id, u.fname, u.lname 
                     FROM tbl_group_member gm
                     JOIN tbl_user u ON gm.user_id = u.id
@@ -162,7 +170,6 @@ class GroupModel extends Database {
             }
         }
 
-        // 4. Stitch everything together
         foreach ($groups as &$group) {
             $group['supervisors'] = $supervisorsByGroup[$group['id']] ?? [];
             $group['members'] = $membersByGroup[$group['id']] ?? [];
@@ -173,10 +180,6 @@ class GroupModel extends Database {
 
     /**
      * update groups
-     * @param array $supervisors
-     * @param array $members
-     * @throws \RuntimeException
-     * @return bool
      */
     public function update(array $supervisors, array $members): bool
     {
@@ -185,10 +188,8 @@ class GroupModel extends Database {
         }
 
         try {
-            //start transaction
             $this->db->beginTransaction();
 
-            // Update the main group details
             $sqlGroup = "UPDATE tbl_group 
                         SET branch_id = ?, grouptype_id = ?, name = ?, 
                             expected_weekly_hours = ?, absence_threshold = ?
@@ -203,7 +204,6 @@ class GroupModel extends Database {
                 $this->id 
             ]);
 
-            // Clear old relationships
             $this->db->query("DELETE FROM tbl_group_member WHERE group_id = ?", [$this->id]);
             $this->db->query("DELETE FROM tbl_group_supervisor WHERE group_id = ?", [$this->id]);
 
@@ -224,6 +224,18 @@ class GroupModel extends Database {
             }
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin updated settings for group: '%s' (ID: %d), syncing %d total members and %d supervisors", $this->name, $this->id, count($members), count($supervisors)),
+                null,
+                ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_update']
+            );
+
             return true;
 
         } catch(\Throwable $e) {
@@ -234,38 +246,42 @@ class GroupModel extends Database {
 
     /**
      * Delete group by id including it assoc members and supervisors
-     * @param int $groupId
-     * @return bool
      */
     public function delete(int $groupId): bool {
         try {
             $this->db->beginTransaction();
 
-            // delete old relationships
             $this->db->query("DELETE FROM tbl_group_member WHERE group_id = ?", [$groupId]);
             $this->db->query("DELETE FROM tbl_group_supervisor WHERE group_id = ?", [$groupId]);
-
-            // now delete the parant table
             $this->db->query("DELETE FROM tbl_group WHERE id = ?", [$groupId]);
 
             $this->db->commit();
+
+            // -----------------------------------------------------------------
+            // SYSTEM AUDIT LOG
+            // -----------------------------------------------------------------
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin deleted organization group ID: %d and dropped member relational sync maps", $groupId),
+                null,
+                ['group_id' => $groupId, 'action' => 'group_delete']
+            );
+
             return true;
         } catch (\Throwable $e) {
             $this->db->rollback();
-
-            return false;
+            // FIXED: Re-throw so it registers inside Router global logging block!
+            throw $e;
         }
     }
 
     /**
      * Fetch all terminals associated to this group
-     * @param int $groupId
-     * @return void
      */
     public function getGroupTerminals(int $groupId): array
     {
-        $sql = "SELECT DISTINCT terminal_id FROM tbl_terminal_access_policy
-                WHERE group_id = ?";
+        $sql = "SELECT DISTINCT terminal_id FROM tbl_terminal_access_policy WHERE group_id = ?";
         $result = $this->db->query($sql, [$groupId]);
         $terminalIds = [];
         if ($result) {
@@ -276,45 +292,41 @@ class GroupModel extends Database {
         return $terminalIds;
     }
 
-public function fetchGroupsAndCorrespondingSubgroups(): array
-{
-    $sql = "SELECT 
-                g.id AS group_id, 
-                g.name AS group_name, 
-                sg.id AS subgroup_id, 
-                sg.name AS subgroup_name
-            FROM tbl_group g
-            LEFT JOIN tbl_subgroup sg ON g.id = sg.group_id
-            ORDER BY g.name ASC, sg.name ASC";
+    public function fetchGroupsAndCorrespondingSubgroups(): array
+    {
+        $sql = "SELECT 
+                    g.id AS group_id, 
+                    g.name AS group_name, 
+                    sg.id AS subgroup_id, 
+                    sg.name AS subgroup_name
+                FROM tbl_group g
+                LEFT JOIN tbl_subgroup sg ON g.id = sg.group_id
+                ORDER BY g.name ASC, sg.name ASC";
 
-    $result = $this->db->query($sql);
-    $groups = [];
+        $result = $this->db->query($sql);
+        $groups = [];
 
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $groupId = $row['group_id'];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $groupId = $row['group_id'];
 
-            // Initialize the parent group structure if we haven't seen it yet
-            if (!isset($groups[$groupId])) {
-                $groups[$groupId] = [
-                    'id' => (int)$groupId,
-                    'label' => $row['group_name'], // Matches UI expectation 'label'
-                    'subgroups' => []
-                ];
-            }
+                if (!isset($groups[$groupId])) {
+                    $groups[$groupId] = [
+                        'id' => (int)$groupId,
+                        'label' => $row['group_name'],
+                        'subgroups' => []
+                    ];
+                }
 
-            // Append the subgroup entry if it exists
-            if ($row['subgroup_id'] !== null) {
-                $groups[$groupId]['subgroups'][] = [
-                    'id' => (int)$row['subgroup_id'],
-                    'label' => $row['subgroup_name'] // Matches UI expectation 'label'
-                ];
+                if ($row['subgroup_id'] !== null) {
+                    $groups[$groupId]['subgroups'][] = [
+                        'id' => (int)$row['subgroup_id'],
+                        'label' => $row['subgroup_name']
+                    ];
+                }
             }
         }
+
+        return array_values($groups);
     }
-
-    // Strip out the associative array keys to return a clean indexed array
-    return array_values($groups);
-}
-
 }

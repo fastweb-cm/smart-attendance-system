@@ -14,6 +14,7 @@ use App\Modules\Sync\Controller\SyncController;
 use App\Modules\Exceptions\Controllers\ExceptionController;
 use App\Modules\Attendance\Controller\AttendanceController;
 
+use App\Modules\Logger\Controllers\LoggerController;
 /*
 |--------------------------
 |  Public Routes
@@ -24,6 +25,19 @@ $router->get('/', [UserRegistrationController::class, 'index']);
 $router->post('/api/v1/auth/login', [AuthController::class, 'login']);
 $router->post('/api/v1/auth/logout', [AuthController::class, 'logout']);
 $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
+
+/*
+|--------------------------
+|  lookup Routes
+|--------------------------
+*/
+$router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
+$router->get('/api/v1/lookup/users/{userType}', [UserController::class, 'getUsersByType']);
+$router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
+$router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
+$router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPolicies']);
+
+$router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
 
 /*
 |--------------------------
@@ -42,46 +56,7 @@ $router->group(['middleware' => [TerminalHeartBeatMiddleware::class]], function(
 |  Protected Routes
 |--------------------------
 */
-$router->post('/api/v1/terminal', [TerminalController::class, 'store']);
-$router->put('/api/v1/terminal', [TerminalController::class, 'edit']);
-$router->get('/api/v1/terminal', [TerminalController::class, 'index']);
-$router->delete('/api/v1/terminal/{id}', [TerminalController::class, 'delete']);
 
-$router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
-
-$router->post('/api/v1/event', [EventsController::class, 'store']);
-$router->put('/api/v1/event', [EventsController::class, 'edit']);
-$router->get('/api/v1/event', [EventsController::class, 'index']);
-$router->delete('/api/v1/event/{id}', [EventsController::class, 'delete']);
-
-$router->get('/api/v1/users', [UserController::class, 'index']);
-$router->post('/api/v1/users/sync', [UserController::class, 'syncUsers']);
-$router->get('/api/v1/users/pending-card', [UserController::class, 'fetchUsersToIssueCard']);
-$router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCardIssued']);
-
-$router->get('/api/v1/exceptions', [ExceptionController::class, 'index']);
-$router->post('/api/v1/exceptions', [ExceptionController::class, 'store']);
-$router->delete('/api/v1/exceptions/{id}', [ExceptionController::class, 'delete']);
-$router->get('/api/v1/exceptions/all', [ExceptionController::class, 'all']);
-
-$router->get('/api/v1/attendance/ledger', [AttendanceController::class, 'ledger']);
-$router->get('/api/v1/attendance/user/{id}', [AttendanceController::class, 'userDetail']);
-$router->patch('/api/v1/attendance', [AttendanceController::class, 'partialEdit']);
-
-
-/*
-|--------------------------
-|  lookup Routes
-|--------------------------
-*/
-$router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
-$router->get('/api/v1/lookup/users/{userType}', [UserController::class, 'getUsersByType']);
-$router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
-$router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
-$router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPolicies']);
-
-
-$router->get('/api/v1/terminal/slug/{slug}', [TerminalController::class, 'getTerminalDetailsBySlug']);
 
 $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 
@@ -100,4 +75,33 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->post('/api/v1/group', [GroupController::class, 'store']);
     $router->put('/api/v1/group', [GroupController::class, 'edit']);
     $router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);
+
+    $router->post('/api/v1/terminal', [TerminalController::class, 'store']);
+    $router->put('/api/v1/terminal', [TerminalController::class, 'edit']);
+    $router->get('/api/v1/terminal', [TerminalController::class, 'index']);
+    $router->delete('/api/v1/terminal/{id}', [TerminalController::class, 'delete']);
+    $router->get('/api/v1/terminal/slug/{slug}', [TerminalController::class, 'getTerminalDetailsBySlug']);
+
+    $router->post('/api/v1/event', [EventsController::class, 'store']);
+    $router->put('/api/v1/event', [EventsController::class, 'edit']);
+    $router->get('/api/v1/event', [EventsController::class, 'index']);
+    $router->delete('/api/v1/event/{id}', [EventsController::class, 'delete']);
+
+    $router->get('/api/v1/users', [UserController::class, 'index']);
+    $router->post('/api/v1/users/sync', [UserController::class, 'syncUsers']);
+    $router->get('/api/v1/users/pending-card', [UserController::class, 'fetchUsersToIssueCard']);
+    $router->post('/api/v1/users/mark-card-issued', [UserController::class, 'markCardIssued']);
+
+    $router->get('/api/v1/exceptions', [ExceptionController::class, 'index']);
+    $router->post('/api/v1/exceptions', [ExceptionController::class, 'store']);
+    $router->delete('/api/v1/exceptions/{id}', [ExceptionController::class, 'delete']);
+    $router->get('/api/v1/exceptions/all', [ExceptionController::class, 'all']);
+
+    $router->get('/api/v1/attendance/ledger', [AttendanceController::class, 'ledger']);
+    $router->get('/api/v1/attendance/user/{id}', [AttendanceController::class, 'userDetail']);
+    $router->patch('/api/v1/attendance', [AttendanceController::class, 'partialEdit']);
+
+    
+    $router->get('/api/v1/logs', [LoggerController::class, 'index']);
 });
+
