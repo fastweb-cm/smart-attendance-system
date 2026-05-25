@@ -100,12 +100,12 @@ export const sidebarMenItems = [
     items: [
       {
         title: "System Logs",
-        url: "/admin/logs/system",
+        url: "/admin/logs",
         icon: FileCode2,
       },
       {
         title: "Error Logs",
-        url: "/admin/logs/activity",
+        url: "/admin/logs/error-logs",
         icon: Activity,
       }
     ],

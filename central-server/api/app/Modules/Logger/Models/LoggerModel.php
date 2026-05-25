@@ -15,10 +15,10 @@ class LoggerModel
 
     /**
      * Fetch paginated and filtered logs
-     * * @param string|null $category 'system', 'sync', 'biometric', etc.
-     * @param string|null $level    'info', 'warning', 'error'
-     * @param string|null $startDate Y-m-d H:i:s or Y-m-d
-     * @param string|null $endDate   Y-m-d H:i:s or Y-m-d
+     * * @param string|null $category   'system', 'sync', 'biometric', etc.
+     * @param string|null $level      'info', 'warning', 'error'
+     * @param string|null $startDate  Y-m-d H:i:s or Y-m-d
+     * @param string|null $endDate    Y-m-d H:i:s or Y-m-d
      * @param int $page
      * @param int $limit
      * @return array Contains 'data' (rows) and 'pagination' meta
@@ -34,7 +34,7 @@ class LoggerModel
         $where = [];
         $params = [];
 
-        // 1. Build dynamic filtering criteria
+        // 1. Build dynamic filtering criteria (Safely aliased to 'l')
         if (!empty($category)) {
             $where[] = "l.category = ?";
             $params[] = $category;
@@ -47,7 +47,7 @@ class LoggerModel
 
         if (!empty($startDate)) {
             $where[] = "l.date_created >= ?";
-            $params[] = $startDate .' 00:00:00';
+            $params[] = $startDate . ' 00:00:00';
         }
 
         if (!empty($endDate)) {
@@ -61,8 +61,8 @@ class LoggerModel
 
         $whereClause = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
 
-        // 2. Count Total Records matching criteria (for frontend pagination stats)
-        $countSql = "SELECT COUNT(*) as total FROM tbl_logs $whereClause";
+        // 2. Count Total Records matching criteria (FIXED: Added 'l' table alias)
+        $countSql = "SELECT COUNT(*) as total FROM tbl_logs l $whereClause";
         $countResult = $this->db->query($countSql, $params);
         $totalRows = $countResult ? (int)$countResult->fetch_assoc()['total'] : 0;
 
@@ -72,7 +72,7 @@ class LoggerModel
         $offset = ($page - 1) * $limit;
 
         // 4. Retrieve Dataset
-        $dataSql = "SELECT l.id, l.category, l.log_level, l.description, l.ip_address,l.request_uri,l.context_data, l.date_created,
+        $dataSql = "SELECT l.id, l.category, l.log_level, l.description, l.ip_address, l.request_uri, l.context_data, l.date_created,
                     CONCAT(u.fname, ' ', u.lname) AS name, r.role_name 
                     FROM tbl_logs l
                     LEFT JOIN tbl_user u ON l.user_id = u.id
