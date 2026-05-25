@@ -113,41 +113,53 @@ class PermissionModel extends Database
         }
     }
 
-    /**
-     * Process administrative review and insert tracking receipt log (Wrapped Transaction)
-     */
-    public function processApproval(int $approverId, string $status, ?string $remark): bool
-    {
-        $this->db->beginTransaction();
+/**
+ * Process administrative review and insert tracking receipt log (Wrapped Transaction)
+ */
+public function processApproval(int $approverId, string $status, ?string $remark): bool
+{
+    // 1. Fetch current live status to ensure the target record exists and isn't locked down
+    $checkSql = "SELECT status FROM tbl_permission WHERE id = ?";
+    $result = $this->db->query($checkSql, [$this->id]);
+    $permission = $result ? $result->fetch_assoc() : null;
 
-        try {
-            // 1. Insert tracking log to tbl_permission_approval
-            $approvalSql = "INSERT INTO tbl_permission_approval (permission_id, approver_id, remark) VALUES (?, ?, ?)";
-            $this->db->query($approvalSql, [$this->id, $approverId, $remark]);
-
-            // 2. Cascade state modification back to core tracking document mapping
-            $updateSql = "UPDATE tbl_permission SET status = ? WHERE id = ?";
-            $this->db->query($updateSql, [$status, $this->id]);
-
-            $this->db->commit();
-
-            // -----------------------------------------------------------------
-            // SYSTEM AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log('system', 'info', sprintf("Admin ID %d updated status of permission ID %d to '%s'", $approverId, $this->id, $status), null, [
-                'permission_id' => $this->id,
-                'approver_id'   => $approverId,
-                'status'        => $status,
-                'action'        => 'permission_review'
-            ]);
-
-            return true;
-        } catch (Throwable $e) {
-            $this->db->rollback();
-            throw $e;
-        }
+    if (!$permission) {
+        throw new \Exception("Permission record not found.");
     }
 
+    if ($permission['status'] === 'approved') {
+        throw new \Exception("This permission request has already been finalized and approved.");
+    }
+
+    $this->db->beginTransaction();
+
+    try {
+        // 2. Insert the tracking audit receipt log to tbl_permission_approval
+        $approvalSql = "INSERT INTO tbl_permission_approval (permission_id, approver_id, remark) VALUES (?, ?, ?)";
+        $this->db->query($approvalSql, [$this->id, $approverId, $remark]);
+
+        // 3. Cascade state modification back to core tracking document mapping
+        $updateSql = "UPDATE tbl_permission SET status = ? WHERE id = ?";
+        $this->db->query($updateSql, [$status, $this->id]);
+
+        // 4. SYSTEM AUDIT LOG (Protected safely inside the atomic transaction loop)
+        Logger::log('system', 'info', sprintf("Admin ID %d updated status of permission ID %d to '%s'", $approverId, $this->id, $status), null, [
+            'permission_id' => $this->id,
+            'approver_id'   => $approverId,
+            'status'        => $status,
+            'action'        => 'permission_review'
+        ]);
+
+        // Everything passed without firing exceptions—seal the database states permanently
+        $this->db->commit();
+        return true;
+
+    } catch (Throwable $e) {
+        // If anything fails (DB entry crashes or Logger fails), roll back the entire operational block completely
+        $this->db->rollback();
+        throw $e;
+    }
+}
     public function delete(int $id): bool
     {
         try {
