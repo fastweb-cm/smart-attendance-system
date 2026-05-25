@@ -88,8 +88,8 @@ export default function AttendanceLedger() {
       search: "",
       status: "",
       context: "daily",
-      start_date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      end_date: new Date().toISOString().split('T')[0],
+      start_date: getStartDate(),
+      end_date: getPreviousDay(),
       page: 1,
       limit: 10
     });
@@ -104,6 +104,7 @@ export default function AttendanceLedger() {
       setIsSheetOpen(true)
     }
   }
+
 
   return (
     <div className="space-y-8 w-full">
@@ -172,7 +173,7 @@ export default function AttendanceLedger() {
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         filteredEmployee={selectedUser}
-        queryParams={queryParams}
+        queryParams={filters}
       />
     </div>
   );
