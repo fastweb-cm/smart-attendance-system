@@ -54,14 +54,15 @@ export const getDaysDifference = (start: string, end: string) => {
 
 // returns previous day date
 export function getPreviousDay() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1); // Subtract 1 day
-  
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}`;
+  const localDate = new Date();
+  localDate.setDate(localDate.getDate() - 1); // Step back exactly one day
+
+  const year = localDate.getFullYear();
+  // Months are zero-indexed in JS (0 = Jan, 4 = May), so add 1 and pad with a leading zero if needed
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`; // Returns perfectly formatted "2026-05-24"
 }
 
 // return attendance start date

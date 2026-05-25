@@ -9,7 +9,7 @@ import AttendanceTable from './AttendanceTable';
 import IndividualReportSheet from './IndividualReportSheet';
 import { AttendanceLedgerData } from '@/client';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
-import { getStartDate } from '@/lib/utils';
+import { getPreviousDay, getStartDate } from '@/lib/utils';
 
 export default function AttendanceLedger() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -27,7 +27,7 @@ export default function AttendanceLedger() {
     status: "",
     context: "daily", // Explicitly starting with your preferred default context configuration
     start_date: getStartDate(),
-    end_date: new Date().toISOString().split('T')[0],
+    end_date: getPreviousDay(),
     page: 1,
     limit: 10
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react'; // Added useMemo
 import { Search, Filter, Layers, RefreshCw } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,24 @@ export function AttendanceFilterBar({
   onFilterChange,
   onReset
 }: AttendanceFilterBarProps) {
+  
+const maxAllowedEndDate = useMemo(() => {
+  const localDate = new Date();
+  localDate.setDate(localDate.getDate() - 1);
+  
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`; // Hard-locked to local yesterday date profile
+}, []);
+
   return (
     /* Soft Muted Charcoal Slate container framework */
     <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-4 shadow-sm w-full">
       <div className="flex flex-col xl:flex-row xl:items-center gap-4 justify-between w-full">
         
-        {/* Responsive Control Layout Matrix (5-columns on large screens) */}
+        {/* Responsive Control Layout Matrix */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 flex-1 w-full">
           
           {/* 1. Search Filter Input Component */}
@@ -57,27 +69,6 @@ export function AttendanceFilterBar({
             </Select>
           </div>
 
-          {/* 3. Status Select Box Dropdown Tool */}
-          {/* <div className="w-full">
-            <Select
-              value={filters.status}
-              onValueChange={(val) => onFilterChange("status", val)}
-            >
-              <SelectTrigger className="h-10 rounded-xl bg-slate-900/40 border-slate-700/50 text-slate-300 focus:ring-blue-500/50">
-                <div className="flex items-center gap-2 text-slate-300">
-                  <Filter className="w-3.5 h-3.5 text-slate-400/80 shrink-0" />
-                  <SelectValue placeholder="Status: All" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-slate-800 border-slate-700 text-slate-300">
-                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">Status: All Records</SelectItem>
-                <SelectItem value="present" className="focus:bg-slate-700 focus:text-white">Present</SelectItem>
-                <SelectItem value="absent" className="focus:bg-slate-700 focus:text-white">Absent</SelectItem>
-                <SelectItem value="on permission" className="focus:bg-slate-700 focus:text-white">On Permission</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
-
           {/* 4. Start Date Tracking Input Parameter */}
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-slate-400/70 pointer-events-none">
@@ -91,7 +82,7 @@ export function AttendanceFilterBar({
             />
           </div>
 
-          {/* 5. End Date Tracking Input Parameter */}
+          {/* 5. End Date Tracking Input Parameter (Enforced With native max picker limits) */}
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-slate-400/70 pointer-events-none">
               To
@@ -99,6 +90,7 @@ export function AttendanceFilterBar({
             <Input
               type="date"
               value={filters.end_date}
+              max={maxAllowedEndDate} // Added native attribute protection
               onChange={(e) => onFilterChange("end_date", e.target.value)}
               className="pl-10 h-10 rounded-xl bg-slate-900/40 border-slate-700/50 text-slate-300 font-medium focus-visible:ring-blue-500/50"
             />
