@@ -211,32 +211,45 @@ export const zSubgroupResponse = zSubgroup.and(z.object({
     date_created: z.optional(z.iso.datetime())
 }));
 
-export const zPermissionRequest = z.object({
-    permissiontype_id: z.optional(z.int()),
+export const zPermissionDetail = z.object({
+    id: z.optional(z.int()),
+    permission_type_id: z.optional(z.int()),
+    permission_type_name: z.optional(z.string()),
     user_id: z.optional(z.int()),
-    initiatedby: z.optional(z.int()),
+    employee_name: z.optional(z.string()),
+    initiatedby: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
     reason: z.optional(z.string()),
     start_date: z.optional(z.iso.date()),
     end_date: z.optional(z.iso.date()),
-    status: z.optional(z.enum([
-        'pending',
-        'approved',
-        'rejected'
+    status: z.optional(z.string()),
+    additional_proof: z.optional(z.union([
+        z.string(),
+        z.null()
     ])),
-    additional_proof: z.optional(z.string()),
     requested_at: z.optional(z.iso.datetime())
 });
 
-export const zPermissionApproval = z.object({
-    permission_id: z.optional(z.int()),
-    approver_id: z.optional(z.int()),
-    remark: z.optional(z.string()),
-    status: z.optional(z.enum([
-        'pending',
-        'approved',
-        'rejected'
+export const zPermissionExtendedRow = zPermissionDetail.and(z.object({
+    initiator_name: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    closing_remark: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    approver_name: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    date_approved: z.optional(z.union([
+        z.iso.datetime(),
+        z.null()
     ]))
-});
+}));
 
 export const zAnnoucement = z.object({
     name: z.optional(z.string()),
@@ -780,16 +793,124 @@ export const zAssignUsersToSubgroupData = z.object({
     query: z.optional(z.never())
 });
 
-export const zCreatePermissionRequestData = z.object({
-    body: zPermissionRequest.and(z.record(z.string(), z.unknown())),
+export const zFetchOnePermissionData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        id: z.int()
+    })
+});
+
+/**
+ * Details successfully retrieved.
+ */
+export const zFetchOnePermissionResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(zPermissionDetail)
+});
+
+export const zUpsertPermissionData = z.object({
+    body: z.object({
+        id: z.optional(z.union([
+            z.int(),
+            z.null()
+        ])),
+        permission_type_id: z.int(),
+        user_id: z.int(),
+        initiatedby: z.optional(z.union([
+            z.int(),
+            z.null()
+        ])),
+        reason: z.optional(z.string()),
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        status: z.optional(z.enum([
+            'pending',
+            'approved',
+            'rejected'
+        ])),
+        additional_proof: z.optional(z.union([
+            z.string(),
+            z.null()
+        ]))
+    }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-export const zDecidePermissionRequestData = z.object({
-    body: zPermissionApproval.and(z.record(z.string(), z.unknown())),
+/**
+ * Request processed successfully.
+ */
+export const zUpsertPermissionResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
+export const zDeleteApiV1PermissionsByIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Permission request canceled and removed successfully.
+ */
+export const zDeleteApiV1PermissionsByIdResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
+export const zGetApiV1PermissionsAllData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        search: z.optional(z.string()),
+        status: z.optional(z.enum([
+            'pending',
+            'approved',
+            'rejected'
+        ])),
+        page: z.optional(z.int()).default(1),
+        limit: z.optional(z.int()).default(10)
+    }))
+});
+
+/**
+ * Array listing and metadata metrics maps generated.
+ */
+export const zGetApiV1PermissionsAllResponse = z.object({
+    success: z.optional(z.boolean()),
+    meta: z.optional(z.object({
+        total_records: z.optional(z.int()),
+        total_pages: z.optional(z.int()),
+        current_page: z.optional(z.int()),
+        limit: z.optional(z.int())
+    })),
+    data: z.optional(z.array(zPermissionExtendedRow))
+});
+
+export const zPostApiV1PermissionsReviewData = z.object({
+    body: z.object({
+        permission_id: z.int(),
+        approver_id: z.int(),
+        status: z.enum(['approved', 'rejected']),
+        remark: z.optional(z.union([
+            z.string(),
+            z.null()
+        ]))
+    }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
+});
+
+/**
+ * Operational state securely shifted.
+ */
+export const zPostApiV1PermissionsReviewResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
 });
 
 export const zListAnnouncementsData = z.object({

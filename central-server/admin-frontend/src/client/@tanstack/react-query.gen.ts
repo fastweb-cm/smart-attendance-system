@@ -4,8 +4,8 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createPermissionRequest, createSubgroup, createTerminal, createUser, decidePermissionRequest, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreatePermissionRequestData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DecidePermissionRequestData, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteApiV1PermissionsById, deleteEvent, deleteException, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getApiV1PermissionsAll, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, postApiV1PermissionsReview, refresh, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteApiV1PermissionsByIdData, DeleteApiV1PermissionsByIdResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetApiV1PermissionsAllData, GetApiV1PermissionsAllResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, PostApiV1PermissionsReviewData, PostApiV1PermissionsReviewResponse, RefreshData, RefreshResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -388,13 +388,35 @@ export const assignUsersToSubgroupMutation = (options?: Partial<Options<AssignUs
     return mutationOptions;
 };
 
+export const fetchOnePermissionQueryKey = (options: Options<FetchOnePermissionData>) => createQueryKey('fetchOnePermission', options);
+
 /**
- * Create permission request for a user
+ * Fetch singular permission details
+ *
+ * Retrieves extended information block for a target singular permission record using explicit query string parameters matching.
  */
-export const createPermissionRequestMutation = (options?: Partial<Options<CreatePermissionRequestData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<CreatePermissionRequestData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<CreatePermissionRequestData>> = {
+export const fetchOnePermissionOptions = (options: Options<FetchOnePermissionData>) => queryOptions<FetchOnePermissionResponse, AxiosError<DefaultError>, FetchOnePermissionResponse, ReturnType<typeof fetchOnePermissionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await fetchOnePermission({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: fetchOnePermissionQueryKey(options)
+});
+
+/**
+ * Upsert a permission request
+ *
+ * Handles both structural initial payload injection tracking, and modification updates for active unreviewed elements. Pass an `id` value of 0 or omit it for creation, and supply a valid record `id` to perform updates.
+ */
+export const upsertPermissionMutation = (options?: Partial<Options<UpsertPermissionData>>): UseMutationOptions<UpsertPermissionResponse, AxiosError<DefaultError>, Options<UpsertPermissionData>> => {
+    const mutationOptions: UseMutationOptions<UpsertPermissionResponse, AxiosError<DefaultError>, Options<UpsertPermissionData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await createPermissionRequest({
+            const { data } = await upsertPermission({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -406,12 +428,111 @@ export const createPermissionRequestMutation = (options?: Partial<Options<Create
 };
 
 /**
- * Approve or reject a permission request
+ * Cancel / Drop a pending permission request
+ *
+ * Removes a request entirely from system operational lookup metrics. This operation is restricted solely to records whose state evaluates to `pending`.
  */
-export const decidePermissionRequestMutation = (options?: Partial<Options<DecidePermissionRequestData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DecidePermissionRequestData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DecidePermissionRequestData>> = {
+export const deleteApiV1PermissionsByIdMutation = (options?: Partial<Options<DeleteApiV1PermissionsByIdData>>): UseMutationOptions<DeleteApiV1PermissionsByIdResponse, AxiosError<DefaultError>, Options<DeleteApiV1PermissionsByIdData>> => {
+    const mutationOptions: UseMutationOptions<DeleteApiV1PermissionsByIdResponse, AxiosError<DefaultError>, Options<DeleteApiV1PermissionsByIdData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await decidePermissionRequest({
+            const { data } = await deleteApiV1PermissionsById({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getApiV1PermissionsAllQueryKey = (options?: Options<GetApiV1PermissionsAllData>) => createQueryKey('getApiV1PermissionsAll', options);
+
+/**
+ * Fetch filtered aggregate permissions ledger listing
+ *
+ * Returns an unstructured array index stream of historical permissions suited for administrative grid panels. Supports contextual tracking queries.
+ */
+export const getApiV1PermissionsAllOptions = (options?: Options<GetApiV1PermissionsAllData>) => queryOptions<GetApiV1PermissionsAllResponse, AxiosError<DefaultError>, GetApiV1PermissionsAllResponse, ReturnType<typeof getApiV1PermissionsAllQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getApiV1PermissionsAll({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getApiV1PermissionsAllQueryKey(options)
+});
+
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const getApiV1PermissionsAllInfiniteQueryKey = (options?: Options<GetApiV1PermissionsAllData>): QueryKey<Options<GetApiV1PermissionsAllData>> => createQueryKey('getApiV1PermissionsAll', options, true);
+
+/**
+ * Fetch filtered aggregate permissions ledger listing
+ *
+ * Returns an unstructured array index stream of historical permissions suited for administrative grid panels. Supports contextual tracking queries.
+ */
+export const getApiV1PermissionsAllInfiniteOptions = (options?: Options<GetApiV1PermissionsAllData>) => infiniteQueryOptions<GetApiV1PermissionsAllResponse, AxiosError<DefaultError>, InfiniteData<GetApiV1PermissionsAllResponse>, QueryKey<Options<GetApiV1PermissionsAllData>>, number | Pick<QueryKey<Options<GetApiV1PermissionsAllData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<GetApiV1PermissionsAllData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                page: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await getApiV1PermissionsAll({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getApiV1PermissionsAllInfiniteQueryKey(options)
+});
+
+/**
+ * Submit administrative review validation decision
+ *
+ * Point endpoint utilized by managing units to approve or reject an isolated staff request, documenting custom operational annotations and changing state indices.
+ */
+export const postApiV1PermissionsReviewMutation = (options?: Partial<Options<PostApiV1PermissionsReviewData>>): UseMutationOptions<PostApiV1PermissionsReviewResponse, AxiosError<DefaultError>, Options<PostApiV1PermissionsReviewData>> => {
+    const mutationOptions: UseMutationOptions<PostApiV1PermissionsReviewResponse, AxiosError<DefaultError>, Options<PostApiV1PermissionsReviewData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await postApiV1PermissionsReview({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -702,35 +823,6 @@ export const getAttendanceLedgerOptions = (options?: Options<GetAttendanceLedger
     },
     queryKey: getAttendanceLedgerQueryKey(options)
 });
-
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
 
 export const getAttendanceLedgerInfiniteQueryKey = (options?: Options<GetAttendanceLedgerData>): QueryKey<Options<GetAttendanceLedgerData>> => createQueryKey('getAttendanceLedger', options, true);
 

@@ -246,29 +246,26 @@ export type SubgroupResponse = Subgroup & {
     date_created?: string;
 };
 
-export type PermissionRequest = {
-    permissiontype_id?: number;
+export type PermissionDetail = {
+    id?: number;
+    permission_type_id?: number;
+    permission_type_name?: string;
     user_id?: number;
-    /**
-     * The admin or HR who initiated this permission
-     */
-    initiatedby?: number;
+    employee_name?: string;
+    initiatedby?: number | null;
     reason?: string;
     start_date?: string;
     end_date?: string;
-    status?: 'pending' | 'approved' | 'rejected';
-    /**
-     * The stored file name (optional)
-     */
-    additional_proof?: string;
+    status?: string;
+    additional_proof?: string | null;
     requested_at?: string;
 };
 
-export type PermissionApproval = {
-    permission_id?: number;
-    approver_id?: number;
-    remark?: string;
-    status?: 'pending' | 'approved' | 'rejected';
+export type PermissionExtendedRow = PermissionDetail & {
+    initiator_name?: string | null;
+    closing_remark?: string | null;
+    approver_name?: string | null;
+    date_approved?: string | null;
 };
 
 export type Annoucement = {
@@ -1303,16 +1300,67 @@ export type AssignUsersToSubgroupResponses = {
     200: unknown;
 };
 
-export type CreatePermissionRequestData = {
-    body: PermissionRequest & {
-        [key: string]: unknown;
+export type FetchOnePermissionData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Unique identity key configuration index of the permission record.
+         */
+        id: number;
+    };
+    url: '/api/v1/permissions';
+};
+
+export type FetchOnePermissionErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type FetchOnePermissionResponses = {
+    /**
+     * Details successfully retrieved.
+     */
+    200: {
+        success?: boolean;
+        data?: PermissionDetail;
+    };
+};
+
+export type FetchOnePermissionResponse = FetchOnePermissionResponses[keyof FetchOnePermissionResponses];
+
+export type UpsertPermissionData = {
+    body: {
+        id?: number | null;
+        permission_type_id: number;
+        user_id: number;
+        initiatedby?: number | null;
+        reason?: string;
+        start_date: string;
+        end_date: string;
+        status?: 'pending' | 'approved' | 'rejected';
+        additional_proof?: string | null;
     };
     path?: never;
     query?: never;
     url: '/api/v1/permissions';
 };
 
-export type CreatePermissionRequestErrors = {
+export type UpsertPermissionErrors = {
     /**
      * Invalid input
      */
@@ -1331,23 +1379,129 @@ export type CreatePermissionRequestErrors = {
     500: unknown;
 };
 
-export type CreatePermissionRequestResponses = {
+export type UpsertPermissionResponses = {
     /**
-     * Permission request created
+     * Request processed successfully.
      */
-    201: unknown;
+    200: {
+        success?: boolean;
+        message?: string;
+    };
 };
 
-export type DecidePermissionRequestData = {
-    body: PermissionApproval & {
-        [key: string]: unknown;
+export type UpsertPermissionResponse = UpsertPermissionResponses[keyof UpsertPermissionResponses];
+
+export type DeleteApiV1PermissionsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/permissions/{id}';
+};
+
+export type DeleteApiV1PermissionsByIdErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type DeleteApiV1PermissionsByIdResponses = {
+    /**
+     * Permission request canceled and removed successfully.
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+    };
+};
+
+export type DeleteApiV1PermissionsByIdResponse = DeleteApiV1PermissionsByIdResponses[keyof DeleteApiV1PermissionsByIdResponses];
+
+export type GetApiV1PermissionsAllData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Dynamic query text matching against employee first or last names.
+         */
+        search?: string;
+        status?: 'pending' | 'approved' | 'rejected';
+        /**
+         * Target offset navigation page reference index.
+         */
+        page?: number;
+        /**
+         * Max count entries segment block chunk returning slice.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/permissions/all';
+};
+
+export type GetApiV1PermissionsAllErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetApiV1PermissionsAllResponses = {
+    /**
+     * Array listing and metadata metrics maps generated.
+     */
+    200: {
+        success?: boolean;
+        meta?: {
+            total_records?: number;
+            total_pages?: number;
+            current_page?: number;
+            limit?: number;
+        };
+        data?: Array<PermissionExtendedRow>;
+    };
+};
+
+export type GetApiV1PermissionsAllResponse = GetApiV1PermissionsAllResponses[keyof GetApiV1PermissionsAllResponses];
+
+export type PostApiV1PermissionsReviewData = {
+    body: {
+        permission_id: number;
+        approver_id: number;
+        status: 'approved' | 'rejected';
+        remark?: string | null;
     };
     path?: never;
     query?: never;
-    url: '/api/v1/permissions/decision';
+    url: '/api/v1/permissions/review';
 };
 
-export type DecidePermissionRequestErrors = {
+export type PostApiV1PermissionsReviewErrors = {
     /**
      * Invalid input
      */
@@ -1366,12 +1520,17 @@ export type DecidePermissionRequestErrors = {
     500: unknown;
 };
 
-export type DecidePermissionRequestResponses = {
+export type PostApiV1PermissionsReviewResponses = {
     /**
-     * Permission decision recorded
+     * Operational state securely shifted.
      */
-    200: unknown;
+    200: {
+        success?: boolean;
+        message?: string;
+    };
 };
+
+export type PostApiV1PermissionsReviewResponse = PostApiV1PermissionsReviewResponses[keyof PostApiV1PermissionsReviewResponses];
 
 export type ListAnnouncementsData = {
     body?: never;

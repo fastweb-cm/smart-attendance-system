@@ -59,7 +59,7 @@ class PermissionController extends Controller
             $this->json([
                 "success" => false,
                 "message" => "user_id and permission_type_id parameters are required integers.",
-            ]);
+            ],400);
             return;
         }
 
@@ -76,7 +76,7 @@ class PermissionController extends Controller
                 "success" => false,
                 "message" => $e->getMessage(),
                 "type"    => get_class($e)
-            ]);
+            ],500);
         }
     }
 
@@ -96,7 +96,7 @@ class PermissionController extends Controller
             $this->json([
                 "success" => false,
                 "message" => "Invalid entry tracking params configuration inputs for review.",
-            ]);
+            ],400);
             return;
         }
 
@@ -113,7 +113,7 @@ class PermissionController extends Controller
                 "success" => false,
                 "message" => $e->getMessage(),
                 "type"    => get_class($e)
-            ]);
+            ],500);
         }
     }
 
@@ -126,7 +126,7 @@ class PermissionController extends Controller
             $this->json([
                 "success" => false,
                 "message" => "permission id tracking variable validation exception.",
-            ]);
+            ],400);
             return;
         }
 
@@ -141,34 +141,38 @@ class PermissionController extends Controller
                 "success" => false,
                 "message" => $e->getMessage(),
                 "type"    => get_class($e)
-            ]);
+            ],500);
         }
     }
 
     /**
      * Filtered Dataset View
      */
-    public function all()
-    {
-        $filters = [
-            'user_id' => $_GET['user_id'] ?? null,
-            'status'  => $_GET['status'] ?? null
-        ];
+public function all()
+{
+    $filters = [
+        'search' => $_GET['search'] ?? null, // Captures text string inputs
+        'status' => $_GET['status'] ?? null
+    ];
 
-        try {
-            $result = $this->p->findAll($filters);
-            $this->json([
-                "success" => true,
-                "data"    => $result
-            ]);
-        } catch (Throwable $e) {
-            $this->json([
-                "success" => false,
-                "message" => $e->getMessage(),
-                "type"    => get_class($e)
-            ]);
-        }
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+
+    try {
+        $result = $this->p->findAll($filters, $page, $limit);
+        $this->json([
+            "success" => true,
+            "meta"    => $result['pagination'],
+            "data"    => $result['data']
+        ]);
+    } catch (Throwable $e) {
+        $this->json([
+            "success" => false,
+            "message" => $e->getMessage(),
+            "type"    => get_class($e)
+        ], 500);
     }
+}
 
     /**
      * Fetch Lookup Configuration Data
@@ -186,7 +190,7 @@ class PermissionController extends Controller
                 "success" => false,
                 "message" => $e->getMessage(),
                 "type"    => get_class($e)
-            ]);
+            ],500);
         }
     }
 }

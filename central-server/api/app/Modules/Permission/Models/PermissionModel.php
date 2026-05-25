@@ -185,39 +185,76 @@ class PermissionModel extends Database
         }
     }
 
-    public function findAll(array $filters = []): array
-    {
-        try {
-            $sql = "SELECT p.*, lk.name AS permission_type_name,
-                    CONCAT(u.fname, ' ', u.lname) AS employee_name,
-                    CONCAT(i.fname, ' ', i.lname) AS initiator_name,
-                    app.remark AS closing_remark,
-                    CONCAT(appr.fname, ' ', appr.lname) AS approver_name,
-                    app.date_approved
-                    FROM tbl_permission p
-                    INNER JOIN lkup_permission lk ON p.permission_type_id = lk.id
-                    INNER JOIN tbl_user u ON p.user_id = u.id
-                    LEFT JOIN tbl_user i ON p.initiatedby = i.id
-                    LEFT JOIN tbl_permission_approval app ON p.id = app.permission_id
-                    LEFT JOIN tbl_user appr ON app.approver_id = appr.id WHERE 1=1";
-            
-            $params = [];
-            if (!empty($filters['user_id'])) {
-                $sql .= " AND p.user_id = ?";
-                $params[] = (int)$filters['user_id'];
-            }
-            if (!empty($filters['status'])) {
-                $sql .= " AND p.status = ?";
-                $params[] = $filters['status'];
-            }
+public function findAll(array $filters = [], int $page = 1, int $limit = 10): array
+{
+    try {
+        $where = [];
+        $params = [];
 
-            $sql .= " ORDER BY p.id DESC";
-            $result = $this->db->query($sql, $params);
-            return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-        } catch (Throwable $e) {
-            throw $e;
+        // Dynamic Text Search on Employee Name (First Name or Last Name)
+        if (!empty($filters['search'])) {
+            $where[] = "(u.fname LIKE ? OR u.lname LIKE ?)";
+            $searchTerm = "%" . $filters['search'] . "%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
         }
+        
+        if (!empty($filters['status'])) {
+            $where[] = "p.status = ?";
+            $params[] = $filters['status'];
+        }
+
+        $whereClause = !empty($where) ? " AND " . implode(" AND ", $where) : "";
+
+        // 1. Calculate count matching search parameters
+        // Note: INNER JOIN tbl_user u is included here so the name search clauses resolve safely
+        $countSql = "SELECT COUNT(*) as total 
+                     FROM tbl_permission p 
+                     INNER JOIN tbl_user u ON p.user_id = u.id 
+                     WHERE 1=1 $whereClause";
+                     
+        $countResult = $this->db->query($countSql, $params);
+        $totalRows = $countResult ? (int)$countResult->fetch_assoc()['total'] : 0;
+
+        // 2. Clamp bounds
+        $totalPages = $totalRows > 0 ? ceil($totalRows / $limit) : 1;
+        $page = max(1, min($page, $totalPages));
+        $offset = ($page - 1) * $limit;
+
+        // 3. Extract paginated dataset chunk
+        $sql = "SELECT p.*, lk.name AS permission_type_name,
+                CONCAT(u.fname, ' ', u.lname) AS employee_name,
+                CONCAT(i.fname, ' ', i.lname) AS initiator_name,
+                app.remark AS closing_remark,
+                CONCAT(appr.fname, ' ', appr.lname) AS approver_name,
+                app.date_approved
+                FROM tbl_permission p
+                INNER JOIN lkup_permission lk ON p.permission_type_id = lk.id
+                INNER JOIN tbl_user u ON p.user_id = u.id
+                LEFT JOIN tbl_user i ON p.initiatedby = i.id
+                LEFT JOIN tbl_permission_approval app ON p.id = app.permission_id
+                LEFT JOIN tbl_user appr ON app.approver_id = appr.id 
+                WHERE 1=1 $whereClause
+                ORDER BY p.id DESC
+                LIMIT ? OFFSET ?";
+        
+        $finalParams = array_merge($params, [$limit, $offset]);
+        $result = $this->db->query($sql, $finalParams);
+        $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+        return [
+            'data' => $rows,
+            'pagination' => [
+                'total_records' => $totalRows,
+                'total_pages'   => $totalPages,
+                'current_page'  => $page,
+                'limit'         => $limit
+            ]
+        ];
+    } catch (Throwable $e) {
+        throw $e;
     }
+}
 
     public function fetchLookupTypes(): array
     {
