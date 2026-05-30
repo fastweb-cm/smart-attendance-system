@@ -91,6 +91,7 @@ export const syncUsers = <ThrowOnError extends boolean = false>(options: Options
  * Delete a user
  */
 export const deleteUser = <ThrowOnError extends boolean = false>(options: Options<DeleteUserData, ThrowOnError>) => (options.client ?? client).delete<DeleteUserResponses, DeleteUserErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/{id}',
     ...options

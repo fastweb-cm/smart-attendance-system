@@ -2,10 +2,12 @@
 
 import { listUsersQueryKey } from "@/client/@tanstack/react-query.gen";
 import { queryClient } from "@/lib/queryClient";
-import { userMutation, sycUsersMutation } from "@/services/users/mutations";
+import { userMutation, sycUsersMutation, deleteUserMut } from "@/services/users/mutations";
 import { getUsersQuery, ListusersFilters, userQueryKey } from "@/services/users/queries";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
+
+const queryKey = userQueryKey();
 
 // Get all users with paginated matrix and search queries
 export const useUsers = (filters?: ListusersFilters) => 
@@ -36,6 +38,24 @@ export const useCreateUser = () =>
             });
         }
     });
+
+// delete employee mutation hook
+export const useDeleteEmployee = () => {
+    return useMutation({
+        ...deleteUserMut(),
+        onSuccess: (res) => {
+            toast.success (res.message || "Employee deleted successfully")
+        },
+        onSettled: async () => {
+            // invalidate the list of employees after the delete
+            await queryClient.invalidateQueries({ queryKey })
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to delete employee")
+        }
+    })
+}
+
 //sync users hook
 export const useSyncUsers = () =>
     useMutation({

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useUsers } from "@/hooks/useUsers";
+import { useDeleteEmployee, useUsers } from "@/hooks/useUsers";
 import { ListusersFilters } from "@/services/users/queries";
 import { UserQueryFilterBar } from "./UserQueryFilterBar";
 import UserTable from "./UserTable";
@@ -17,6 +17,9 @@ export default function UsersDirectoryView() {
     search: undefined,
     status: undefined,
   });
+
+  // delete hook 
+  const deleteEmployeeMut = useDeleteEmployee();
 
   const [selected, setSelected] =
       useState<UserResponse | null>(null);
@@ -49,12 +52,11 @@ export default function UsersDirectoryView() {
       setOpenDelete(true);
     }
   const onConfirmDelete = async () => {
-    if (!selected) return;
+    if (!selected || selected.id === undefined) return;
     setIsDeleting(true);
     try {
-      // await deleteTerminalApi(selected.id); 
-      // await deleteTerminalMutation.mutateAsync({ path:{ id: selected.id } });
-      console.log("deleted")
+
+      await deleteEmployeeMut.mutateAsync({ path:{ id: selected.id } });
       setOpenDelete(false);
     } catch (error) {
       console.error(error);

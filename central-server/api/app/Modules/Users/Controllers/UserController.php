@@ -126,38 +126,55 @@ public function index(): void
  */
 public function destroy($id = null): void
 {
-    // Fallback lookup matrix if your framework relies on internal routing state bags instead of argument injection
-    if ($id === null) {
+    try {
+        // 1. Initial Validation
+        if ($id === null) {
+            $this->json([
+                "success" => false,
+                "message" => "Bad Request: Missing structural path identity target parameter."
+            ], 400);
+            return;
+        }
+
+        $targetId = (int)$id;
+
+        if ($targetId <= 0) {
+            $this->json([
+                "success" => false,
+                "message" => "Bad Request: Invalid identity target format."
+            ], 400);
+            return;
+        }
+
+        $userModel = new Users();
+
+        // Execution Layer
+        if ($userModel->deleteUser($targetId)) {
+            $this->json([
+                "success" => true,
+                "message" => "Employee record and all associated identities successfully deleted from the system."
+            ]);
+        } else {
+            // This triggers if deleteUser returns false (e.g., ID doesn't exist) 
+            // but NO exception was thrown by the DB.
+            $this->json([
+                "success" => false,
+                "message" => "Target record not found. No deletions occurred."
+            ], 404);
+        }
+
+    } catch (Throwable $e) {
+        // 3. Catch-all for Re-thrown Exceptions from Model
         $this->json([
             "success" => false,
-            "message" => "Bad Request: Missing structural path identity target parameter."
-        ], 400);
-        return;
-    }
-
-    $targetId = $id ? (int)$id : null;
-
-    if (!$targetId) {
-        $this->json([
-            "success" => false,
-            "message" => "Bad Request: Missing or invalid structural path identity target parameter."
-        ], 400);
-        return;
-    }
-
-    $userModel = new Users();
-
-    // Run cascade delete transaction pipeline
-    if ($userModel->deleteUser()) {
-        $this->json([
-            "success" => true,
-            "message" => "Operational identity profile completely expunged from tenant matrix layer."
-        ]);
-    } else {
-        $this->json([
-            "success" => false,
-            "message" => "Internal System Error: Failed to execute cascading identity destruction routines."
-        ],500);
+            "message" => "Internal System Error: Failed to execute cascading identity destruction.",
+            "error_details" => [
+                "class"   => get_class($e),
+                "message" => $e->getMessage(),
+                "file"    => $e->getFile(),
+                "line"    => $e->getLine()
+            ]
+        ], 500);
     }
 }
 

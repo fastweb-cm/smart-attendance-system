@@ -40,7 +40,6 @@ $router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPo
 $router->get('/api/v1/lookup/permissions/types', [PermissionController::class, 'types']);
 
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
-
 /*
 |--------------------------
 |  Sync Routes

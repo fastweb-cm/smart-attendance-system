@@ -238,9 +238,9 @@ class Users
         }
     }
 
-    public function deleteUser(): bool
+    public function deleteUser(int $id): bool
 {
-    if (!$this->id) return false;
+    if (!$id) return false;
 
     // Begin transaction sequence to ensure total atomic integrity across multiple tables
     $this->db->beginTransaction();
@@ -248,14 +248,14 @@ class Users
     try {
         //  Clear child relational logs first to avoid reference lock violations
         $sqlStudent = "DELETE FROM tbl_student WHERE user_id = ?";
-        $this->db->query($sqlStudent, [$this->id]);
+        $this->db->query($sqlStudent, [$id]);
 
         $sqlStaff = "DELETE FROM tbl_staff WHERE user_id = ?";
-        $this->db->query($sqlStaff, [$this->id]);
+        $this->db->query($sqlStaff, [$id]);
 
         // Erase core primary auth profile row
         $sqlUser = "DELETE FROM tbl_user WHERE id = ?";
-        $this->db->query($sqlUser, [$this->id]);
+        $this->db->query($sqlUser, [$id]);
 
         // Check if the main record was actually dropped
         $affected = $this->db->affectedRows() > 0;
@@ -282,20 +282,12 @@ class Users
         $this->db->rollBack();
         return false;
 
-    } catch (\Exception $e) {
+    } catch (Throwable $e) {
         // Reverse all executed components if any query throws an exception
         $this->db->rollBack();
 
-        // Register failure sequence to diagnostic logs
-        Logger::log(
-            'system',
-            'error',
-            sprintf("Critical failure aborting deletion chain for user ID %d: %s", $this->id, $e->getMessage()),
-            null,
-            ['user_id' => $this->id, 'error' => $e->getMessage()]
-        );
+        throw $e; // Re-throw exception to be handled by controller layer
 
-        return false;
     }
 }
 

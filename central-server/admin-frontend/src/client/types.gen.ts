@@ -843,8 +843,13 @@ export type DeleteUserResponses = {
     /**
      * User deleted successfully
      */
-    200: unknown;
+    200: {
+        success?: boolean;
+        message?: string;
+    };
 };
+
+export type DeleteUserResponse = DeleteUserResponses[keyof DeleteUserResponses];
 
 export type GetUserByIdData = {
     body?: never;
