@@ -1,0 +1,31 @@
+name: Deploy PHP to Server
+on:
+    push:
+        branches: [main]
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            # Step 1: Upload the files
+            - name: Deploy via rsync
+              uses: easingthemes/ssh-deploy@main
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+                  ARGS: "-rltgoDzvO --delete"
+                  SOURCE: "central-server/api/"
+                  REMOTE_HOST: ${{ secrets.SSH_HOST }}
+                  REMOTE_USER: ${{ secrets.SSH_USER }}
+                  TARGET: "/home/fastxrdj/smartattendance.fastwebcm.org/"
+
+            # Step 2: Install dependencies on the server
+            - name: Install Dependencies
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  script: |
+                      cd /home/fastxrdj/smartattendance.fastwebcm.org/
+                      composer install --no-dev --optimize-autoloader
