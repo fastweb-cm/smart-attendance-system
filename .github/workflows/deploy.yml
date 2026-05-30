@@ -8,6 +8,10 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
+            - name: Debug Secrets
+              run: |
+                  echo "SSH_HOST: ${{ secrets.SSH_HOST }}"
+                  echo "SSH_USER: ${{ secrets.SSH_USER }}"
             # Step 1: Upload the files
             - name: Deploy via rsync
               uses: easingthemes/ssh-deploy@main
