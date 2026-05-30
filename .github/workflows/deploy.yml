@@ -21,7 +21,7 @@ jobs:
                   REMOTE_USER: ${{ secrets.SSH_USER }}
                   REMOTE_PORT: 21098
                   SOURCE: "central-server/api/"
-                  TARGET: "/home/fastxrdj/smartattendance.fastwebcm.org/"
+                  TARGET: "/home/fastxrdj/api.smartattendance.fastwebcm.org/"
                   ARGS: "-rltgoDzvO --delete"
 
             # Step 2: Install dependencies on the server
@@ -33,7 +33,7 @@ jobs:
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   port: 21098
                   script: |
-                      cd /home/fastxrdj/smartattendance.fastwebcm.org/
+                      cd /home/fastxrdj/api.smartattendance.fastwebcm.org/
 
                       # 1. Download composer.phar if it doesn't exist
                       if [ ! -f "composer.phar" ]; then
