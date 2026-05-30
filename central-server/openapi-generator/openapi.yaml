@@ -259,7 +259,7 @@ components:
         user_type:
           $ref: "#/components/schemas/UserType"
         status:
-          $ref: "#/components/schemas/UserStatus"
+          type: ["string", "null"]
         biometric_enrollment_status:
           $ref: "#/components/schemas/BiometricEnrollmentStatus"
         role_id:
@@ -300,10 +300,24 @@ components:
           type: string
         class:
           type: string
-        studentregno:
+        user_type:
+          $ref: "#/components/schemas/UserType"
+        regno:
           type: string
         username:
           type: string
+    PaginatedUsersResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResponse"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
 
     StudentInput:
       type: object
@@ -1314,22 +1328,41 @@ paths:
         - in: query
           name: user_type
           schema:
-            $ref: "#/components/schemas/UserType"
+            type: ["string", "null"]
           description: Filter by user type
         - in: query
           name: status
           schema:
-            $ref: "#/components/schemas/UserStatus"
+            type: ["string", "null"]
           description: Filter by status
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Contextual string match across names or student registration numbers
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: The pagination page index number to view
+        - in: query
+          name: role
+          schema:
+            type: ["string", "null"]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Maximum items returned per pagination block page window
       responses:
         "200":
-          description: List of users
+          description: Paginated matrix list of system users
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/PaginatedUsersResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

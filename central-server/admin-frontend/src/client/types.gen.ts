@@ -115,7 +115,7 @@ export type User = {
     email: string;
     gender?: 'male' | 'female';
     user_type: UserType;
-    status?: UserStatus;
+    status?: string | null;
     biometric_enrollment_status?: BiometricEnrollmentStatus;
     /**
      * role id for privileged staff
@@ -141,8 +141,14 @@ export type UserResponse = {
     biometric_enrollment_status?: BiometricEnrollmentStatus;
     role?: string;
     class?: string;
-    studentregno?: string;
+    user_type?: UserType;
+    regno?: string;
     username?: string;
+};
+
+export type PaginatedUsersResponse = {
+    data: Array<UserResponse>;
+    meta: PaginationMeta;
 };
 
 export type StudentInput = {
@@ -682,11 +688,24 @@ export type ListUsersData = {
         /**
          * Filter by user type
          */
-        user_type?: UserType;
+        user_type?: string | null;
         /**
          * Filter by status
          */
-        status?: UserStatus;
+        status?: string | null;
+        /**
+         * Contextual string match across names or student registration numbers
+         */
+        search?: string;
+        /**
+         * The pagination page index number to view
+         */
+        page?: number;
+        role?: string | null;
+        /**
+         * Maximum items returned per pagination block page window
+         */
+        limit?: number;
     };
     url: '/api/v1/users';
 };
@@ -712,9 +731,9 @@ export type ListUsersErrors = {
 
 export type ListUsersResponses = {
     /**
-     * List of users
+     * Paginated matrix list of system users
      */
-    200: Array<UserResponse>;
+    200: PaginatedUsersResponse;
 };
 
 export type ListUsersResponse = ListUsersResponses[keyof ListUsersResponses];

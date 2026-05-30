@@ -11,15 +11,32 @@ class UserController extends Controller
      * List all users
      * Optional query parameters: user_type, status, limit, offset
      */
-    public function index(): void
-    {
-        $query = $this->getQueryParams(); 
-        $userType = $query['user_type'] ?? null;
-        $status = $query['status'] ?? null;
+public function index(): void
+{
+    $query = $this->getQueryParams(); 
+    
+    // Parse routing filters
+    $userType = $query['user_type'] ?? null;
+    $status   = $query['status'] ?? null;
+    $role     = $query['role'] ?? null;   // New query string captured from multi-tenant selector
+    $search   = $query['search'] ?? null; // Capture incoming text query string
 
-        $users = (new Users())->listUsers($userType, $status);
-        $this->json($users);
-    }
+    // Normalize pagination keys safely from strings to integers
+    $limit = isset($query['limit']) ? max(1, (int)$query['limit']) : 10;
+    $page  = isset($query['page']) ? max(1, (int)$query['page']) : 1;
+    
+    // Calculate database pointer offset index position
+    $offset = ($page - 1) * $limit;
+
+    // Execute lookup sequence with the added role tracking parameter
+    $responseMatrix = (new Users())->listUsers($userType, $status, $role, $search, $limit, $offset);
+    
+    // Append current tracking window info to metadata layer for frontend ease
+    $responseMatrix['meta']['current_page'] = $page;
+
+    // Stream formatted payload upstream to TanStack Query interface layers
+    $this->json($responseMatrix);
+}
 
     /**
      * Get a single user by ID

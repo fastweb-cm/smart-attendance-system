@@ -347,45 +347,107 @@ class Users
         return false;
     }
 
-    public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array
-    {
-        $sql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status,
-               CONCAT(u.fname, ' ', u.lname) AS name,
-               c.class_name AS class,
-               r.role_name AS role,
-               s.regno AS studentregno
-        FROM tbl_user u
-        LEFT JOIN tbl_student s ON u.id = s.user_id
-        LEFT JOIN tbl_class c ON u.class_id = c.id
-        LEFT JOIN tbl_staff st ON u.id = st.user_id
-        LEFT JOIN lkup_role r ON st.role_id = r.id";
-        
-        $conditions = [];
-        $params = [];
+public function listUsers(
+    ?string $userType = null, 
+    ?string $status = null, 
+    ?string $role = null, // Injected optional string role matching
+    ?string $search = null, 
+    int $limit = 10, 
+    int $offset = 0
+): array {
+    // ---------------------------------------------------------
+    // 1. Build Base Query Conditions & Bind parameters
+    // ---------------------------------------------------------
+    $conditions = [];
+    $params = [];
 
-        if ($userType) {
-            $conditions[] = "u.user_type = ?";
-            $params[] = $userType;
-        }
-        if ($status) {
-            $conditions[] = "u.status = ?";
-            $params[] = $status;
-        }
-
-        if (!empty($conditions)) {
-            $sql .= " WHERE " . implode(" AND ", $conditions);
-        }
-
-        $result = $this->db->query($sql, $params);
-        $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
-        }
-        return $users;
+    if ($userType) {
+        $conditions[] = "u.user_type = ?";
+        $params[] = $userType;
+    }
+    if ($status) {
+        $conditions[] = "u.status = ?";
+        $params[] = $status;
+    }
+    if ($role) {
+        // Enforces lookup comparison mapping against the linked role description matrix
+        $conditions[] = "r.role_name = ?";
+        $params[] = $role;
+    }
+    
+    // Add flexible loose search match across names and registration numbers
+    if ($search) {
+        $conditions[] = "(u.fname LIKE ? OR u.lname LIKE ? OR s.regno LIKE ? OR st.sregno LIKE ?)";
+        $searchParam = "%" . $search . "%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam; // Appended additional search parameter coverage for staff reg strings
     }
 
+    $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
+
+    // ---------------------------------------------------------
+    // 2. Count Total Records matching these exact criteria first
+    // ---------------------------------------------------------
+    $countSql = "SELECT COUNT(DISTINCT u.id) as total 
+                 FROM tbl_user u
+                 LEFT JOIN tbl_student s ON u.id = s.user_id
+                 LEFT JOIN tbl_class c ON u.class_id = c.id
+                 LEFT JOIN tbl_staff st ON u.id = st.user_id
+                 LEFT JOIN lkup_role r ON st.role_id = r.id" . $whereClause;
+                 
+    $countResult = $this->db->query($countSql, $params);
+    $totalRecords = 0;
+    if ($countResult && $row = $countResult->fetch_assoc()) {
+        $totalRecords = (int)$row['total'];
+    }
+
+    // ---------------------------------------------------------
+    // 3. Pull Paginated Data rows
+    // ---------------------------------------------------------
+    $dataSql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status, u.email,
+                       CONCAT(u.fname, ' ', u.lname) AS name,
+                       c.class_name AS class,
+                       u.user_type,
+                       r.role_name AS role,
+                       CASE
+                        WHEN u.user_type = 'staff'
+                        THEN st.sregno
+                        ELSE s.regno
+                       END AS regno
+                FROM tbl_user u
+                LEFT JOIN tbl_student s ON u.id = s.user_id
+                LEFT JOIN tbl_class c ON u.class_id = c.id
+                LEFT JOIN tbl_staff st ON u.id = st.user_id
+                LEFT JOIN lkup_role r ON st.role_id = r.id" 
+                . $whereClause . 
+                " ORDER BY u.fname, u.lname ASC LIMIT ? OFFSET ?";
+
+    // Push pagination integers into executing variable parameter streams
+    $dataParams = array_merge($params, [$limit, $offset]);
+
+    $result = $this->db->query($dataSql, $dataParams);
+    $users = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 4. Return Structured Matrix Payload
+    // ---------------------------------------------------------
+    return [
+        "data" => $users,
+        "meta" => [
+            "total_records" => $totalRecords,
+            "limit"         => $limit,
+            "offset"        => $offset,
+            "total_pages"   => ceil($totalRecords / $limit)
+        ]
+    ];
+}
     public function getUserGroupSubgroupTerminal(int $userId): array
     {
         $sql = "SELECT DISTINCT terminal_id 

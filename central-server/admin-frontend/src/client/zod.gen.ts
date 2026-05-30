@@ -106,7 +106,10 @@ export const zUser = z.object({
     email: z.string(),
     gender: z.optional(z.enum(['male', 'female'])),
     user_type: zUserType,
-    status: z.optional(zUserStatus),
+    status: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role_id: z.optional(z.int()),
     class_id: z.optional(z.int()),
@@ -126,8 +129,14 @@ export const zUserResponse = z.object({
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role: z.optional(z.string()),
     class: z.optional(z.string()),
-    studentregno: z.optional(z.string()),
+    user_type: z.optional(zUserType),
+    regno: z.optional(z.string()),
     username: z.optional(z.string())
+});
+
+export const zPaginatedUsersResponse = z.object({
+    data: z.array(zUserResponse),
+    meta: zPaginationMeta
 });
 
 export const zStudentInput = z.object({
@@ -622,15 +631,28 @@ export const zListUsersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        user_type: z.optional(zUserType),
-        status: z.optional(zUserStatus)
+        user_type: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        status: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        search: z.optional(z.string()),
+        page: z.optional(z.int()).default(1),
+        role: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        limit: z.optional(z.int()).default(10)
     }))
 });
 
 /**
- * List of users
+ * Paginated matrix list of system users
  */
-export const zListUsersResponse = z.array(zUserResponse);
+export const zListUsersResponse = zPaginatedUsersResponse;
 
 export const zCreateUserData = z.object({
     body: zUserCreate,
