@@ -30,6 +30,7 @@ jobs:
                   host: ${{ secrets.SSH_HOST }}
                   username: ${{ secrets.SSH_USER }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: 21098
                   script: |
                       cd /home/fastxrdj/smartattendance.fastwebcm.org/
                       composer install --no-dev --optimize-autoloader
