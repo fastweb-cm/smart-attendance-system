@@ -239,14 +239,31 @@ class Users
     }
 
     public function deleteUser(): bool
-    {
-        if (!$this->id) return false;
-        
-        $sql = "DELETE FROM tbl_user WHERE id = ?";
-        $this->db->query($sql, [$this->id]);
+{
+    if (!$this->id) return false;
+
+    // Begin transaction sequence to ensure total atomic integrity across multiple tables
+    $this->db->beginTransaction();
+
+    try {
+        //  Clear child relational logs first to avoid reference lock violations
+        $sqlStudent = "DELETE FROM tbl_student WHERE user_id = ?";
+        $this->db->query($sqlStudent, [$this->id]);
+
+        $sqlStaff = "DELETE FROM tbl_staff WHERE user_id = ?";
+        $this->db->query($sqlStaff, [$this->id]);
+
+        // Erase core primary auth profile row
+        $sqlUser = "DELETE FROM tbl_user WHERE id = ?";
+        $this->db->query($sqlUser, [$this->id]);
+
+        // Check if the main record was actually dropped
         $affected = $this->db->affectedRows() > 0;
 
         if ($affected) {
+            // Commit all deletions to disk simultaneously
+            $this->db->commit();
+
             // -----------------------------------------------------------------
             // SYSTEM AUDIT LOG
             // -----------------------------------------------------------------
@@ -257,10 +274,30 @@ class Users
                 null,
                 ['user_id' => $this->id, 'action' => 'user_delete']
             );
+
+            return true;
         }
 
-        return $affected;
+        // If no rows were changed, something went wrong; roll back changes safely
+        $this->db->rollBack();
+        return false;
+
+    } catch (\Exception $e) {
+        // Reverse all executed components if any query throws an exception
+        $this->db->rollBack();
+
+        // Register failure sequence to diagnostic logs
+        Logger::log(
+            'system',
+            'error',
+            sprintf("Critical failure aborting deletion chain for user ID %d: %s", $this->id, $e->getMessage()),
+            null,
+            ['user_id' => $this->id, 'error' => $e->getMessage()]
+        );
+
+        return false;
     }
+}
 
     public function getUserById(int $id): ?array
     {

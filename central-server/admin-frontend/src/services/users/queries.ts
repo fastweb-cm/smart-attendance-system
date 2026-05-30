@@ -24,6 +24,7 @@ export const getUsersQuery = (filters?: ListusersFilters) =>
         }
     });
 
+
 export const userQueryKey = (filters?: ListusersFilters) => 
     listUsersQueryKey({
         query: {
@@ -35,3 +36,5 @@ export const userQueryKey = (filters?: ListusersFilters) =>
             limit: filters?.limit
         }
     });
+
+

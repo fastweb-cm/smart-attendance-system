@@ -120,4 +120,45 @@ public function index(): void
         $this->json($users);
     }
 
+    /**
+ * Handle path parameter routing: /admin/users/delete/{id}
+ * * @param int|string|null $id Router automatically parses and injects the route match slice here
+ */
+public function destroy($id = null): void
+{
+    // Fallback lookup matrix if your framework relies on internal routing state bags instead of argument injection
+    if ($id === null) {
+        $this->json([
+            "success" => false,
+            "message" => "Bad Request: Missing structural path identity target parameter."
+        ], 400);
+        return;
+    }
+
+    $targetId = $id ? (int)$id : null;
+
+    if (!$targetId) {
+        $this->json([
+            "success" => false,
+            "message" => "Bad Request: Missing or invalid structural path identity target parameter."
+        ], 400);
+        return;
+    }
+
+    $userModel = new Users();
+
+    // Run cascade delete transaction pipeline
+    if ($userModel->deleteUser()) {
+        $this->json([
+            "success" => true,
+            "message" => "Operational identity profile completely expunged from tenant matrix layer."
+        ]);
+    } else {
+        $this->json([
+            "success" => false,
+            "message" => "Internal System Error: Failed to execute cascading identity destruction routines."
+        ],500);
+    }
+}
+
 }
