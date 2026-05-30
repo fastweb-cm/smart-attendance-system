@@ -34,4 +34,13 @@ jobs:
                   port: 21098
                   script: |
                       cd /home/fastxrdj/smartattendance.fastwebcm.org/
-                      composer install --no-dev --optimize-autoloader
+
+                      # 1. Download composer.phar if it doesn't exist
+                      if [ ! -f "composer.phar" ]; then
+                      echo "Downloading Composer..."
+                      curl -sS https://getcomposer.org/installer | php
+                      fi
+
+                      # 2. Run composer using the local file
+                      echo "Installing dependencies..."
+                      php composer.phar install --no-dev --optimize-autoloader
