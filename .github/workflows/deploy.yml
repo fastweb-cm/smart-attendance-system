@@ -1,0 +1,46 @@
+name: Deploy PHP to Server
+on:
+    push:
+        branches: [main]
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Debug Secrets
+              run: |
+                  echo "SSH_HOST: ${{ secrets.SSH_HOST }}"
+                  echo "SSH_USER: ${{ secrets.SSH_USER }}"
+            # Step 1: Upload the files
+            - name: Deploy via rsync
+              uses: easingthemes/ssh-deploy@main
+              with:
+                  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+                  REMOTE_HOST: ${{ secrets.SSH_HOST }}
+                  REMOTE_USER: ${{ secrets.SSH_USER }}
+                  REMOTE_PORT: 21098
+                  SOURCE: "central-server/api/"
+                  TARGET: "/home/fastxrdj/api.smartattendance.fastwebcm.org/"
+                  ARGS: "-rltgoDzvO --delete"
+
+            # Step 2: Install dependencies on the server
+            - name: Install Dependencies
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: 21098
+                  script: |
+                      cd /home/fastxrdj/api.smartattendance.fastwebcm.org/
+
+                      # 1. Download composer.phar if it doesn't exist
+                      if [ ! -f "composer.phar" ]; then
+                      echo "Downloading Composer..."
+                      curl -sS https://getcomposer.org/installer | php
+                      fi
+
+                      # 2. Run composer using the local file
+                      echo "Installing dependencies..."
+                      php composer.phar install --no-dev --optimize-autoloader

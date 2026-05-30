@@ -5,6 +5,7 @@ $allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3002',
     'http://smartattendance.fastwebcm.local:3000',
+    'http://smartattendance.fastwebcm.org/', // production url
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
