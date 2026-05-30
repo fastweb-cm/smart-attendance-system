@@ -304,5 +304,5 @@ export interface UserTableProps {
   paginationMeta: PaginationMetaProps;
   onView: (id: number) => void;
   onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
+  onDelete: (user: UserResponse) => void;
 }

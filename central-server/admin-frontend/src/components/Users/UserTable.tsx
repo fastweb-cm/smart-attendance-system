@@ -150,7 +150,7 @@ export default function UserTable({
                                         <button onClick={() => onEdit(u.id!)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-sm">
                                             <Edit2 className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={() => onDelete(u.id!)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm">
+                                        <button title={`Delete employee ${u.name}`} onClick={() => onDelete(u)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm">
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
