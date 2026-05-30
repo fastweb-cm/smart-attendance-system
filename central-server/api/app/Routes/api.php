@@ -33,6 +33,7 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |--------------------------
 */
 $router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
+$router->get('/api/v1/lookup/roles', [UserController::class, 'getRoles']);
 $router->get('/api/v1/lookup/users', [UserController::class, 'getUsersByType']);
 $router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
 $router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);

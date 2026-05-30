@@ -3,27 +3,28 @@ import UsersDirectoryView from "@/components/Users/UserDirectoryView";
 import { Shield } from "lucide-react";
 
 export const metadata = {
-  title: "Omni Tenant Directory Ledger",
-  description: "Global cross-platform account matrix and registry mapping tools.",
+  title: "User Directory | Attendance Management",
+  description: "Manage accounts, institutional roles, and system access settings across the platform.",
 };
 
 export default function GlobalUsersDirectoryPage() {
   return (
     <div className="my-4 max-w-6xl space-y-6">
-      {/* Header Framework Layout Block */}
+      
+      {/* Page Header Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="flex items-center gap-2 text-slate-800 font-extrabold text-2xl tracking-tight">
-            <Shield className="w-7 h-7 text-indigo-600 shrink-0" />
-            <h1>Global Registry Control</h1>
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-2xl tracking-tight">
+            <Shield className="w-6 h-6 text-indigo-600 shrink-0" />
+            <h1>User Directory & Accounts</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            System identity mapping registry supporting multi-organizational user bases, roles, and device sync matrices.
+            Central management hub for all semployees, system permissions, and credential controls.
           </p>
         </div>
       </div>
 
-      {/* Client-side directory component handles state safely below */}
+      {/* Client-side directory list view toggle interface */}
       <UsersDirectoryView />
     </div>
   );

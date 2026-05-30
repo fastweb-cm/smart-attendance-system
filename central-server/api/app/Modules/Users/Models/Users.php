@@ -699,6 +699,13 @@ public function listUsers(
         return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
     }
 
+    public function getEmployeeRoles(): array
+    {
+        $sql = "SELECT id, role_name AS name FROM lkup_role";
+        $res = $this->db->query($sql, []);
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
 public function getUsers(?string $userType = null): array
 {
     $params = [];

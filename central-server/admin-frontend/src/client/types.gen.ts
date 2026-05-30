@@ -112,7 +112,7 @@ export type User = {
     id?: number;
     fname: string;
     lname: string;
-    email: string;
+    email: string | null;
     gender?: 'male' | 'female';
     user_type: UserType;
     status?: string | null;

@@ -103,7 +103,10 @@ export const zUser = z.object({
     id: z.optional(z.int()),
     fname: z.string(),
     lname: z.string(),
-    email: z.string(),
+    email: z.union([
+        z.string(),
+        z.null()
+    ]),
     gender: z.optional(z.enum(['male', 'female'])),
     user_type: zUserType,
     status: z.optional(z.union([

@@ -2,16 +2,18 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axiosClient";
 import { GroupWithSubgroupsLookup, Lookup, LookupBranch, LookupClass } from "@/types";
+import { User } from "@/client";
 
-export const useClasses = (initialData: LookupClass[] = []) => {
+export const useClasses = (initialData?: LookupClass[]) => {
     return useQuery<LookupClass[]>({
         queryKey: ['classes'],
         queryFn: async () => {
             const response = await apiClient.get('/api/v1/lookup/classes');
             return response.data;
         },
-        initialData: initialData, // Uses the server-fetched data immediately
-        staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+        // Only applies if you explicitly pass data from a server component
+        initialData: initialData, 
+        staleTime: 1000 * 60 * 5, // 5 minutes cache freshness
     })
 }
 
@@ -78,4 +80,27 @@ export const usePermissionTypes = () => {
         }
     })
 }
+
+export const useEmployeeRoles = () => {
+    return useQuery<Lookup[]>({
+        queryKey: ['employee_roles'],
+        queryFn: async () => {
+            const res = await apiClient.get("/api/v1/lookup/roles");
+            return res.data;
+        }
+    })
+}
+
+export const useEmployee = (id?: number) => {
+    return useQuery<User>({
+        queryKey: ['employee', id],
+        queryFn: async () => {
+            const res = await apiClient.get(`/api/v1/users/${id}`);
+            return res.data;
+        },
+        enabled: !!id,
+    });
+};
+
+
 

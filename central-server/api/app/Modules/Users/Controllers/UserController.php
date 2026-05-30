@@ -113,6 +113,12 @@ public function index(): void
         $this->json($classes);
     }
 
+    public function getRoles()
+    {
+        $classes = (new Users())->getEmployeeRoles();
+        $this->json($classes);
+    }
+
     public function getUsersByType()
     {
         $userType = $_GET['userType'] ?? null;

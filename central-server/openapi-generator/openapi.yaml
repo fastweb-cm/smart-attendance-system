@@ -251,7 +251,7 @@ components:
           type: string
           example: Brandon
         email:
-          type: string
+          type: ["string", "null"]
           example: brandon@example.com
         gender:
           type: string
