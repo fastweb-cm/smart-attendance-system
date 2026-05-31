@@ -65,6 +65,7 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->get('/api/v1/users', [UserController::class, 'index']);
     $router->post('/api/v1/users', [UserRegistrationController::class, 'register']);
     $router->delete('/api/v1/users/{id}', [UserController::class, 'destroy']);
+    $router->put('/api/v1/users/{id}', [UserController::class, 'update']);
 
     //branch routes
     $router->post('/api/v1/branch', [BranchController::class, 'store']);

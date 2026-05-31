@@ -184,4 +184,89 @@ public function destroy($id = null): void
     }
 }
 
+public function update(int $id): void
+{
+    if ($id <= 0) {
+        $this->json(['error' => "Invalid or missing User ID parameter"], 400);
+        return;
+    }
+
+    $data = $this->getJsonInput(); // decode parsing utility
+
+    // 1. Core required structural keys validation
+    $required = ['fname', 'lname', 'user_type', 'gender'];
+    foreach ($required as $field) {
+        if (empty($data[$field])) {
+            $this->json(['error' => "Field '$field' cannot be saved blank"], 400);
+            return;
+        }
+    }
+
+    // 2. Strict type constraint alignment matching frontend zod layout schemas
+    if ($data['user_type'] === 'staff') {
+        if (empty($data['email'])) {
+            $this->json(['error' => "Email identity is strictly required for staff members"], 400);
+            return;
+        }
+        if (empty($data['role_id'])) {
+            $this->json(['error' => "An operational role assignment designation is required for staff members"], 400);
+            return;
+        }
+    }
+
+    if ($data['user_type'] === 'student' && empty($data['class_id'])) {
+        $this->json(['error' => "An academic class room assignment is required for students"], 400);
+        return;
+    }
+
+    // Initialize entity instance object targeting active matching profile reference
+    $user = new Users();
+    $existingUser = $user->getUserById($id);
+    
+    if (!$existingUser) {
+        $this->json(['error' => "No user account was found with ID #$id"], 444);
+        return;
+    }
+
+    // Assign core updating metadata
+    $user->setId($id);
+    $user->setFname(trim($data['fname']));
+    $user->setLname(trim($data['lname']));
+    $user->setGender(trim($data['gender']));
+    $user->setUserType(trim($data['user_type']));
+    $user->setStatus($data['status'] ?? 'active');
+    $user->setBiometricEnrollmentStatus($data['biometric_enrollment_status'] ?? 'pending');
+
+    // Handle Nullable Profile Strings securely
+    $user->setEmail(!empty($data['email']) ? trim($data['email']) : null);
+    $user->setUsername(!empty($data['username']) ? trim($data['username']) : null);
+
+    // Only update and re-hash password strings if the user explicitly typed one in
+    if (!empty($data['password'])) {
+        $user->setPasswordHash(password_hash($data['password'], PASSWORD_BCRYPT));
+    } else {
+        // Keep it null explicitly so the model knows to skip it during SQL construction
+        $user->setPasswordHash(null);
+    }
+
+    // Segment tracking properties mappings
+    if ($data['user_type'] === 'student') {
+        $user->setClassId((int)$data['class_id']);
+    } else {
+        $user->setRoleId((int)$data['role_id']);
+    }
+
+    // Execute save operation transaction routine 
+    $updatedUser = $user->updateUser();
+
+    if ($updatedUser) {
+        $this->json([
+            'message' => 'Account profile saved and updated successfully',
+            'user' => $updatedUser
+        ], 200);
+    } else {
+        $this->json(['error' => 'Failed to save account identity properties updates'], 500);
+    }
+}
+
 }

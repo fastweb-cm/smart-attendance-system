@@ -163,80 +163,82 @@ class Users
         $this->db->query($sql, $params);
     }
 
-    public function updateUser(): ?array
-    {
-        if (!$this->id) return null;
+public function updateUser(): ?array
+{
+    if (!$this->id) return null;
 
-        try {
-            $this->db->beginTransaction();
+    try {
+        $this->db->beginTransaction();
 
-            $fields = [];
-            $params = [];
-            $props = [
-                'fname', 'lname', 'email', 'gender', 'username', 'password_hash', 
-                'status', 'biometric_enrollment_status', 'class_id', 'user_type'
-            ];
-
-            foreach ($props as $prop) {
-                if ($this->$prop !== null) {
-                    $fields[] = "$prop = ?";
-                    $params[] = $this->$prop;
-                }
+        $fields = [];
+        $params = [];
+        
+        // 1. Core Non-Nullable fields
+        $updatableProps = [
+            'fname', 'lname', 'gender', 'status', 
+            'biometric_enrollment_status', 'class_id', 'user_type'
+        ];
+        
+        foreach ($updatableProps as $prop) {
+            if ($this->$prop !== null) {
+                $fields[] = "$prop = ?";
+                $params[] = $this->$prop;
             }
-
-            if (!empty($fields)) {
-                $params[] = $this->id;
-                $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
-                $this->db->query($sql, $params);
-            }
-
-            if ($this->user_type === 'student') {
-                $fieldsStudent = [];
-                $paramsStudent = [];
-                if ($this->class_id !== null) {
-                    $fieldsStudent[] = "class_id = ?";
-                    $paramsStudent[] = $this->class_id;
-                }
-                if (!empty($fieldsStudent)) {
-                    $paramsStudent[] = $this->id;
-                    $sqlStudent = "UPDATE tbl_student SET " . implode(", ", $fieldsStudent) . " WHERE user_id = ?";
-                    $this->db->query($sqlStudent, $paramsStudent);
-                }
-            } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
-                $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
-                $this->db->query($sqlStaff, [$this->role_id, $this->id]);
-            }
-
-            $terminals = $this->getUserGroupSubgroupTerminal($this->id);
-            if (!empty($terminals)) {
-                foreach ($terminals as $tId) {
-                    $this->syncModel->setTerminalId($tId);
-                    $this->syncModel->setEntityType('tbl_user');
-                    $this->syncModel->setEntityId($this->id);
-                    $this->syncModel->setAction('upsert');
-                    $this->syncModel->save();
-                }
-            }
-
-            $this->db->commit();
-
-            // -----------------------------------------------------------------
-            // SYSTEM AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log(
-                'system',
-                'info',
-                sprintf("Modified identity account and refreshed edge network queue data for User ID: %d", $this->id),
-                null,
-                ['user_id' => $this->id, 'action' => 'user_update']
-            );
-
-            return $this->getUserById($this->id);
-        } catch (Throwable $e) {
-            $this->db->rollback();
-            throw $e;
         }
+
+        // 2. Safely check Nullable properties using internal visibility
+        if ($this->email !== null || isset($this->email)) { 
+            $fields[] = "email = ?";
+            $params[] = $this->email;
+        }
+        if ($this->username !== null || isset($this->username)) {
+            $fields[] = "username = ?";
+            $params[] = $this->username;
+        }
+
+        // 3. ONLY patch password if it was explicitly set to a hashed string by the controller
+        if ($this->password_hash !== null) {
+            $fields[] = "password_hash = ?";
+            $params[] = $this->password_hash;
+        }
+
+        if (!empty($fields)) {
+            $params[] = $this->id;
+            $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
+            $this->db->query($sql, $params);
+        }
+
+        // 4. Update child contextual relational bindings
+        if ($this->user_type === 'student') {
+            if ($this->class_id !== null) {
+                $sqlStudent = "UPDATE tbl_student SET class_id = ? WHERE user_id = ?";
+                $this->db->query($sqlStudent, [$this->class_id, $this->id]);
+            }
+        } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
+            $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
+            $this->db->query($sqlStaff, [$this->role_id, $this->id]);
+        }
+
+        // 5. Trigger network syncing records edge updates
+        $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+        if (!empty($terminals)) {
+            foreach ($terminals as $tId) {
+                $this->syncModel->setTerminalId($tId);
+                $this->syncModel->setEntityType('tbl_user');
+                $this->syncModel->setEntityId($this->id);
+                $this->syncModel->setAction('upsert');
+                $this->syncModel->save();
+            }
+        }
+
+        $this->db->commit();
+        return $this->getUserById($this->id);
+
+    } catch (Throwable $e) {
+        $this->db->rollback();
+        throw $e;
     }
+}
 
     public function deleteUser(int $id): bool
 {
@@ -436,10 +438,10 @@ public function listUsers(
     // 3. Pull Paginated Data rows
     // ---------------------------------------------------------
     $dataSql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status, u.email,
-                       CONCAT(u.fname, ' ', u.lname) AS name,
-                       c.class_name AS class,
+                       CONCAT(u.fname, ' ', u.lname) AS name, fname,lname,
+                       c.class_name AS class, c.id AS class_id,
                        u.user_type,
-                       r.role_name AS role,
+                       r.role_name AS role, r.id AS role_id,
                        CASE
                         WHEN u.user_type = 'staff'
                         THEN st.sregno
