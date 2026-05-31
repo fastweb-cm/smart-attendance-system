@@ -23,7 +23,7 @@ export const Step1Terminal: React.FC<Step1Props> = ({ onNext, initialBranches, i
     name: "authCapabilities",
   });
 
-  const { data: branches } = useBranches(initialBranches);
+  const { data: branches } = useBranches(); // fetch imidiately with no initial data
   
   const branchOptions = branches?.map((b: LookupBranch) => ({
     label: b.name,

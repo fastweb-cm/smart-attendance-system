@@ -17,16 +17,15 @@ export const useClasses = (initialData?: LookupClass[]) => {
     })
 }
 
-export const useBranches = (initialData: LookupBranch[] = []) => {
+export const useBranches = (initialData?: LookupBranch[]) => {
     return useQuery<LookupBranch[]> ({
         queryKey: ['branches'],
         queryFn: async () => {
             const response = await apiClient.get('/api/v1/lookup/branches');
             return response.data
         },
-        initialData,
+        initialData: initialData,
         staleTime: 1000 * 60 * 5,
-        refetchOnMount: true, 
     })
 }
 
