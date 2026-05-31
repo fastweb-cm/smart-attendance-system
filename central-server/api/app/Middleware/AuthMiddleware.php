@@ -26,6 +26,8 @@ class AuthMiddleware extends controller {
 
     public static function attempRefresh()
     {
+        $config = require __DIR__ . '/../../config/cookie.php';
+        
         $users = new Users();
         if (!isset($_COOKIE['refresh_token'])) {
             self::json([
@@ -66,9 +68,10 @@ class AuthMiddleware extends controller {
                     [
                         'expires' => time() + 86400 * 30, //30 days
                         'path' => '/', //only send cookie to this endpoint
+                        'domain' => $config['domain'],
                         'httponly' => true, //prevent Javascript access
                         'samesite' => 'Lax',
-                        'secure' => false
+                        'secure' => $config['secure']
                     ]
                     );
                 $newAccess = $jwtService->generateAccessToken($user);

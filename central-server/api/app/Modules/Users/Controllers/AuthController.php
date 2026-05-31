@@ -11,6 +11,7 @@ class AuthController extends controller
 {
     public function login()
     {
+        $config = require __DIR__ . '/../../config/cookie.php';
         if ($this->request() === 'POST'){
             $users = new Users();
 
@@ -50,8 +51,9 @@ class AuthController extends controller
                     [
                         'expires' => time() + 86400 * 30, //30 days
                         'path' => '/', //only send cookie to this endpoint
+                        'domain' => $config['domain'],
                         'httponly' => true, //prevent Javascript access
-                        'secure' => false, //change to true in production (only send cookie over HTTPS)
+                        'secure' => $config['secure'], //change to true in production (only send cookie over HTTPS)
                         'samesite' => 'Lax' // change to Strict in production
                     ]
                     );
