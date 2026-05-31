@@ -26,7 +26,7 @@ class AuthMiddleware extends controller {
 
     public static function attempRefresh()
     {
-        $config = require __DIR__ . '/../../config/cookie.php';
+        require dirname(__DIR__, 2) . '/config/cookie.php';
         
         $users = new Users();
         if (!isset($_COOKIE['refresh_token'])) {

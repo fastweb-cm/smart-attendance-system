@@ -11,7 +11,7 @@ class AuthController extends controller
 {
     public function login()
     {
-        $config = require __DIR__ . '/../../config/cookie.php';
+        require dirname(__DIR__, 4) . '/config/cookie.php';
         if ($this->request() === 'POST'){
             $users = new Users();
 
