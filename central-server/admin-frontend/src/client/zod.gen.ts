@@ -103,10 +103,10 @@ export const zUser = z.object({
     id: z.optional(z.int()),
     fname: z.string(),
     lname: z.string(),
-    email: z.union([
+    email: z.optional(z.union([
         z.string(),
         z.null()
-    ]),
+    ])),
     gender: z.optional(z.enum(['male', 'female'])),
     user_type: zUserType,
     status: z.optional(z.union([
@@ -125,6 +125,8 @@ export const zUserCreate = zUser;
 
 export const zUserResponse = z.object({
     id: z.optional(z.int()),
+    fname: z.optional(z.string()),
+    lname: z.optional(z.string()),
     name: z.optional(z.string()),
     email: z.optional(z.string()),
     gender: z.optional(z.enum(['male', 'female'])),
@@ -134,7 +136,9 @@ export const zUserResponse = z.object({
     class: z.optional(z.string()),
     user_type: z.optional(zUserType),
     regno: z.optional(z.string()),
-    username: z.optional(z.string())
+    username: z.optional(z.string()),
+    class_id: z.optional(z.int()),
+    role_id: z.optional(z.int())
 });
 
 export const zPaginatedUsersResponse = z.object({
@@ -666,7 +670,10 @@ export const zCreateUserData = z.object({
 /**
  * User created successfully
  */
-export const zCreateUserResponse = zUserResponse;
+export const zCreateUserResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
 
 export const zSyncUsersData = z.object({
     body: zSyncRequest,
@@ -719,7 +726,10 @@ export const zUpdateUserData = z.object({
 /**
  * User updated successfully
  */
-export const zUpdateUserResponse = zUserResponse;
+export const zUpdateUserResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
 
 export const zListRolesData = z.object({
     body: z.optional(z.never()),

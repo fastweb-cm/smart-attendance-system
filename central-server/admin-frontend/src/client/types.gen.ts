@@ -112,7 +112,7 @@ export type User = {
     id?: number;
     fname: string;
     lname: string;
-    email: string | null;
+    email?: string | null;
     gender?: 'male' | 'female';
     user_type: UserType;
     status?: string | null;
@@ -134,6 +134,8 @@ export type UserCreate = User;
 
 export type UserResponse = {
     id?: number;
+    fname?: string;
+    lname?: string;
     name?: string;
     email?: string;
     gender?: 'male' | 'female';
@@ -144,6 +146,8 @@ export type UserResponse = {
     user_type?: UserType;
     regno?: string;
     username?: string;
+    class_id?: number;
+    role_id?: number;
 };
 
 export type PaginatedUsersResponse = {
@@ -771,7 +775,10 @@ export type CreateUserResponses = {
     /**
      * User created successfully
      */
-    201: UserResponse;
+    201: {
+        success?: boolean;
+        message?: string;
+    };
 };
 
 export type CreateUserResponse = CreateUserResponses[keyof CreateUserResponses];
@@ -926,7 +933,10 @@ export type UpdateUserResponses = {
     /**
      * User updated successfully
      */
-    200: UserResponse;
+    201: {
+        success?: boolean;
+        message?: string;
+    };
 };
 
 export type UpdateUserResponse = UpdateUserResponses[keyof UpdateUserResponses];

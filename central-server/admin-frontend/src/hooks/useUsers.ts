@@ -1,8 +1,8 @@
 "use client";
 
-import { listUsersQueryKey } from "@/client/@tanstack/react-query.gen";
+import { getUserByIdQueryKey, listUsersQueryKey } from "@/client/@tanstack/react-query.gen";
 import { queryClient } from "@/lib/queryClient";
-import { userMutation, sycUsersMutation, deleteUserMut } from "@/services/users/mutations";
+import { userMutation, sycUsersMutation, deleteUserMut, updateUserMut } from "@/services/users/mutations";
 import { getUsersQuery, ListusersFilters, userQueryKey } from "@/services/users/queries";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
@@ -21,8 +21,8 @@ export const useUsers = (filters?: ListusersFilters) =>
 export const useCreateUser = () =>
     useMutation({
         ...userMutation(),
-        onSuccess: () =>
-            toast.success("User registered successfully"),
+        onSuccess: (res) =>
+            toast.success(res.message || "Employee registered successfully"),
         onError: (error) =>
             console.log(error.response?.status),
         onSettled: async (_, __, variables) => {
@@ -38,6 +38,38 @@ export const useCreateUser = () =>
             });
         }
     });
+
+// update empl hook
+export const useUpdateEmployee = () => {
+    return useMutation({
+        ...updateUserMut(),
+        onSuccess: (res) => {
+            toast.success(res.message || "Update operation was sucessful")
+        },
+        onError: (error) => {
+            toast.error(error.message || "An unexpected error occurred while updating user profile")
+        },
+        onSettled: async (_, __, variables) => {
+            const userId = (variables)?.path?.id;
+            const userType = (variables)?.body?.user_type;
+
+            // Flush individual user caches using the generated hook target index
+            if (userId) {
+                await queryClient.invalidateQueries({
+                    queryKey: getUserByIdQueryKey({ path: { id: userId } })
+                });
+            }
+
+            // Invalidate user listings filtered matching the current user's profile group
+            await queryClient.invalidateQueries({
+                queryKey: listUsersQueryKey({
+                    query: { user_type: userType }
+                }),
+                exact: false // Targets all filter variants and pagination indices
+            });
+        }
+    })
+}
 
 // delete employee mutation hook
 export const useDeleteEmployee = () => {

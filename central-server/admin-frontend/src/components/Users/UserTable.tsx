@@ -146,7 +146,7 @@ export default function UserTable({
                                         <button onClick={() => onView(u.id!)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition shadow-xs">
                                             <Eye className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={() => onEdit(u.id!)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-xs">
+                                        <button title={`Edit Record`} onClick={() => onEdit(u)} className="p-1.5 bg-white border border-slate-200 cursor-pointer rounded-lg text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-xs">
                                             <Edit2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>

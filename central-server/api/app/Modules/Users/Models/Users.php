@@ -173,7 +173,7 @@ public function updateUser(): ?array
         $fields = [];
         $params = [];
         
-        // 1. Core Non-Nullable fields
+        // 1. Standard non-nullable fields loop
         $updatableProps = [
             'fname', 'lname', 'gender', 'status', 
             'biometric_enrollment_status', 'class_id', 'user_type'
@@ -186,17 +186,18 @@ public function updateUser(): ?array
             }
         }
 
-        // 2. Safely check Nullable properties using internal visibility
-        if ($this->email !== null || isset($this->email)) { 
+        // 2. FIXED: Explicitly handle fields that can be cleared out completely
+        // Checking property uniqueness natively handles mapping explicit null updates
+        if (property_exists($this, 'email')) { 
             $fields[] = "email = ?";
             $params[] = $this->email;
         }
-        if ($this->username !== null || isset($this->username)) {
+        if (property_exists($this, 'username')) {
             $fields[] = "username = ?";
             $params[] = $this->username;
         }
 
-        // 3. ONLY patch password if it was explicitly set to a hashed string by the controller
+        // 3. Only patch password if a fresh string hash has been calculated
         if ($this->password_hash !== null) {
             $fields[] = "password_hash = ?";
             $params[] = $this->password_hash;
@@ -208,7 +209,7 @@ public function updateUser(): ?array
             $this->db->query($sql, $params);
         }
 
-        // 4. Update child contextual relational bindings
+        // 4. Update contextual child tables
         if ($this->user_type === 'student') {
             if ($this->class_id !== null) {
                 $sqlStudent = "UPDATE tbl_student SET class_id = ? WHERE user_id = ?";
@@ -219,7 +220,7 @@ public function updateUser(): ?array
             $this->db->query($sqlStaff, [$this->role_id, $this->id]);
         }
 
-        // 5. Trigger network syncing records edge updates
+        // 5. Fire sync records queue onto edge smart terminal points
         $terminals = $this->getUserGroupSubgroupTerminal($this->id);
         if (!empty($terminals)) {
             foreach ($terminals as $tId) {

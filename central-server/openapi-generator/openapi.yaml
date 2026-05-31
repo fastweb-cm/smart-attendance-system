@@ -239,7 +239,6 @@ components:
       required:
         - fname
         - lname
-        - email
         - user_type
       properties:
         id:
@@ -284,6 +283,10 @@ components:
       properties:
         id:
           type: integer
+        fname:
+          type: string
+        lname:
+          type: string
         name:
           type: string
         email:
@@ -306,6 +309,10 @@ components:
           type: string
         username:
           type: string
+        class_id:
+          type: integer
+        role_id:
+          type: integer
     PaginatedUsersResponse:
       type: object
       required:
@@ -1310,7 +1317,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1444,12 +1456,17 @@ paths:
             schema:
               $ref: "#/components/schemas/UserCreate"
       responses:
-        "200":
+        "201":
           description: User updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

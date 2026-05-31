@@ -261,8 +261,8 @@ public function update(int $id): void
 
     if ($updatedUser) {
         $this->json([
-            'message' => 'Account profile saved and updated successfully',
-            'user' => $updatedUser
+            'message' => 'Account profile updated successfully',
+            'success' => true
         ], 200);
     } else {
         $this->json(['error' => 'Failed to save account identity properties updates'], 500);

@@ -17,7 +17,7 @@ export default function UsersDirectoryView() {
   // Navigation & Form State Hooks
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [formUserType, setFormUserType] = useState<"student" | "staff">("student");
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | undefined>(undefined);
+  const [selectedEmployee, setSelectedEmployee] = useState<UserResponse | undefined>(undefined);
 
   const [filters, setFilters] = useState<ListusersFilters>({
     user_type: undefined,
@@ -75,21 +75,21 @@ export default function UsersDirectoryView() {
   };
 
   const handleOpenCreate = (type: "student" | "staff") => {
-    setSelectedEmployeeId(undefined);
+    setSelectedEmployee(undefined);
     setFormUserType(type);
     setViewMode("form");
   };
 
   const handleOpenEdit = (user: UserResponse) => {
     if (user.id === undefined) return;
-    setSelectedEmployeeId(user.id);
+    setSelectedEmployee(user);
     // Dynamically match user type coming out of row mapping
     setFormUserType(user.user_type === "staff" ? "staff" : "student");
     setViewMode("form");
   };
 
   const handleCloseForm = () => {
-    setSelectedEmployeeId(undefined);
+    setSelectedEmployee(undefined);
     setViewMode("table");
   };
 
@@ -107,8 +107,8 @@ export default function UsersDirectoryView() {
         </div>
 
         <EmployeeForm 
-          employeeId={selectedEmployeeId} 
-          userType={formUserType} 
+          initialData={selectedEmployee}
+          fallbackUserType={formUserType} 
         />
       </div>
     );
@@ -145,7 +145,7 @@ export default function UsersDirectoryView() {
       <UserTable
         users={responseMatrix?.data ?? []}
         onView={(id) => console.log('View: ', id)}
-        onEdit={(id) => console.log('Edit: ', id)}
+        onEdit={handleOpenEdit}
         onDelete={handleDeleteTrigger}
         paginationMeta={{
           total_records: responseMatrix?.meta?.total_records ?? 0,

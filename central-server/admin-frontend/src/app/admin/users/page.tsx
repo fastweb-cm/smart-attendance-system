@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function GlobalUsersDirectoryPage() {
   return (
-    <div className="my-4 max-w-6xl space-y-6">
+    <div className="my-4 space-y-6">
       
       {/* Page Header Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
