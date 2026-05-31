@@ -5,7 +5,7 @@ import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
 import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteEvent, deleteException, deletePermission, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getAllPermissions, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, reviewPermission, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, DeleteUserResponse, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -109,6 +109,62 @@ export const listUsersOptions = (options?: Options<ListUsersData>) => queryOptio
     queryKey: listUsersQueryKey(options)
 });
 
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const listUsersInfiniteQueryKey = (options?: Options<ListUsersData>): QueryKey<Options<ListUsersData>> => createQueryKey('listUsers', options, true);
+
+/**
+ * List all users
+ */
+export const listUsersInfiniteOptions = (options?: Options<ListUsersData>) => infiniteQueryOptions<ListUsersResponse, AxiosError<DefaultError>, InfiniteData<ListUsersResponse>, QueryKey<Options<ListUsersData>>, number | Pick<QueryKey<Options<ListUsersData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<ListUsersData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                page: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await listUsers({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listUsersInfiniteQueryKey(options)
+});
+
 /**
  * Create a new user
  */
@@ -146,8 +202,8 @@ export const syncUsersMutation = (options?: Partial<Options<SyncUsersData>>): Us
 /**
  * Delete a user
  */
-export const deleteUserMutation = (options?: Partial<Options<DeleteUserData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteUserData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteUserData>> = {
+export const deleteUserMutation = (options?: Partial<Options<DeleteUserData>>): UseMutationOptions<DeleteUserResponse, AxiosError<DefaultError>, Options<DeleteUserData>> => {
+    const mutationOptions: UseMutationOptions<DeleteUserResponse, AxiosError<DefaultError>, Options<DeleteUserData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await deleteUser({
                 ...options,
@@ -465,35 +521,6 @@ export const getAllPermissionsOptions = (options?: Options<GetAllPermissionsData
     },
     queryKey: getAllPermissionsQueryKey(options)
 });
-
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
 
 export const getAllPermissionsInfiniteQueryKey = (options?: Options<GetAllPermissionsData>): QueryKey<Options<GetAllPermissionsData>> => createQueryKey('getAllPermissions', options, true);
 

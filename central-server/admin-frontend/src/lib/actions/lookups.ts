@@ -64,3 +64,14 @@ export async function getUsers(userType: string): Promise<Lookup[]> {
     const data: Lookup[] = await response.json();
     return data as Lookup[];
 }
+
+export async function getEmployeeRoles(): Promise<Lookup[]> {
+    const res = await fetch(`${baseUrl}/api/v1/lookup/roles`)
+
+    if (!res.ok) {
+        throw new Error(`Failed to fetch employee roles: ${res.statusText}`);
+    }
+
+    const data: Lookup[] = await res.json();
+    return data as Lookup[];
+}

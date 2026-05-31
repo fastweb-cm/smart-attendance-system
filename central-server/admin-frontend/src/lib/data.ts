@@ -45,18 +45,9 @@ export const sidebarMenItems = [
       //   icon: UserPlus,
       // },
       {
-        title: "Users",
+        title: "Employees",
         icon: Users,
-        children: [
-          {
-            title: "Students",
-            url: "/admin/users/students",
-          },
-          {
-            title: "Staff",
-            url: "/admin/users/staff",
-          },
-        ],
+        url: "/admin/users"
       },
 
       // {

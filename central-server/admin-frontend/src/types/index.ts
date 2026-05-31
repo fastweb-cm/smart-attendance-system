@@ -1,6 +1,6 @@
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import type { AttendanceLedgerData, FetchLogsResponses, GetAllPermissionsResponses } from "@/client";
+import type { AttendanceLedgerData, FetchLogsResponses, GetAllPermissionsResponses, UserResponse } from "@/client";
 
 interface Option {
   label: string
@@ -297,4 +297,12 @@ export interface PermissionFilterProps {
   filters: PermissionQueryParams;
   onFilterChange: (key: keyof PermissionQueryParams, value: string | undefined) => void;
   onReset: () => void;
+}
+
+export interface UserTableProps {
+  users: UserResponse[];
+  paginationMeta: PaginationMetaProps;
+  onView: (id: number) => void;
+  onEdit: (user: UserResponse) => void;
+  onDelete: (user: UserResponse) => void;
 }

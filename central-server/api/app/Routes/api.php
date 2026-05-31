@@ -33,6 +33,7 @@ $router->post('/api/v1/auth/refresh', [AuthMiddleware::class, 'attempRefresh']);
 |--------------------------
 */
 $router->get('/api/v1/lookup/classes', [UserController::class, 'getClasses']);
+$router->get('/api/v1/lookup/roles', [UserController::class, 'getRoles']);
 $router->get('/api/v1/lookup/users', [UserController::class, 'getUsersByType']);
 $router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
 $router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
@@ -40,7 +41,6 @@ $router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPo
 $router->get('/api/v1/lookup/permissions/types', [PermissionController::class, 'types']);
 
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
-
 /*
 |--------------------------
 |  Sync Routes
@@ -64,6 +64,8 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
 
     $router->get('/api/v1/users', [UserController::class, 'index']);
     $router->post('/api/v1/users', [UserRegistrationController::class, 'register']);
+    $router->delete('/api/v1/users/{id}', [UserController::class, 'destroy']);
+    $router->put('/api/v1/users/{id}', [UserController::class, 'update']);
 
     //branch routes
     $router->post('/api/v1/branch', [BranchController::class, 'store']);

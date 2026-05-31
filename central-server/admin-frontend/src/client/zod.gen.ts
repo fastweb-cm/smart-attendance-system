@@ -103,10 +103,16 @@ export const zUser = z.object({
     id: z.optional(z.int()),
     fname: z.string(),
     lname: z.string(),
-    email: z.string(),
+    email: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
     gender: z.optional(z.enum(['male', 'female'])),
     user_type: zUserType,
-    status: z.optional(zUserStatus),
+    status: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role_id: z.optional(z.int()),
     class_id: z.optional(z.int()),
@@ -119,6 +125,8 @@ export const zUserCreate = zUser;
 
 export const zUserResponse = z.object({
     id: z.optional(z.int()),
+    fname: z.optional(z.string()),
+    lname: z.optional(z.string()),
     name: z.optional(z.string()),
     email: z.optional(z.string()),
     gender: z.optional(z.enum(['male', 'female'])),
@@ -126,8 +134,16 @@ export const zUserResponse = z.object({
     biometric_enrollment_status: z.optional(zBiometricEnrollmentStatus),
     role: z.optional(z.string()),
     class: z.optional(z.string()),
-    studentregno: z.optional(z.string()),
-    username: z.optional(z.string())
+    user_type: z.optional(zUserType),
+    regno: z.optional(z.string()),
+    username: z.optional(z.string()),
+    class_id: z.optional(z.int()),
+    role_id: z.optional(z.int())
+});
+
+export const zPaginatedUsersResponse = z.object({
+    data: z.array(zUserResponse),
+    meta: zPaginationMeta
 });
 
 export const zStudentInput = z.object({
@@ -622,15 +638,28 @@ export const zListUsersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        user_type: z.optional(zUserType),
-        status: z.optional(zUserStatus)
+        user_type: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        status: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        search: z.optional(z.string()),
+        page: z.optional(z.int()).default(1),
+        role: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        limit: z.optional(z.int()).default(10)
     }))
 });
 
 /**
- * List of users
+ * Paginated matrix list of system users
  */
-export const zListUsersResponse = z.array(zUserResponse);
+export const zListUsersResponse = zPaginatedUsersResponse;
 
 export const zCreateUserData = z.object({
     body: zUserCreate,
@@ -641,7 +670,10 @@ export const zCreateUserData = z.object({
 /**
  * User created successfully
  */
-export const zCreateUserResponse = zUserResponse;
+export const zCreateUserResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
 
 export const zSyncUsersData = z.object({
     body: zSyncRequest,
@@ -660,6 +692,14 @@ export const zDeleteUserData = z.object({
         id: z.int()
     }),
     query: z.optional(z.never())
+});
+
+/**
+ * User deleted successfully
+ */
+export const zDeleteUserResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
 });
 
 export const zGetUserByIdData = z.object({
@@ -686,7 +726,10 @@ export const zUpdateUserData = z.object({
 /**
  * User updated successfully
  */
-export const zUpdateUserResponse = zUserResponse;
+export const zUpdateUserResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
 
 export const zListRolesData = z.object({
     body: z.optional(z.never()),

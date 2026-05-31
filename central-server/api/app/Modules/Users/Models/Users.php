@@ -163,90 +163,110 @@ class Users
         $this->db->query($sql, $params);
     }
 
-    public function updateUser(): ?array
-    {
-        if (!$this->id) return null;
+public function updateUser(): ?array
+{
+    if (!$this->id) return null;
 
-        try {
-            $this->db->beginTransaction();
+    try {
+        $this->db->beginTransaction();
 
-            $fields = [];
-            $params = [];
-            $props = [
-                'fname', 'lname', 'email', 'gender', 'username', 'password_hash', 
-                'status', 'biometric_enrollment_status', 'class_id', 'user_type'
-            ];
-
-            foreach ($props as $prop) {
-                if ($this->$prop !== null) {
-                    $fields[] = "$prop = ?";
-                    $params[] = $this->$prop;
-                }
-            }
-
-            if (!empty($fields)) {
-                $params[] = $this->id;
-                $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
-                $this->db->query($sql, $params);
-            }
-
-            if ($this->user_type === 'student') {
-                $fieldsStudent = [];
-                $paramsStudent = [];
-                if ($this->class_id !== null) {
-                    $fieldsStudent[] = "class_id = ?";
-                    $paramsStudent[] = $this->class_id;
-                }
-                if (!empty($fieldsStudent)) {
-                    $paramsStudent[] = $this->id;
-                    $sqlStudent = "UPDATE tbl_student SET " . implode(", ", $fieldsStudent) . " WHERE user_id = ?";
-                    $this->db->query($sqlStudent, $paramsStudent);
-                }
-            } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
-                $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
-                $this->db->query($sqlStaff, [$this->role_id, $this->id]);
-            }
-
-            $terminals = $this->getUserGroupSubgroupTerminal($this->id);
-            if (!empty($terminals)) {
-                foreach ($terminals as $tId) {
-                    $this->syncModel->setTerminalId($tId);
-                    $this->syncModel->setEntityType('tbl_user');
-                    $this->syncModel->setEntityId($this->id);
-                    $this->syncModel->setAction('upsert');
-                    $this->syncModel->save();
-                }
-            }
-
-            $this->db->commit();
-
-            // -----------------------------------------------------------------
-            // SYSTEM AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log(
-                'system',
-                'info',
-                sprintf("Modified identity account and refreshed edge network queue data for User ID: %d", $this->id),
-                null,
-                ['user_id' => $this->id, 'action' => 'user_update']
-            );
-
-            return $this->getUserById($this->id);
-        } catch (Throwable $e) {
-            $this->db->rollback();
-            throw $e;
-        }
-    }
-
-    public function deleteUser(): bool
-    {
-        if (!$this->id) return false;
+        $fields = [];
+        $params = [];
         
-        $sql = "DELETE FROM tbl_user WHERE id = ?";
-        $this->db->query($sql, [$this->id]);
+        // 1. Standard non-nullable fields loop
+        $updatableProps = [
+            'fname', 'lname', 'gender', 'status', 
+            'biometric_enrollment_status', 'class_id', 'user_type'
+        ];
+        
+        foreach ($updatableProps as $prop) {
+            if ($this->$prop !== null) {
+                $fields[] = "$prop = ?";
+                $params[] = $this->$prop;
+            }
+        }
+
+        // 2. FIXED: Explicitly handle fields that can be cleared out completely
+        // Checking property uniqueness natively handles mapping explicit null updates
+        if (property_exists($this, 'email')) { 
+            $fields[] = "email = ?";
+            $params[] = $this->email;
+        }
+        if (property_exists($this, 'username')) {
+            $fields[] = "username = ?";
+            $params[] = $this->username;
+        }
+
+        // 3. Only patch password if a fresh string hash has been calculated
+        if ($this->password_hash !== null) {
+            $fields[] = "password_hash = ?";
+            $params[] = $this->password_hash;
+        }
+
+        if (!empty($fields)) {
+            $params[] = $this->id;
+            $sql = "UPDATE tbl_user SET " . implode(", ", $fields) . " WHERE id = ?";
+            $this->db->query($sql, $params);
+        }
+
+        // 4. Update contextual child tables
+        if ($this->user_type === 'student') {
+            if ($this->class_id !== null) {
+                $sqlStudent = "UPDATE tbl_student SET class_id = ? WHERE user_id = ?";
+                $this->db->query($sqlStudent, [$this->class_id, $this->id]);
+            }
+        } elseif ($this->user_type === 'staff' && $this->role_id !== null) {
+            $sqlStaff = "UPDATE tbl_staff SET role_id = ? WHERE user_id = ?";
+            $this->db->query($sqlStaff, [$this->role_id, $this->id]);
+        }
+
+        // 5. Fire sync records queue onto edge smart terminal points
+        $terminals = $this->getUserGroupSubgroupTerminal($this->id);
+        if (!empty($terminals)) {
+            foreach ($terminals as $tId) {
+                $this->syncModel->setTerminalId($tId);
+                $this->syncModel->setEntityType('tbl_user');
+                $this->syncModel->setEntityId($this->id);
+                $this->syncModel->setAction('upsert');
+                $this->syncModel->save();
+            }
+        }
+
+        $this->db->commit();
+        return $this->getUserById($this->id);
+
+    } catch (Throwable $e) {
+        $this->db->rollback();
+        throw $e;
+    }
+}
+
+    public function deleteUser(int $id): bool
+{
+    if (!$id) return false;
+
+    // Begin transaction sequence to ensure total atomic integrity across multiple tables
+    $this->db->beginTransaction();
+
+    try {
+        //  Clear child relational logs first to avoid reference lock violations
+        $sqlStudent = "DELETE FROM tbl_student WHERE user_id = ?";
+        $this->db->query($sqlStudent, [$id]);
+
+        $sqlStaff = "DELETE FROM tbl_staff WHERE user_id = ?";
+        $this->db->query($sqlStaff, [$id]);
+
+        // Erase core primary auth profile row
+        $sqlUser = "DELETE FROM tbl_user WHERE id = ?";
+        $this->db->query($sqlUser, [$id]);
+
+        // Check if the main record was actually dropped
         $affected = $this->db->affectedRows() > 0;
 
         if ($affected) {
+            // Commit all deletions to disk simultaneously
+            $this->db->commit();
+
             // -----------------------------------------------------------------
             // SYSTEM AUDIT LOG
             // -----------------------------------------------------------------
@@ -257,10 +277,22 @@ class Users
                 null,
                 ['user_id' => $this->id, 'action' => 'user_delete']
             );
+
+            return true;
         }
 
-        return $affected;
+        // If no rows were changed, something went wrong; roll back changes safely
+        $this->db->rollBack();
+        return false;
+
+    } catch (Throwable $e) {
+        // Reverse all executed components if any query throws an exception
+        $this->db->rollBack();
+
+        throw $e; // Re-throw exception to be handled by controller layer
+
     }
+}
 
     public function getUserById(int $id): ?array
     {
@@ -347,45 +379,107 @@ class Users
         return false;
     }
 
-    public function listUsers(?string $userType = null, ?string $status = null, int $limit = 100, int $offset = 0): array
-    {
-        $sql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status,
-               CONCAT(u.fname, ' ', u.lname) AS name,
-               c.class_name AS class,
-               r.role_name AS role,
-               s.regno AS studentregno
-        FROM tbl_user u
-        LEFT JOIN tbl_student s ON u.id = s.user_id
-        LEFT JOIN tbl_class c ON u.class_id = c.id
-        LEFT JOIN tbl_staff st ON u.id = st.user_id
-        LEFT JOIN lkup_role r ON st.role_id = r.id";
-        
-        $conditions = [];
-        $params = [];
+public function listUsers(
+    ?string $userType = null, 
+    ?string $status = null, 
+    ?string $role = null, // Injected optional string role matching
+    ?string $search = null, 
+    int $limit = 10, 
+    int $offset = 0
+): array {
+    // ---------------------------------------------------------
+    // 1. Build Base Query Conditions & Bind parameters
+    // ---------------------------------------------------------
+    $conditions = [];
+    $params = [];
 
-        if ($userType) {
-            $conditions[] = "u.user_type = ?";
-            $params[] = $userType;
-        }
-        if ($status) {
-            $conditions[] = "u.status = ?";
-            $params[] = $status;
-        }
-
-        if (!empty($conditions)) {
-            $sql .= " WHERE " . implode(" AND ", $conditions);
-        }
-
-        $result = $this->db->query($sql, $params);
-        $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
-        }
-        return $users;
+    if ($userType) {
+        $conditions[] = "u.user_type = ?";
+        $params[] = $userType;
+    }
+    if ($status) {
+        $conditions[] = "u.status = ?";
+        $params[] = $status;
+    }
+    if ($role) {
+        // Enforces lookup comparison mapping against the linked role description matrix
+        $conditions[] = "r.role_name = ?";
+        $params[] = $role;
+    }
+    
+    // Add flexible loose search match across names and registration numbers
+    if ($search) {
+        $conditions[] = "(u.fname LIKE ? OR u.lname LIKE ? OR s.regno LIKE ? OR st.sregno LIKE ?)";
+        $searchParam = "%" . $search . "%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam; // Appended additional search parameter coverage for staff reg strings
     }
 
+    $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
+
+    // ---------------------------------------------------------
+    // 2. Count Total Records matching these exact criteria first
+    // ---------------------------------------------------------
+    $countSql = "SELECT COUNT(DISTINCT u.id) as total 
+                 FROM tbl_user u
+                 LEFT JOIN tbl_student s ON u.id = s.user_id
+                 LEFT JOIN tbl_class c ON u.class_id = c.id
+                 LEFT JOIN tbl_staff st ON u.id = st.user_id
+                 LEFT JOIN lkup_role r ON st.role_id = r.id" . $whereClause;
+                 
+    $countResult = $this->db->query($countSql, $params);
+    $totalRecords = 0;
+    if ($countResult && $row = $countResult->fetch_assoc()) {
+        $totalRecords = (int)$row['total'];
+    }
+
+    // ---------------------------------------------------------
+    // 3. Pull Paginated Data rows
+    // ---------------------------------------------------------
+    $dataSql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status, u.email,
+                       CONCAT(u.fname, ' ', u.lname) AS name, fname,lname,
+                       c.class_name AS class, c.id AS class_id,
+                       u.user_type,
+                       r.role_name AS role, r.id AS role_id,
+                       CASE
+                        WHEN u.user_type = 'staff'
+                        THEN st.sregno
+                        ELSE s.regno
+                       END AS regno
+                FROM tbl_user u
+                LEFT JOIN tbl_student s ON u.id = s.user_id
+                LEFT JOIN tbl_class c ON u.class_id = c.id
+                LEFT JOIN tbl_staff st ON u.id = st.user_id
+                LEFT JOIN lkup_role r ON st.role_id = r.id" 
+                . $whereClause . 
+                " ORDER BY u.fname, u.lname ASC LIMIT ? OFFSET ?";
+
+    // Push pagination integers into executing variable parameter streams
+    $dataParams = array_merge($params, [$limit, $offset]);
+
+    $result = $this->db->query($dataSql, $dataParams);
+    $users = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 4. Return Structured Matrix Payload
+    // ---------------------------------------------------------
+    return [
+        "data" => $users,
+        "meta" => [
+            "total_records" => $totalRecords,
+            "limit"         => $limit,
+            "offset"        => $offset,
+            "total_pages"   => ceil($totalRecords / $limit)
+        ]
+    ];
+}
     public function getUserGroupSubgroupTerminal(int $userId): array
     {
         $sql = "SELECT DISTINCT terminal_id 
@@ -604,6 +698,13 @@ class Users
     public function getClasses(): array
     {
         $sql = "SELECT id, class_name FROM tbl_class ORDER BY class_name ASC";
+        $res = $this->db->query($sql, []);
+        return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    public function getEmployeeRoles(): array
+    {
+        $sql = "SELECT id, role_name AS name FROM lkup_role";
         $res = $this->db->query($sql, []);
         return $res && $res->num_rows > 0 ? $res->fetch_all(MYSQLI_ASSOC) : [];
     }
