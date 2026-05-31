@@ -18,6 +18,10 @@ RUN pip install --no-cache-dir --default-timeout=5000 cryptography==42.0.5
 COPY requirements.txt .
 RUN pip install --no-cache-dir --default-timeout=5000 -r requirements.txt
 
+# Copy and run preload script to bake weights into the image ---
+COPY preload_models.py .
+RUN python preload_models.py
+
 COPY . .
 
 CMD ["python", "run.py"]
