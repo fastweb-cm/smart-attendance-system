@@ -46,7 +46,7 @@ export default function LoginForm() {
         <div className="absolute -top-7 left-1/2 -translate-x-1/2">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-2xl">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-                    <Image src="/logo.jpg" alt="Logo" width={32} height={32} />
+                    <Image src="/logo.png" alt="FastWEB Logo" width={32} height={32} />
                 </div>
             </div>
         </div>

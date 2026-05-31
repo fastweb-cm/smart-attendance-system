@@ -22,7 +22,8 @@ jobs:
                   REMOTE_PORT: 21098
                   SOURCE: "central-server/api/"
                   TARGET: "/home/fastxrdj/api.smartattendance.fastwebcm.org/"
-                  ARGS: "-rltgoDzvO --delete"
+                  # Add --exclude='.env' to your ARGS
+                  ARGS: "-rltgoDzvO --delete --exclude='.env'"
 
             # Step 2: Install dependencies on the server
             - name: Install Dependencies

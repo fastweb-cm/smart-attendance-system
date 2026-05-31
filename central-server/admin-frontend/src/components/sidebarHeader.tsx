@@ -21,7 +21,7 @@ export default function SidebarHead() {
               className="flex items-center gap-1 font-semibold group-data-[collapsible=icon]:gap-0"
             >
               {/* Logo container */}
-              <Image src="/logo.jpg" alt="logo" width={32} height={32} />
+              <Image src="/logo.png" alt="FastWEB logo" width={32} height={32} />
 
               {/* App name */}
               <span
@@ -30,7 +30,7 @@ export default function SidebarHead() {
                   group-data-[collapsible=icon]:hidden text-primary
                 "
               >
-                SSEC
+                FastWEB
               </span>
             </Link>
           </SidebarMenuButton>

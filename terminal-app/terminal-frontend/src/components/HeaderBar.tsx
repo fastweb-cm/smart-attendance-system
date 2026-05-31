@@ -8,7 +8,7 @@ export default function HeaderBar() {
     <div className="flex items-center justify-between">
         {/* logo */}
         <div className="flex items-center space-x-2">
-            <Image src="/logo.jpg" alt="Logo" width={32} height={32} />
+            <Image src="/logo.png" alt="FastWEB Logo" width={32} height={32} />
             <span className="text-xl font-bold text-primary">SSEC Bamenda</span>
         </div>
         {/* branchname */}
