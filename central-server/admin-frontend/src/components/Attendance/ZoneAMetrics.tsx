@@ -95,7 +95,7 @@ export default function ZoneAMetrics({
         <div className="bg-amber-50/60 p-2.5 rounded-lg border border-amber-200 text-center flex flex-col justify-between shadow-sm">
           <span className="text-[10px] text-amber-800 font-bold font-mono block leading-tight">Late Arrivals</span>
           <span className="text-lg font-extrabold font-mono text-amber-600 mt-1.5">{metrics.late}d</span>
-          <span className="text-[9px] text-amber-500 font-mono mt-0.5">Over Buffer</span>
+          <span className="text-[9px] text-amber-500 font-mono mt-0.5">Late Checkins</span>
         </div>
 
         {/* Excused Leave / Permissions */}

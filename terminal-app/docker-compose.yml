@@ -45,6 +45,8 @@ services:
       - DB_PASSWORD=Password@2025
       - DB_NAME=db_terminal
       - ADMIN_API_URL=http://localhost:8087/api/v1 # The Central Admin IP
+    volumes:
+      - ./api/sync_config.json:/app/sync_config.json
     restart: always
 
   # Next.js Frontend

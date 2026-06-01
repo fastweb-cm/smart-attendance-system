@@ -142,7 +142,7 @@ export default function TerminalPage() {
           ${direction === "checkin" ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"}`}>
           <ChevronRight className="w-10 h-10 rotate-90" />
         </div>
-        <h2 className="text-3xl font-bold text-slate-900">{identifiedUser ? `${direction === "checkin" ? "Welcome back" : "Goodbye"}, ${identifiedUser.fName}!` : "Attendance Recorded"}</h2>
+        <h2 className="text-3xl font-bold text-slate-900">{identifiedUser ? `${direction === "checkin" ? "Welcome" : "Goodbye"}, ${identifiedUser.fName}!` : "Attendance Recorded"}</h2>
         <p className="text-slate-500 mt-2 font-medium text-lg">
             {identifiedUser 
                 ? `You have successfully ${direction}. Have a great ${direction === "checkin" ? "day" : "evening"} ${identifiedUser.fName} ${identifiedUser.lName}!`
@@ -291,6 +291,7 @@ export default function TerminalPage() {
         onClick={() => {
           reset();
           setStarted(false);
+          window.location.reload();
         }
         }
         className="mt-4 mx-auto block text-slate-400 font-medium hover:text-red-500 text-sm transition-colors"
