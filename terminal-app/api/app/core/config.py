@@ -33,7 +33,7 @@ def get_sync_config():
     # Default values
     default_config = {
         "last_sync_timestamp": "2000-01-01 00:00:00",
-        "terminal_id": 9
+        "terminal_id": 0
     }
 
     if os.path.exists(CONFIG_FILE_PATH):
@@ -42,7 +42,7 @@ def get_sync_config():
                 data = json.load(f)
                 return {
                     "last_sync_timestamp": data.get("last_sync_timestamp", default_config["last_sync_timestamp"]),
-                    "terminal_id": data.get("terminal_id", 0)
+                    "terminal_id": data.get("terminal_id", default_config["terminal_id"])
                 }
         except json.JSONDecodeError:
             return default_config
@@ -53,12 +53,18 @@ def get_sync_config():
 def update_last_sync_time(timestamp=None):
     if timestamp is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Read existing config first to preserve terminal_id!
+    config = get_sync_config()
+    config['last_sync_timestamp'] = timestamp
+
     with open(CONFIG_FILE_PATH, 'w') as f:
-        json.dump({'last_sync_time': timestamp}, f)
+        json.dump(config, f, indent=4)
 
 
-def update_terminal_id(terminal_id):
+def update_terminal_id(terminal_id: int):
     config = get_sync_config()
     config['terminal_id'] = terminal_id
+
     with open(CONFIG_FILE_PATH, 'w') as f:
-        json.dump(config, f)
+        json.dump(config, f, indent=4)

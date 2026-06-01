@@ -3,14 +3,15 @@
 import fs from "fs";
 import path from "path";
 import { terminalConfiguration } from "@/types";
+import { revalidatePath } from "next/cache";
 
 export async function createTerminalConfig(data: terminalConfiguration) {
-    const configDir = path.join(process.cwd(), 'terminal-configs');
+    const configDir = process.env.TERMINAL_CONFIG_DIR || path.join(process.cwd(), 'terminal-configs');
     const configPath = path.join(configDir, "config.json");
     
     //ensure the dir exists
     if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir);
+        fs.mkdirSync(configDir, { recursive: true });
     }
 
     // commit the configuration file
@@ -24,4 +25,7 @@ export async function createTerminalConfig(data: terminalConfiguration) {
         auth_capabilities: data.auth_capabilities,
         auth_policy: data.access_policy,
     },null, 2));
+
+    // Tells Next.js to throw away cached layouts and fetch fresh data from the disk
+    revalidatePath("/", "layout"); 
 }

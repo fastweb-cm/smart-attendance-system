@@ -79,7 +79,6 @@ import { AuthType, User } from "@/types";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
-  console.log(config)
 
   //memoized steps to avoid rebuilding on every render, only when config changes
   const steps = useMemo(

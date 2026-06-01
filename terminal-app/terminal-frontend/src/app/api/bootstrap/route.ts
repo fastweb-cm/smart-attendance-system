@@ -263,6 +263,11 @@ export async function POST(request: Request) {
 
     const data = await request.json();
 
+    if (!data || !data.id) {
+      return NextResponse.json({ success: false, message: "Missing payload data specifications" }, { status: 400 });
+    }
+
+
     // ========================
     // TRANSACTION START
     // ========================
@@ -273,149 +278,149 @@ export async function POST(request: Request) {
     // INSERT TERMINAL
     // ========================
 
-    // await connection.query(
-    //   `INSERT INTO tbl_terminal 
-    //   (id, name, slug, branch_id, branch_name, status, date_created)
-    //   VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    //   [
-    //     data.id,
-    //     data.name,
-    //     data.slug,
-    //     data.branch_id,
-    //     data.branch,
-    //     data.status,
-    //     data.date_created,
-    //   ]
-    // );
+    await connection.query(
+      `INSERT INTO tbl_terminal 
+      (id, name, slug, branch_id, branch_name, status, date_created)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.id,
+        data.name,
+        data.slug,
+        data.branch_id,
+        data.branch,
+        data.status,
+        data.date_created,
+      ]
+    );
 
     // ========================
     // AUTH CAPABILITIES
     // ========================
 
-    // for (const auth of data.auth_capabilities || []) {
-    //   await connection.query(
-    //     `INSERT INTO tbl_auth_capabilities 
-    //     (terminal_id, auth_type_id, auth_step, auth_type_name)
-    //     VALUES (?, ?, ?, ?)`,
-    //     [
-    //       auth.terminal_id,
-    //       auth.auth_type_id,
-    //       auth.auth_step,
-    //       auth.auth_type_name,
-    //     ]
-    //   );
-    // }
+    for (const auth of data.auth_capabilities || []) {
+      await connection.query(
+        `INSERT INTO tbl_auth_capabilities 
+        (terminal_id, auth_type_id, auth_step, auth_type_name)
+        VALUES (?, ?, ?, ?)`,
+        [
+          auth.terminal_id,
+          auth.auth_type_id,
+          auth.auth_step,
+          auth.auth_type_name,
+        ]
+      );
+    }
 
     // ========================
     // AUTH POLICY
     // ========================
 
-    // for (const policy of data.access_policy || []) {
-    //   await connection.query(
-    //     `INSERT INTO tbl_auth_policy 
-    //     (id, terminal_id, group_id, subgroup_id, auth_type_id, group_name, auth_type_name)
-    //     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    //     [
-    //       policy.id,
-    //       policy.terminal_id,
-    //       policy.group_id,
-    //       policy.subgroup_id,
-    //       policy.auth_type_id,
-    //       policy.group_name,
-    //       policy.auth_type_name,
-    //     ]
-    //   );
-    // }
+    for (const policy of data.access_policy || []) {
+      await connection.query(
+        `INSERT INTO tbl_auth_policy 
+        (id, terminal_id, group_id, subgroup_id, auth_type_id, group_name, auth_type_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          policy.id,
+          policy.terminal_id,
+          policy.group_id,
+          policy.subgroup_id,
+          policy.auth_type_id,
+          policy.group_name,
+          policy.auth_type_name,
+        ]
+      );
+    }
 
     // ========================
     // MEMBERS (WITH BLOBS)
     // ========================
 
-    // for (const member of data.members || []) {
-    //   await connection.query(
-    //     `INSERT INTO tbl_user 
-    //     (id,terminal_id, fname, lname, gender, user_type,
-    //      face_template, fingerprint_template, card_serial_code)
-    //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    //     [
-    //       member.id,
-    //       data.id,
-    //       member.fname,
-    //       member.lname,
-    //       member.gender,
-    //       member.user_type,
-    //       base64ToBuffer(member.face_template),
-    //       base64ToBuffer(member.fingerprint_template),
-    //       member.card_serial_code,
-    //     ]
-    //   );
-    // }
+    for (const member of data.members || []) {
+      await connection.query(
+        `INSERT INTO tbl_user 
+        (id,terminal_id, fname, lname, gender, user_type,
+         face_template, fingerprint_template, card_serial_code)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          member.id,
+          data.id,
+          member.fname,
+          member.lname,
+          member.gender,
+          member.user_type,
+          base64ToBuffer(member.face_template),
+          base64ToBuffer(member.fingerprint_template),
+          member.card_serial_code,
+        ]
+      );
+    }
 
-    // for (const event of data.events || []) {
-    //   const [result] = await connection.query(
-    //     `INSERT INTO tbl_event 
-    //     (id, name, start_datetime, end_datetime, affects_attendance, created_by, handshake,created_at,updated_at)
-    //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    //     [
-    //       event.id,
-    //       event.name,
-    //       event.start_datetime,
-    //       event.end_datetime,
-    //       event.affects_attendance,
-    //       event.created_by,
-    //       event.handshake,
-    //       event.created_at,
-    //       event.updated_at,
-    //     ]
-    //   );
+    for (const event of data.events || []) {
+      const [result] = await connection.query(
+        `INSERT INTO tbl_event 
+        (id, name, start_datetime, end_datetime, affects_attendance, created_by, handshake,created_at,updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          event.id,
+          event.name,
+          event.start_datetime,
+          event.end_datetime,
+          event.affects_attendance,
+          event.created_by,
+          event.handshake,
+          event.created_at,
+          event.updated_at,
+        ]
+      );
 
-    //   const range = event.checkinout_range;
+      const range = event.checkinout_range;
 
-    //   if (range) {
-    //     await connection.query(
-    //       `INSERT INTO tbl_event_checkin_checkout_range 
-    //       (event_id, checkin_start_datetime, checkin_end_datetime, checkout_start_datetime, checkout_end_datetime)
-    //       VALUES (?, ?, ?, ?, ?)`,
-    //       [
-    //         event.id,
-    //         range.checkin_start_datetime,
-    //         range.checkin_end_datetime,
-    //         range.checkout_start_datetime,
-    //         range.checkout_end_datetime,
-    //       ]
-    //     );
-    //   }
+      if (range) {
+        await connection.query(
+          `INSERT INTO tbl_event_checkin_checkout_range 
+          (event_id, checkin_start_datetime, checkin_end_datetime, checkout_start_datetime, checkout_end_datetime)
+          VALUES (?, ?, ?, ?, ?)`,
+          [
+            event.id,
+            range.checkin_start_datetime,
+            range.checkin_end_datetime,
+            range.checkout_start_datetime,
+            range.checkout_end_datetime,
+          ]
+        );
+      }
 
-    //   for (const policy of event.access_policy || []) {
-    //     await connection.query(
-    //       `INSERT INTO tbl_event_access_policy 
-    //       (event_id, group_id, subgroup_id, auth_type_id, auth_type_name)
-    //       VALUES (?, ?, ?, ?, ?)`,
-    //       [
-    //         event.id,
-    //         policy.group_id,
-    //         policy.subgroup_id,
-    //         policy.auth_type_id,
-    //         policy.auth_type_name,
-    //       ]
-    //     );
-    //   }
-    // }
+      for (const policy of event.access_policy || []) {
+        await connection.query(
+          `INSERT INTO tbl_event_access_policy 
+          (event_id, group_id, subgroup_id, auth_type_id, auth_type_name)
+          VALUES (?, ?, ?, ?, ?)`,
+          [
+            event.id,
+            policy.group_id,
+            policy.subgroup_id,
+            policy.auth_type_id,
+            policy.auth_type_name,
+          ]
+        );
+      }
+    }
 
-    // for (const permission of data.permissions || []) {
-    //   await connection.query(
-    //     `INSERT INTO tbl_user_permission 
-    //     (user_id, group_id, subgroup_id, context, event_id)
-    //     VALUES (?, ?, ?, ?, ?)`,
-    //     [
-    //       permission.user_id,
-    //       permission.group_id,
-    //       permission.subgroup_id,
-    //       permission.context,
-    //       permission.event_id,
-    //     ]
-    //   );
-    // }
+    for (const permission of data.permissions || []) {
+      await connection.query(
+        `INSERT INTO tbl_user_permission 
+        (user_id, group_id, subgroup_id, context, event_id)
+        VALUES (?, ?, ?, ?, ?)`,
+        [
+          permission.user_id,
+          permission.group_id,
+          permission.subgroup_id,
+          permission.context,
+          permission.event_id,
+        ]
+      );
+    }
 
     // ========================
     // CREATE TERMINAL CONFIG FILE

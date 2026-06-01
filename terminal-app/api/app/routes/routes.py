@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from deepface import DeepFace
-from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException
+from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException, status
 import time
 import faiss
 from sqlalchemy.orm import Session
@@ -402,4 +402,23 @@ async def verify_card(
 
 @router.post("/terminal/update-id")
 async def update_terminal_config(payload: TerminalConfigUpdateRequest):
-    update_terminal_id(payload.terminal_id)
+    try:
+        if payload.terminal_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid structural Terminal ID configuration."
+            )
+        # Write the id to sync_config.json
+        update_terminal_id(payload.terminal_id)
+
+        print("Terminal sync config updated successfully")
+
+        return {
+            "success": True,
+            "message": f"Terminal sync identity provisioned to ID: {payload.terminal_id}"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

@@ -4,15 +4,23 @@ import fs from "fs"
 import path from "path";
 
 export function loadTerminalConfig(): TerminalConfig | null {
-    const configPath = path.join(process.cwd(),"terminal-configs","config.json");
+    const configDir = process.env.TERMINAL_CONFIG_DIR || path.join(process.cwd(), 'terminal-configs');
 
-    if(!fs.existsSync(configPath)){
+    const configPath = path.join(configDir, "config.json"); 
+
+    // If configPath is just a directory, existsSync returns true, 
+    // but we must make sure it is actually a FILE.
+    if (!fs.existsSync(configPath) || fs.lstatSync(configPath).isDirectory()) {
         return null;
     }
 
-    const config = JSON.parse(fs.readFileSync(configPath,'utf-8'));
-
-    return config;
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        return config;
+    } catch (error) {
+        console.error("Failed to parse config.json", error);
+        return null;
+    }
 }
 
 //convert base64 image to blob

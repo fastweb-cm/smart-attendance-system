@@ -59,10 +59,13 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - MYSQL_HOST=terminal-db
+      - MYSQL_HOST=db
       - MYSQL_USER=root
       - MYSQL_PASSWORD=Password@2025
       - DB_NAME=db_terminal
+      - TERMINAL_CONFIG_DIR=/app/terminal-configs
+    volumes:
+      - ./terminal-frontend/terminal-configs:/app/terminal-configs
     depends_on:
       db:
         condition: service_healthy
