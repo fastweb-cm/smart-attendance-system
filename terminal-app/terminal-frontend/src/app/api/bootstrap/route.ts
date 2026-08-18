@@ -274,6 +274,9 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
+    // Temporarily disable FK checks for bulk bootstrapping
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0;");
+
     // ========================
     // INSERT TERMINAL
     // ========================
@@ -455,6 +458,9 @@ export async function POST(request: Request) {
     );
 
   } finally {
+    // Always re-enable FK checks before commit/rollback
+    await connection?.query("SET FOREIGN_KEY_CHECKS = 1;");
     if (connection) await connection.end();
   }
+  
 }

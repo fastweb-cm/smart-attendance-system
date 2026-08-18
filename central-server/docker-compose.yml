@@ -45,13 +45,14 @@ services:
       - DB_PASSWORD=Password@2025
       - DB_NAME=db_smartattendance
       - JWT_SECRET=95ff5e0dff037e781d11d7594411971ddd638fd2cfb7a377b1691f2b0d5e6a73d7692ef5bc401932d0fd43c38f6f2654f46afc7d3a7f5ab4668c8161882781ed
-      - APP_URL=http://localhost:8087
+      - APP_URL=http://smartattendance.fastwebcm.local
 
   nginx:
     image: nginx:alpine
     container_name: nginx_smartattendance
     restart: unless-stopped
     ports:
+      - "80:80"
       - "8087:80"
     volumes:
       # Map the API code so Nginx can see the /public folder
@@ -65,15 +66,22 @@ services:
   app:
     build:
       context: ./admin-frontend
+      target: dev
       args:
-        # This takes the value from your local machine/env and passes it to the Dockerfile ARG
-        - NEXT_PUBLIC_BASE_URL=http://localhost:8087
+        - NEXT_PUBLIC_BASE_URL=http://smartattendance.fastwebcm.local
     container_name: admin-dashboard
     restart: unless-stopped
     ports:
       - "3002:3000"
     environment:
-      - NEXT_PUBLIC_BASE_URL=http://localhost:8087
+      - NEXT_PUBLIC_BASE_URL=http://smartattendance.fastwebcm.local
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true # Ensures Webpack detects file edits inside Docker on Linux
+    volumes:
+      - ./admin-frontend:/app
+      - admin_node_modules:/app/node_modules
+      - /app/.next
+    command: npm run dev
     depends_on:
       db:
         condition: service_healthy
@@ -83,7 +91,7 @@ services:
     container_name: phpmyadmin_smartattendance
     restart: unless-stopped
     ports:
-      - "8088:80" 
+      - "8088:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
@@ -94,3 +102,4 @@ services:
 
 volumes:
   smartattendance_data:
+  admin_node_modules:

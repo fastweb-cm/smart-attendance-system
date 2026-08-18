@@ -14,13 +14,18 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
     now = datetime.now(timezone.utc)
     attendance_type = None
 
-    # Check if there is an active session that started VERY recently
-    recent_session = db.query(AttendanceSession).filter(
-        AttendanceSession.user_id == user_id,
-        AttendanceSession.session_status == 'active',
-        AttendanceSession.attendance_context == context,
-        AttendanceSession.event_id == event_id
-    ).first()
+    # Check the MOST RECENT active session for this user and context
+    recent_session = (
+        db.query(AttendanceSession)
+        .filter(
+            AttendanceSession.user_id == user_id,
+            AttendanceSession.session_status == 'active',
+            AttendanceSession.attendance_context == context,
+            AttendanceSession.event_id == event_id,
+        )
+        .order_by(AttendanceSession.checkin_timestamp.desc())
+        .first()
+    )
 
     if recent_session:
         time_since_checkin = now - \
@@ -125,21 +130,7 @@ def process_attendance_step(db: Session, user_id: int, terminal_id: int, auth_ty
 
 def handle_attendance_session(db: Session, user_id: int, terminal_id: int, event_id: int | None = None, context: str = "daily"):
     now_utc = datetime.now(timezone.utc)
-    today = now_utc.date()
     attendance_type = None  # this tells whether we are checkin or checkout
-
-    # Look for a session that is already 'completed' for TODAY
-    completed_today = db.query(AttendanceSession).filter(
-        AttendanceSession.user_id == user_id,
-        AttendanceSession.attendance_context == context,
-        AttendanceSession.event_id == event_id,
-        AttendanceSession.session_status == 'completed',
-        func.date(AttendanceSession.checkin_timestamp) == today
-    ).first()
-
-    if completed_today:
-        # Stop them here. They already checked in and out today.
-        return "already_completed"
 
     # create the audit log
     auth_log = AttendanceAuthLog(

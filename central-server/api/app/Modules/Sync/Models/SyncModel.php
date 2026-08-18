@@ -255,67 +255,70 @@ class SyncModel
         );
     }
 
-    public function syncAttendanceSession(array $sessions): array
-    {
-        if (empty($sessions)) return [];
+public function syncAttendanceSession(array $sessions): array
+{
+    if (empty($sessions)) return [];
 
-        $synced_ids = [];
-        $values = [];
-        $placeholders = [];
+    $synced_ids = [];
+    $values = [];
+    $placeholders = [];
 
-        try {
-            $this->db->beginTransaction();
+    try {
+        $this->db->beginTransaction();
 
-            foreach ($sessions as $s) {
-                $synced_ids[] = $s["local_id"];
+        foreach ($sessions as $s) {
+            $synced_ids[] = $s["local_id"];
 
-                $values[] = $s["user_id"];
-                $values[] = $s["terminal_id"];
-                $values[] = $s["local_id"];
-                $values[] = $s["context"];
-                $values[] = $s["event_id"] ?? null;
-                $values[] = $s["checkin_timestamp"];
-                $values[] = $s["checkout_timestamp"] ?? null;
-                $values[] = $s["checkin_status"];
-                $values[] = $s["checkout_status"] ?? null;
-                $values[] = $s["session_status"];
-                $values[] = $s["sync_status"];
-                $values[] = $s["created_at"];
+            $values[] = $s["user_id"];
+            $values[] = $s["terminal_id"];               // original terminal_id column
+            $values[] = $s["terminal_id"];               // checkin_terminal_id
+            $values[] = !empty($s["checkout_timestamp"]) ? $s["terminal_id"] : null;
+            $values[] = $s["local_id"];                  // terminal_session_id
+            $values[] = $s["context"] ?? $s["attendance_context"] ?? 'general';
+            $values[] = !empty($s["event_id"]) ? $s["event_id"] : null;
+            $values[] = $s["checkin_timestamp"];
+            $values[] = !empty($s["checkout_timestamp"]) ? $s["checkout_timestamp"] : null;
+            $values[] = $s["checkin_status"] ?? 'on_time';
+            $values[] = !empty($s["checkout_status"]) ? $s["checkout_status"] : null;
+            $values[] = $s["session_status"] ?? 'active';
+            $values[] = 'synced';                        // central status
+            $values[] = $s["created_at"] ?? date('Y-m-d H:i:s');
 
-                $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            }
-
-            $sql = "INSERT INTO tbl_attendance_session (
-                        user_id, terminal_id, terminal_session_id, attendance_context, event_id, 
-                        checkin_timestamp, checkout_timestamp, checkin_status, checkout_status, 
-                        session_status, sync_status, created_at
-                    ) VALUES " . implode(', ', $placeholders) . "
-                    ON DUPLICATE KEY UPDATE 
-                        checkout_timestamp = VALUES(checkout_timestamp),
-                        checkout_status = VALUES(checkout_status),
-                        sync_status = VALUES(sync_status),
-                        session_status = VALUES(session_status)";
-
-            $this->db->query($sql, $values);
-            $this->db->commit();
-
-            // -----------------------------------------------------------------
-            // SYNC AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log(
-                'sync',
-                'info',
-                sprintf("Ingested %d raw attendance log items from hardware uplink", count($sessions)),
-                null,
-                ['total_records_processed' => count($sessions)]
-            );
-
-            return $synced_ids;
-        } catch (Throwable $e) {
-            $this->db->rollBack();
-            throw $e;
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
+
+        $sql = "INSERT INTO tbl_attendance_session (
+                user_id, 
+                terminal_id, 
+                checkin_terminal_id, 
+                checkout_terminal_id, 
+                terminal_session_id, 
+                attendance_context, 
+                event_id, 
+                checkin_timestamp, 
+                checkout_timestamp, 
+                checkin_status, 
+                checkout_status, 
+                session_status, 
+                sync_status, 
+                created_at
+            ) VALUES " . implode(', ', $placeholders) . "
+            ON DUPLICATE KEY UPDATE 
+                checkout_terminal_id = IF(VALUES(checkout_timestamp) IS NOT NULL, VALUES(terminal_id), checkout_terminal_id),
+                checkout_timestamp   = COALESCE(VALUES(checkout_timestamp), checkout_timestamp),
+                checkout_status      = COALESCE(VALUES(checkout_status), checkout_status),
+                session_status       = IF(VALUES(session_status) = 'completed', 'completed', session_status),
+                sync_status          = 'synced'";
+
+        $this->db->query($sql, $values);
+        $this->db->commit();
+
+        return $synced_ids;
+    } catch (Throwable $e) {
+        $this->db->rollBack();
+        throw $e;
     }
+}
 
     public function syncAttendanceSummary(array $summaries): bool
     {

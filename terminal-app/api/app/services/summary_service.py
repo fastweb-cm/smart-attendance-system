@@ -16,8 +16,6 @@ def prepare_summary_batch(db: Session, finalized_sessions: list[AttendanceSessio
 
 
 def update_local_summary(db: Session, user_id: int, attn_date: date, session: AttendanceSession):
-    # Only aggregate sessions within the SAME context and event
-    # This keeps Daily and Event summaries completely separate.
     relevant_sessions = db.query(AttendanceSession).filter(
         AttendanceSession.user_id == user_id,
         func.date(AttendanceSession.checkin_timestamp) == attn_date,
@@ -28,25 +26,23 @@ def update_local_summary(db: Session, user_id: int, attn_date: date, session: At
     if not relevant_sessions:
         return None
 
-    # Aggregation now happens ONLY for this specific context (e.g., just the 'event' sessions)
     first_in = min(s.checkin_timestamp for s in relevant_sessions)
     checkouts = [
         s.checkout_timestamp for s in relevant_sessions if s.checkout_timestamp]
     last_out = max(checkouts) if checkouts else None
 
-    # Calculate hours for THIS context only
-    total_hrs = 0
-    if last_out and first_in:
-        total_hrs = (last_out - first_in).total_seconds() / 3600
+    # SUM ONLY ACTUAL WORKED SECONDS (EXCLUDES BREAKS/GAPS)
+    total_seconds = sum(
+        (s.checkout_timestamp - s.checkin_timestamp).total_seconds()
+        for s in relevant_sessions
+        if s.checkout_timestamp and s.checkin_timestamp
+    )
+    total_hrs = total_seconds / 3600.0
 
-    # Status Logic per Context
-    # If it's a Daily context and they missed checkout, it's 'missed checkout'
-    # If it's an Event and they completed it, it's 'present'
     has_completed = any(s.session_status ==
                         'completed' for s in relevant_sessions)
     status = "present" if has_completed else "missed checkout"
 
-    # 4. Upsert into Summary
     summary = db.query(AttendanceSummary).filter(
         AttendanceSummary.user_id == user_id,
         AttendanceSummary.attendance_date == attn_date,
@@ -69,7 +65,7 @@ def update_local_summary(db: Session, user_id: int, attn_date: date, session: At
         )
         db.add(summary)
     else:
-        summary.first_checkin = first_in  # In case a secondary checkin was earlier
+        summary.first_checkin = first_in
         summary.last_checkout = last_out
         summary.total_hours = total_hrs
         summary.attendance_status = status

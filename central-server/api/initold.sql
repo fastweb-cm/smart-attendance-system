@@ -2,10 +2,10 @@
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Aug 15, 2026 at 03:02 AM
--- Server version: 11.4.12-MariaDB-cll-lve-log
--- PHP Version: 8.4.24
+-- Host: db:3306
+-- Generation Time: Aug 14, 2026 at 07:02 AM
+-- Server version: 8.0.45
+-- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `fastxrdj_smartattendance`
+-- Database: `db_smartattendance`
 --
 
 -- --------------------------------------------------------
@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `lkup_attendance_status` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -39,7 +39,7 @@ CREATE TABLE `lkup_attendance_status` (
 --
 
 CREATE TABLE `lkup_auth_type` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` enum('face','fingerprint','card') DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -59,7 +59,7 @@ INSERT INTO `lkup_auth_type` (`id`, `name`) VALUES
 --
 
 CREATE TABLE `lkup_exception` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -70,7 +70,7 @@ CREATE TABLE `lkup_exception` (
 --
 
 CREATE TABLE `lkup_grouptype` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(100) NOT NULL,
   `abbreviation` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -90,24 +90,13 @@ INSERT INTO `lkup_grouptype` (`id`, `name`, `abbreviation`) VALUES
 --
 
 CREATE TABLE `lkup_permission` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(200) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `date_created` timestamp NULL DEFAULT current_timestamp()
+  `is_staff` tinyint(1) DEFAULT '1',
+  `is_student` tinyint(1) DEFAULT '0',
+  `status` enum('active','disabled') DEFAULT 'active',
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `lkup_permission`
---
-
-INSERT INTO `lkup_permission` (`id`, `name`, `description`, `date_created`) VALUES
-(1, 'Sick Leave', 'Absence granted due to documented medical illness, doctor appointments, or healthcare recovery periods.', '2026-05-25 10:13:07'),
-(2, 'Casual Leave', 'Short-term personal time off granted for urgent personal matters, unexpected family occurrences, or private affairs.', '2026-05-25 10:13:07'),
-(3, 'Maternity Leave', 'Statutory leave provided for childbirth preparation, maternal health, and newborn care integration.', '2026-05-25 10:13:07'),
-(4, 'Paternity Leave', 'Absence allocated to fathers for newborn family care and maternal support following childbirth.', '2026-05-25 10:13:07'),
-(5, 'Compassionate Leave', 'Time off allocated for critical family emergencies, severe illness of a dependent, or bereavement requirements.', '2026-05-25 10:13:07'),
-(6, 'Official Duty', 'Authorized external institutional assignment, out-of-station official work, or approved professional field assignments.', '2026-05-25 10:13:07'),
-(7, 'Others', '', '2026-05-25 10:13:07');
 
 -- --------------------------------------------------------
 
@@ -116,9 +105,9 @@ INSERT INTO `lkup_permission` (`id`, `name`, `description`, `date_created`) VALU
 --
 
 CREATE TABLE `lkup_role` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `role_name` varchar(100) NOT NULL,
-  `description` text DEFAULT NULL
+  `description` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -136,9 +125,9 @@ INSERT INTO `lkup_role` (`id`, `role_name`, `description`) VALUES
 --
 
 CREATE TABLE `lkup_role_permission` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `key` varchar(100) NOT NULL,
-  `role_id` int(11) DEFAULT NULL
+  `role_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -148,16 +137,16 @@ CREATE TABLE `lkup_role_permission` (
 --
 
 CREATE TABLE `tbl_announcement` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(255) NOT NULL,
   `message` text NOT NULL,
   `start_datetime` datetime NOT NULL,
   `end_datetime` datetime NOT NULL,
   `status` enum('pending','active','expired') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
-  `group_id` int(11) DEFAULT NULL,
-  `subgroup_id` int(11) DEFAULT NULL,
-  `create_at` timestamp NULL DEFAULT current_timestamp()
+  `created_by` int DEFAULT NULL,
+  `group_id` int DEFAULT NULL,
+  `subgroup_id` int DEFAULT NULL,
+  `create_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -167,10 +156,10 @@ CREATE TABLE `tbl_announcement` (
 --
 
 CREATE TABLE `tbl_announcement_acknowledgement` (
-  `id` int(11) NOT NULL,
-  `announcement_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `acknowledged_at` timestamp NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `announcement_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `acknowledged_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -180,9 +169,9 @@ CREATE TABLE `tbl_announcement_acknowledgement` (
 --
 
 CREATE TABLE `tbl_announcement_group` (
-  `id` int(11) NOT NULL,
-  `announcement_id` int(11) NOT NULL,
-  `group_id` int(11) NOT NULL
+  `id` int NOT NULL,
+  `announcement_id` int NOT NULL,
+  `group_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -192,9 +181,9 @@ CREATE TABLE `tbl_announcement_group` (
 --
 
 CREATE TABLE `tbl_announcement_subgroup` (
-  `id` int(11) NOT NULL,
-  `announcement_id` int(11) NOT NULL,
-  `subgroup_id` int(11) NOT NULL
+  `id` int NOT NULL,
+  `announcement_id` int NOT NULL,
+  `subgroup_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -204,12 +193,12 @@ CREATE TABLE `tbl_announcement_subgroup` (
 --
 
 CREATE TABLE `tbl_attendance_auth_log` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `terminal_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `terminal_id` int NOT NULL,
   `attendance_context` enum('daily','event') NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
-  `captured_at` timestamp NULL DEFAULT current_timestamp()
+  `event_id` int DEFAULT NULL,
+  `captured_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -237,7 +226,6 @@ CREATE TABLE `tbl_attendance_session` (
   `checkin_date` date GENERATED ALWAYS AS (cast(`checkin_timestamp` as date)) STORED
 ) ;
 
-
 -- --------------------------------------------------------
 
 --
@@ -245,18 +233,18 @@ CREATE TABLE `tbl_attendance_session` (
 --
 
 CREATE TABLE `tbl_attendance_summary` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `terminal_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `terminal_id` int DEFAULT NULL,
   `attendance_date` date NOT NULL,
   `attendance_context` enum('daily','event') NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
+  `event_id` int DEFAULT NULL,
   `first_checkin` timestamp NULL DEFAULT NULL,
   `last_checkout` timestamp NULL DEFAULT NULL,
-  `total_hours` decimal(5,2) DEFAULT 0.00,
+  `total_hours` decimal(5,2) DEFAULT '0.00',
   `attendance_status` varchar(100) NOT NULL,
-  `derived_from_session` tinyint(1) DEFAULT 1,
-  `generated_at` timestamp NULL DEFAULT current_timestamp()
+  `derived_from_session` tinyint(1) DEFAULT '1',
+  `generated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -265,18 +253,10 @@ CREATE TABLE `tbl_attendance_summary` (
 
 INSERT INTO `tbl_attendance_summary` (`id`, `user_id`, `terminal_id`, `attendance_date`, `attendance_context`, `event_id`, `first_checkin`, `last_checkout`, `total_hours`, `attendance_status`, `derived_from_session`, `generated_at`) VALUES
 (1, 1, 9, '2026-05-01', 'daily', NULL, '2026-05-01 18:02:02', '2026-05-01 18:04:59', 0.05, 'present', 1, '2026-05-01 19:05:18'),
-(5, 1, 9, '2026-05-04', 'daily', NULL, '2026-05-04 08:50:21', NULL, 0.00, 'present', 1, '2026-05-05 14:53:34'),
-(7, 18, 9, '2026-05-06', 'daily', NULL, '2026-05-06 11:01:52', '2026-05-06 11:13:07', 0.19, 'present', 1, '2026-05-06 12:14:04'),
-(8, 1, 9, '2026-05-17', 'daily', NULL, '2026-05-17 15:35:27', '2026-05-17 15:41:43', 1.20, 'present', 0, '2026-05-17 16:42:13'),
-(9, 18, 9, '2026-05-17', 'daily', NULL, '2026-05-17 15:46:16', '2026-05-17 15:47:41', 0.02, 'present', 1, '2026-05-17 16:48:13'),
-(10, 1, NULL, '2026-05-22', 'daily', NULL, NULL, NULL, 0.00, 'on permission', 0, '2026-05-23 17:10:58'),
-(11, 1, NULL, '2026-05-19', 'daily', NULL, NULL, NULL, 4.00, 'present', 0, '2026-05-23 17:12:37'),
-(12, 1, NULL, '2026-05-22', 'daily', NULL, NULL, NULL, 1.00, 'present', 0, '2026-05-23 17:21:21'),
-(14, 39, NULL, '2026-05-18', 'daily', NULL, NULL, NULL, 1.00, 'present', 0, '2026-05-23 21:47:47'),
-(16, 17, NULL, '2026-05-20', 'event', 13, NULL, NULL, 0.00, 'on permission', 0, '2026-05-24 18:07:06'),
-(20, 1, NULL, '2026-05-25', 'daily', NULL, NULL, NULL, 0.00, 'on permission', 1, '2026-05-25 14:56:06'),
-(23, 1668, 22, '2026-06-01', 'daily', NULL, '2026-06-01 17:46:36', '2026-06-01 17:49:37', 0.05, 'present', 1, '2026-06-01 13:50:01'),
-(24, 17, 21, '2026-06-01', 'daily', NULL, '2026-06-01 15:11:05', NULL, 0.00, 'missed checkout', 1, '2026-06-02 00:00:20');
+(2, 1, 9, '2026-05-02', 'daily', NULL, '2026-05-02 15:23:04', NULL, 0.00, 'missed checkout', 1, '2026-05-03 16:37:56'),
+(5, 1, 9, '2026-05-04', 'daily', NULL, '2026-05-04 08:50:21', NULL, 0.00, 'missed checkout', 1, '2026-05-05 14:53:34'),
+(6, 18, 9, '2026-05-06', 'daily', NULL, '2026-05-06 11:01:52', '2026-05-06 11:10:51', 0.15, 'present', 1, '2026-05-06 12:11:04'),
+(7, 18, 9, '2026-05-06', 'daily', NULL, '2026-05-06 11:01:52', '2026-05-06 11:13:07', 0.19, 'present', 1, '2026-05-06 12:14:04');
 
 -- --------------------------------------------------------
 
@@ -285,11 +265,11 @@ INSERT INTO `tbl_attendance_summary` (`id`, `user_id`, `terminal_id`, `attendanc
 --
 
 CREATE TABLE `tbl_auth_session` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `terminal_id` int(11) NOT NULL,
-  `started_at` timestamp NULL DEFAULT current_timestamp(),
-  `current_step` int(11) DEFAULT 1,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `terminal_id` int NOT NULL,
+  `started_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `current_step` int DEFAULT '1',
   `status` enum('in_progress','completed') DEFAULT 'in_progress'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -300,10 +280,10 @@ CREATE TABLE `tbl_auth_session` (
 --
 
 CREATE TABLE `tbl_biometricprofile` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `face_template` blob DEFAULT NULL,
-  `fingerprint_template` blob DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `face_template` blob,
+  `fingerprint_template` blob,
   `card_serial_code` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -312,9 +292,9 @@ CREATE TABLE `tbl_biometricprofile` (
 --
 
 INSERT INTO `tbl_biometricprofile` (`id`, `user_id`, `face_template`, `fingerprint_template`, `card_serial_code`) VALUES
-(6, 1, NULL, NULL, '1234567890'),
-(7, 17, 0x1992153c777ba0b9e6becfba5c96c5bda0a5a63c669aa93c48a5283b833c4b3cde4e5ebb4495cd3cf408c3bd6c37303d394b02bdb81f6b3c7b221c3d6d108f3948fafbbcbaf592bdb771003daaf1083dfa469c3c5a2c6d3c5826243d9e736fbcf9b93f3b15ef6c3bba668fbc48d2bd3d51bf0fbde4eeb63d0447383c395a1dbc50d3283d7348243d88ad6d3bea7192bd0754843d01ce423dde1cc8bc5656233d4fc2c5bbafc44ebdf4dd463d167391bd42d510bd5d1d1d3db232993de425d53d7eb5b53b36f0283d8eb793bdf1809fbdf6b2a6bd43d5793d308b9a3c2220a6bdbf8e273de857233da9bb313ce8e621bdc712bfbd008606bdd012c33c3605763c590741bdf670ff3c9b630d3cdec1b4bdc22496bc7a8ac33c44e8593d8d38d23c7fd4613df3d60b3dd3daf9bd11c921bbbb25733dbd410d3cfb489b3d8978973ca3ed89bdb1d4163df180a73bd0592f3d6651063d245017bd2ebbe8bd2335913dbd67a0bc9e9c9a3cb1a3c23ac5ef873cc444623bc7dab1bdc154303b34093bbd031926bd6952c6bb6fa3c6bbc63423bc8525103d9c3b8c3c731b1b3d09a18e3d40ba883d692110bc950cf83cbabcad3d7213343d46871abc357a8fbc84f143bdad3cc4bd3360703da3a37b3d233e13bdd29a883c4ca1193dd0b91e3dc33fb0ba9c30a9bc78c5f6bcce8b71bd4a54c8bb6bc410bc433bd03c9f1c42bdd5f2c6bca26d3f3c445ec9bcce3293bb01cf9cbcbfc8a73d1af6e1bcb692eabc28b166bb837ab23cd9e4903c2c378c3c2022963ce9d46cbd365abbbae205f63cd423943c98df11bd9a7c3abced93dfbcd374823b3793a4bd7da682bd3b68ebbca6df5cbd95c3843d83c2d13ba962a3bd0dcb3f3d914584bded1364bdd30ffdbcadeadcbaca00f3bd70b8ffbc206c03bca0f516bd7d8e03bea12dca3a8e5a9bbb2716b6bbe46a57bd01f79bbb7440133db7c4c03c6b55883d043d45bcdde615bd396f043c3a23af3cf52afbba8bbee03b13c95b3abe20b63c23016f3bab069dbd85acaa3c8048bb3c6b80433d2188b3bd909742bdc05248bd423ed63c8586463d8ee65fbdd677a7bbff9a66bd59ca503da335b4bb9b94843c761afebcef7b6bbc2e5919bd3928133c250ff2bccaf823bc63cc49bd369161bc9267b8bc9b9c043dd9f5cbbd6521b8bdea03a33ac94ef93c0862783dcf7f613dcc06e83cb4864f3cc074a13c2611cbbc79589d3c545c3ebd1c0535bba5e31f3c8e92c83b15a6923dd612c4b9c91b663d7d9d6fbda69c90bdf244b33c009463bd5f5b513d6b7031bd6d34a03c91c3503df259dabdd6c8e33c2a8d4abce6b8b03b556b34bd6de51cbd9c3b863c6b7c39bd0c90833df6ea35bd21d922bc5e56183d134a2bbce20f9d3d21a796bbef3e95bb829b8f3c891d7fbc2e2751bd57bb6bbcf1546a3b5d1317bd96eb9f3dc561533d0376113a41001a3d92dc9c3d4128cabbcee9883c1853bf3b3a365d3d9bbf30bd22ea8fbc2778b2bdc4042fbbd3b1b1bcca52293ddec0953d6e8c0fbd0475873c91069e3d6cb76a3b0950b43d41aa0cbd72c617bc60a880bde0a46fbdc74c3dbd4e14d5bc1aa62f3d3a39de3c64e7dcbc2a02823d34f585bcb5d22c3dff5b763c9654d33c916db3bb99a2a0bae0f8333db2ca25bc69554dbd6872663c08f0cb3ce8c740bd81c84a3db51a9dbd573693bc7cccedbb8356bfbc0b8dcb3c8233ce3c341512bc34a7233d06882cbc3733a13d499995bcf74f043c4235b2bda2898e3bbfa3273dd464f33c4d0bc03cc3bab23c431b4ebdd6062abcd73daeba60e46c3dae40023d3da4183cd6b695bce65dc93be29bbcbc9042a03ceae1bcbcce01c23b3fa2163bc7c47a3dfa7a503d79af81bde195ef3c437bf2bdfe471f3d6a82463d0a2e86bcbb4163bd04b7fcbc26dd4dbd9e0b4fba8897ac3a4fa64e3ddb9569bd9a5829bdda8c9cbcee50523cae81453d0a0c3d3ccc6f7abb6e68283dc68dfebb932e86bd9bb822bccbce96bc7f3f16bec19f32bd5ce168bdf98ea03c3adce73b4c22b2bb168037bdb961453c3edf25bcf0675a3df9a5e03d7151503daa01453df6c8b43a5cf3dbba1cf05dbbebe6afbb9b49103d4e58583c596c7f3dea5097bd6e7ea9bb60950ebce3e48f3c92dad4bbb7f7df3ced6bdd3bc66d573d5125a83cc3a893bc4d7c9ebc5ffcf6bc1137d03c0316143d91329f3809e10f3c237e093c4d76c33cc62e64bdec8efa3cda705d3c82172a3dd22554bd9e84e4bd2904c0bd8356c53cc35a92bd8aa36ebcedd81b3dde68f13c9de4d3bc422e803bf069fd3c1a80ebbc8fcb20bd333c7dba640c07bb1725443c8e0b84bca39086bcfd316d3de3ea5b3de429d3bb91d8853c5e60aa3d2e0d003df9907b3d7629f83cfcaaa4bc82eb18bc54277f3c33a3eb3c05435abd369c68bc876199bd8fd93e3d22046dbd43b4293cccca4bbd44dd07bb6eee90bd0b48a73c94e149bdc46133bd7e11e63cd19caa3d5f36bcbc9fccd5bc2fd73dbdffb9f53c7740203d9b8f13bc26c4ab3cf9b1403d29c39bbc4a46cdbca59b0ebd04ddcebd4134213d918c5ebb2a22f8bcd56b32bd5e88823d8b3e333c1c8b323d8f62993cfb1dbfbc78a3e3bcd15b253d3246163d35ee46bc6197f4b9c159633b065eaf3db99158bd4dd394bcd6d33fbdba0f693cd09372bd2940023de7295b3cacec0fb9d09c003dd06508bd7d8f4e3b089170bb8877793d89ba1f3d20c00bbd78ba8a3da08379bd2a10903decb1b03d0fe7713cae35003c58f7c33cc519fb3c742ce43b2e3c6a3d722da7bc4af683bc580cbd3c92f4d13cf8bad3bd333f733c6d19a1bdac929cbd190a9cbc870aaebc33570ebed7061cbc0414173d0705edbb3aeedf3c9afe96bc01fca9bd, NULL, '1234567888'),
-(8, 18, NULL, NULL, '1234567899');
+(6, 1, 0xbe047abc0f4e4c3ced11283c3c2cb1bbb286713d7a8d153d87e2fc3c551875bce90812bb8dfcc83c5040b1bdd1f4653db2958e3cac462d3dd371a63c883190bc337bcbbcc20f66bde2036dbbd542bc3d9e65273de84c03babccec2bc91aea1ba46b0f0bc1cfa323b6a1d96bdf91df33c476b2cbc6bb8f73d8d4485bc1d3fa6bc8389383d776c3a3d102ea5bc07bc1ebd4c48963bdf381d3b704aea3c52e614bd2f651f3dd0be9bbd0bd8133d7acfedbccd997abdc98a253d5dacb63db1c2933dc753063e2cc0d73c27db74bd00a38cbdf4a2f83cf5286e3d9561403ce90fa2bd7292b23c86ca87bbcf462ebc3bde0dbd063d23be6a859ebb508a363c7a96a03d04cb9fbb1a6fa7bc88044bbdc80b04be1639123d5aac3e3c2efcf33c4dd3673d82a4db3b390c1a3d40baacbd22c54d3beaa13a3c60aa743df44d633d47aa613aa0cd60bd4d1a813dc9e03b3c96e0243ddcd99b3def7b5cbd2997d8bc68ee2a3b1e0fa1ba7589f7bcff69e23ccd1f5e3d39ebdcbcf57e56bdda433a3d0277f43bc42d50bceb9427bd814d9ebd8ba810bd35ff1f3dd194aaba0e41773d15558cba8859a63cd4c274bc3ef69c3d1f2896bcde4492bb26c8643c76a479bc74148fbc766f05bd89376c3c916317bbf73ac1bcce5b583c0abcb53dbcef6bbc73b13ebcc0b2b0bca1f824bdf385b83b800390bd5881873da19fefbba73c4abb964624bc6a6cd5bc94ea03bddc8bb93dc9f4053c52750d3ec2009abcbf0636bdf06066ba5323ef3c3c19b13b946d88bdf8fcc23c5f004bbcab9b163dd58a98bb4aa43dbb4ad26c3c4506f9bcbd6193bd9295133c9143a4bde67b85bde6728ebc5dc35abc12ee023d9fe2aa3c2cb9833be1f6c43cf5a347bd0c25abbd08fc2ebd24b1803c3ae0d2bd288fbaba6ffd663ccc83a5bcbfaa87bd2aba5d3c9b9a0abd286d1f3bec9846bb72590ebdb81a403d9dbe373dc099fe3c39a28639592f7cbcca70183aaee6a3bca6232d3d0beb66bd12211cbddae3c8bb580d163ddcbd55bd71ed693db0d89f3d0bf75e3d89b386bd8b4c6abdef05ec397916633c68556a3b04b0a5bbdc86a1bc070de9bd376f9a3c34f65abd5d8a423dad3dd5bda83ae8bcec487c3da7d5b03ae419eebc56492fbcb707b5bc7ed781bcefacc73ccb841fbc2c5fffbc1bdab4bd1105b93c6404133cd9ac113d52ad9b3dc6068fbc4eeaffbc5897763dc8d344bd13d972bc190111bc0063023d63f5203c847b55bcf5f78e3dc2d45bbd94918f3d702dc13c282a48bdb3d23f3d651318bdc9361fbd48fc303cda9259bc704c493c23c8b2bdd057353d23842f3d0a9e5c3c9ad89fbc08f179bce9c71bbd2e419fbd639bbb3d3c8109bc892a5cbd10a0373d1a0850bd4cac8c3de13bac3c7e14dd3c0183c33bbdd30bbd176c5abd17fd2abd6158873c1e5c6b3ddcb3543c2ffa063dd55ba7bcc0eb27bc2ab2d43d61d9b03c3e1c323c167f3d3dad83233d016e93bc73b9c1bdc95f0cbd2091173d4782d83c423d733cf51f043b3fc677bc20a60339727e523ac9ac953cde18973c9ffe81ba9dfb03bd9e4b9bbc738707bc2c903a3d8ac1d93c47a624bb03178b3c2e0b91bd7f2c1b3d5f5ab4bdaf8907bc079410bb4d17be3c5a9208bdd58c243d05e25d3c39f585bb235effba2dab37bc468a85bc38a788bd410f5b3d3610a53bab7c56bddf73b83d903e00bd076f5cbbca3eccbcb54f42bdccc2abbcc456a33c421fb1bc1ec2f5bb2817b23ce1023cbcf06227bcc455933dfbfce73c05ba403d279278bd5efea3bd5d110bbd2be1c2ba2425c33c9b1bff3c11616abd10ed37bc375a24bdbe0c0fbde8e19fbc279149bdad0e963cde610db9e00d7d3d9adebebc012fd7bdff80bd3c31fbffbdc549cf3cdd1c483dd8f94a3b0fbd3cbde6ba0fbd937cbbbdc561023bd844343c53b3e13d17a7bbbcf170953dcdec463ddcc37f3d39898a3d1aa97dbcf892a1ba77a7563cc2a305bdd58e2cbd558fab3c168b0f3dc8bd9cbd6e72a1bc38d936bd20277bbbbc7cb7bc5ef1a6bc0617d0bda4e7cf3b7d990d3cfe66473d97479a3c4f10103cc12edc3cdf68403d49155b38aea1bebc34c73a3cec8fbbbc419230bd4b09363db03888bdda5313bdd7b5253d4da9e53a00039a3c5ab0713d35747c3cc017f93c13c24ebd4c68143cb8fb23bdce5fa7bbf11caa3c5767d73c747d96bb0efc343cb5c20e3c814906bd7d5834bd0a8ec7bb9023033c9612553d6ea9aabdcc20a4bdd32769bc62d75f3d6127d7bc81d901bc54c18a3dea25e43ca9fe74bdd2afb63bc2e7543cdd6597bb78a5b73c0af7a3bcfc76e33cf599ecbc5cd78d3a427c98bce8ebc03d1c3b223ddadbf83bf540653ca210be3d13f147bce768133dcac1913cb7a7633cb92a83bbad9c273d2baf443db39866bdb1cc90bcad8decbc3fd3303d04043cbda00557bd5bea7dbd65518bbd554fb1bc7412873cdb44d0bc1ec3703c2e716cbd5b15b93d9757efbc14bc37bd4cb9bbbc6bc6463dbaf8eb3c33bb213d35a7743d80f5e2bb99429ebdf9b101bb9008debccde1f1bc0bc6d43cc53c91bda49f1cbd8daac8bc4bc87d3c69a2153ddcf5c43cd2fcb13c9e9152bc03550bbd59baf83c7a7f08bd25a36d3dbd33bebca837203c9f9f353d2405babd56998bbca499e23c5184d63bb66609bd0a11473d5c5bba3c48c7b3bb368a503d023495bd68525f3dbaa728bdd7114c3c57b4723d134a313c4a55853daa7329bd4bcf923de3cdb63d4486d4b94670b5bc56b4d53cab4247bb3a493abd60d7073da4f810bcc3c785bd2bd11e3d20f0623ca64680bc4a62c73aefe30ebe2e5c16bdc7ec8cbc3d5f73bd2973bbbda8e59239def50c3ce76a803cd59aa93c30ec06bc9f9e74bd, NULL, NULL),
+(7, 17, 0x99e53fbc8a48413bc1ba663b8ed003bd7c56f53c2954cb3b27feb43c9b08d53c88a9a9bc3c51153d2cb2903caffa3a3b3fb59ebd64341a3db20c5c3c5605263de74385bcca0040bd3f1ead3c4fea8d3c48de623d7da8243d21ecff3b8b9bedbbb9c9a3bcf9a7dbbc622d073d125c8b3d9aee343cc7cb633d440fb5bb7489163c978c6c3d9e4a323d3c1df3bbc8325d3d0bbe62bd63a7233c7514b43dc3fa10bd67dfb7bbb09a9abdd8e48f3b732734bcc407fabc891d42bd1ce24d3cf8557b3c3862fa3c29c75a3d98356dbd21e358bd634f003e5d228a3c59b24d3ded5c1b3d5635c93d02bc3f3c6983623cca1e763d1e3ef8bc350c033dfd591c3ceab3963d8b00723b229a99bdec5ef4bb8cd5a7bd04f1b03d29b71c3b30c00cbe36fd353da81bc8bcfb170a3d8e16acbd5ebe873c802540bcb734083d0db4373cab7601bd113548bd5f9ac13c1f108d3dad97173dd88de33ce33ac23c10c893bd35ae473daae89c3d7e67953ce594313bfd86933c16e7093b4f19803d9068ff3cdb8e3cbc471d13bc2355cb3cbc27ebbdb973003de4cf313d8f06573dcfd7153c0fe9a9ba628da43daa7dafbc71460b3d1c018bbd5722b0bc842aa6bb052f2d3bae0800bd81fba03d37fb3ebc8ffcd43c57bb073c46ea213c59662c3d01928d3be9fe08bdd94f08bc7c27e7bc4c6f8d3df65b8dbcc5ac8a3d6ef6f53c7faeacbd57fb363d2eb5cbbbb7b3683c6002d73a34387dbd92c1aa3dd83701bd01bd2ebd2d5fb53c17d0653d8fac78ba706780bcdc5ece3c062b0b3cba75b13d031c413c749aa03a62f8613d77662ebda9e9a2bddbd81e3c724f80bd77d192bc545150bd2b43143db0ab2b3b1679ab3c04d38f3d9bf934bdd94cf73cfe86bdbd4f4986bd0d2e7a3c4b1a80bd32889ebc796489bb5a7779bdf14a653db171983b291a673d06805ab89d93b8bc4f619c3cb22eed3c8808823d4f1230bd82abacbcd5dde23c9763233b32a05bbd4002c73cdc6a6ebdfab7c13c402695bdb7fb303db31a2fbc28c86fbcadab5d3d5f0d043dfba407bd00a65bbd9bdf103d69e374bc71ae333dfb10e73c91108cbd0d333ebd2a3dd73cd8faed3c35f5743d71cefdbc041463bda2f91fbcb6ece23d760adc3c70335c3dede86c3b8cad2d3bbdeebebc86e734bded715abdd9109dbd32a3d13ca32e083d4148723de256d63d4c8dff3cbac88e3c5a9761bcdf8a03bb922ee83c7c722fbc448a743b612a6bbd1780bd3c7778acbcffd983bdcc43a73ce90419bdec9b79bddc4dc53c0e9be53c6737853b45829d3ce4779ebc681de13a732c44bb062d6f3df8b88fbc2d4fcd3ba08c993c3830813c0f466fbdbd1eedbce826823dcccef43cbf11f93cbf810c3d406bee3c3ab730bd3ed19d3cfad97cbdd8fd133c5e5ba1bcb3eedf3c568fd6bc6d16af3c3d4e5d3da7c8cb3d0a77d5bc839631bba329adbd46aef33cfa658bbca6366d3dde0dd3bbe0e6273dacb091bc178538bd87e917bd6de6bdbc6815913cf2ac183d4eb1e2bcddf30abb0bb93dbdf20224bd514accbcf64aa03d7af34bbcee060cbc8dd5713c5c73993df73abd3a8e49563d89c218bd28bf80bb3b20bfbcce5d5cbaaf1c71bdaf5955bd0255b3bc68f406bdf8f924bde7c883bd3737083d25c79a3da1781e3da3b7f6bc160bba3c2b90c33c3edc42bc45e77b3bf8dd32bda5336c3dedbdaebd3c9c85bdb9c2413d9db68b3c135c9a3c0f83033d65ddbb3ac73a3abd3c6fbd3a39ed43bde23745bc100f933dc67049bc7340863d4b01dbbbb5cb5f3c0b7d85bd4e11423ddd7f183cc3689b3d9e7218bd61e9893d0b521c3da76e8ebce16c533dc3aa39bc86e9153bc0e94dbd21cb30bdb36ca83c75f7873b10527d3d5ea51abe7caef1bc0aa5073d0dbeec3c272949bdcb3a2e3cd4e8c63ba05a2dbd10f815bd1a62703c0f0ea7bde412b83d3faf3f3df763933c38a9b23cc1002ebce11930bcccb156bd63ac63bda03ddebc4284963d21e1c63c4044fa3bcd57b53c9125d8bc72f354bdf3e564bd3ae296bb7bd48bbd354ef43cde80aa3c5c0c433c4ef696bdbf0f9d3ca3fd2d3c74662c3c24222dbb1e0d7c3c3561683db6f429bd2803c03c9aa576bd52512ebda53256bc536a0bbde1dd1bbd6e8f13bbc4d7d73c09508cbc01b1a1bcdd5a8abddba113bdf5347ebc1ae50f3d098f843a44212fbd41098c3cd1c5c0bdcd790739eea8abbd6a3c0b3b1c9fa03c64bd8e3c1c9b4abd31ad4f3d48ce37bcbe9c10bdeed9b93d09368f3c70ad29bd4ca102bc7619973d8c604abbd7f485bcb07d4ebc579d873c52f2fc3c04f0043db677f8b9f2318abd95278d3ddc95c1bc8c43273c6e3d4bbc8ccf333d850ba23cf1877f3d1f079b3caacf66378839cbbdf8d7de3cce798d3c415b903df994b9bcd7d0a4bd61c5593d34e544bd292e1a3db87be2383d98dbbdf02f933d2a99b2bdde33503cb119e5bc4229f63bfb08e33cb78bccbd24123e3d6fe158bcfb560fbceaf9bbbb35ccdebc6e704c3c33faf03c6e64353d7b6affbcc9fef1bda8ad01bdc695fabc2106d43c4b92d83c7e1079bd2821c1bbf1561dbd74473f3d5da3063d3bc387bc3edacebb2375f63cb8f79b3dac41243b260a6abc7141693d6ce4ebbc14d0933bcec8913d4d04d6bd06d939bd6b8b41bd2a21c43c7bc851bda8b92f3df9a296bd85af32bd7f19143c21bbc1bdc98b30bd2b3ff4bcacfb85bcd1855c3cbd33be3a7de0e03ca241de3cde4007bd3792813d831ef6bcab612cbd8385abb635aa6bbcbe7918be32d19d3be562b43dbf9b683c6b5becbcfba87abc6a46593df8258dbc51afe7bba170e83caead84bda43b063d04f96b3c6f868e3cea6c513b9722f4bbfb15fb3cdac8813d46490b3d, NULL, '1234567888'),
+(8, 18, 0x371a16bd48cd513d44a608bceaf7f53c1ac33f3d0745163dc9dd173dd78423bdaf2c5ebcf5c4b73ca1a2a1bd18f70f3d1e5e733cb2b0b33c9274633c689102bd959e55bdbba764bd574bef3bf120623d25ef2c3d121cb5bb9ae878bd84b18abcd92fa6bc5d5c0dbbfe533fbd85f9e53b7524c83c8c07c03d77ae81bbe72576bcd903673d95c21e3d370238bb3f83eebc7f709cb803d2d33b9d60853bbdd45cbd379a753d5f515cbdae0617bc0b422ebd76e545bc3e84593c3ae2a33dc5a4ee3de72bc13dc292803c8d7121bdade564bdb754923d9cd8e53cd4e507bb4b26aabd19a2983bbd9e0a3b2c5904bc93f2e43c9c17e2bd26146c3cb814e53b76e6913df9ecabbc9144f2bcbc7c28bc1e7e0abe800e703d159c303c47e3353d8490723d4f9732bcecc8d9384500c5bd08a5de3cfb1c503c6cdbcf3da89b9b3c09d3083cec4ec9bd3ab7433dbbed593c27e5653d9421c93c1107dfbc0fecd6bc1168fd3c6842773acbd0a3bc7cc7e43cbf45423d46b7173d64b2a6bc39d3c93ccd68133d3b5d973bbd1b48bd1579c3bdd06ffbb94209433d430a6cbc9a8b903d076b1dbcc863663be26edcbc3a34ba3dd9a6493c98c1843cabaccf3c783135bd4ba4fcbb47789d3b1294edbbf764443c5628cfbc7ace113d846b813d565c683cf10cb1bc18f407bcda68b2bc38620d3dd52d18bcc501ff3c8e353fbc7a7816b84a124cbdb807e4bc015be9bc48c6853df68e303cc174e53dd7a7173de4669abc033c813b2ebfe63ce96c86bbd87c5abdd6d14a3daece27bd1e77203c1dca113c5290e03c001dab3c56c1963b3c46c9bde7f2ffbbdc7f90bdc6b80cbd01e468bd26cd993c3fe6be3cc2efab3c7f1d7dbc5069113ce984ae3c69a6efbdeada44bd9981c43c88feb1bd4f0ca2bb0c02093d802a34bdde811b3ca01949bca3479bbb1ca195bcd94187bca747c2bc20c97b3d058d123db79d043d553e0abbfd7f20bd7d02583cfc28f53b74af163d8dd986bd6e6c83bdc062a73b89723f3d75034cbd0ec0023d76c4993d3ab1673d7db96cbd3b0855bdd419213c6bd0183cfd07a1bcd9ee69ba8b05ccbc614b0cbe1237243d278258bd2f83203d626a1abeab5b24bd3770b03cb181cd3c00e60ebc72256b3d8b5301bd889dcdbcbc95873d7230ca3c0389bcbbcb1fd0bd768e2d3dd7d2c0bb36a7c73b2effc33d6fcd1dbde064c8bc617d853d4dd14dbd0df33f3b2fe6953c50dc443d013626bcdad9ad3bcb36a83d8758a4bcaf065d3d1dc2053d7aed2cbd9670523d0f2004bd1a818ebc5bd3ca3cd7664abd18c6e3bcea9b92bdf111e73cbc3dd33c8eddbe3ce11434bd839ba7bcf5008fbc189194bd0065ca3de52a17bdc00aa1bc4d893d3d04d245bdf1d3bb3c48a2493d0c0e7a3d352c77bc911539bd14d951bd3f3db3bcbd56b93c246ded3cb3e9b63c5eb1ec3cec5523bde27fbabc34bb9c3da93790bb5755c4bc41f57e3d6a46de3c54f7ecbb7c09b7bda08d70bd69e9303d6a29f73c379905bcb50bb13be8e20ebd02d50a3bb2113d3d1068883b0e3e443d64a91ebdc82e6c3b529f55bb7826953b44cf493d3efa7c3c2a82afbbab9b4c3c34e8bfbd374c833d7f1f67bda064ecbae64738bc86b402bd7c9593bd9651133dee98993d488e0e3df122be3a0a6dd6bc80c2eebca5cda8bcea2c1d3dc9d6483da39457bd27f9753d0a7736bd97bb2b3c2b484fbdb33b8dbb1498a3bca319473c334d19bdb67d253caa7a41bc6068dbbc933395bc31a19e3dce26823d6313813ded6f87bd3b389bbdea20f4bcb0ff89bcf7e8f73b1f9bd53de39f51bd1d2a383b4d3dccbc51389cbdf9181fbc7f959fbc5e98d33cabe7413cf36f933da7ba45bd62c33bbd6131a7bb1cd3ccbd810c163c5101e93c3fa12f3c7fc989bd9277aabc1728d3bd655788b989b118bd0294ab3d7e5ce4bb64147d3dd8d0873df7a2773df260a73daee4ccbceab52a3c5fd5b9bcd6ded1bca67c3cbd538c043de373433dc3ac78bdd60bdfbc69a94fbdbdd219bc7332d0bc71ba16bd762d91bdc52a50baf3a56e3c41109d3dde58943c4052b23cafab91bcc84e733d4c9b033de3b595bcdee99e3c381982bdd60509bd2247503d9219abbda6abf9bb08da673dc1ed9b3bdddd2c3dd17e593d2ab326bcf4673a3dce61a2bcf26dbf3cdfceb73b9a88853be74e393dfcce073d7fc9b0bb61f0413bed4c6d3cdfac16bd779416bdf9cb13bd587d343c8453fa3c2f3069bdafaa25bd741f70bbedae1d3dfc7d48bdc3dd8eb997ce9e3dfbe99b3c88e3c6bdb4a69ebbbfd054ba7b8789bc4924d23c30f505bc0e95423df21490bd0039a33c065410bdfee9433d0444ed3cdc4ed13ca88d3e3ddeb0733d180573bb38c88e3d16a9a03cda242d3da694013c1da9ef3c525c283dac1fa9bdf6192d3ceb4e88bdf9ab323d4a3528bd3cf9f4bc0f3132bde9b908bd0a391bbdf7fbaa3c0e4b23bd873440bc98448bbdb03a8e3d7248a3bc287828bde51ca7bcbbd4683d591bd73c1ac2a83c2d87073dedc3e0bc878497bd0029ccbb882f95bc93aa3fbcf9192c3c14da18bd740888bc3fdf0fbd81107e3c7e898e3b0442033d6e00093ca8b9b9bb8d5d303b7298bb3bfab1063b706eb23c237420bd9fc486bb4835243db853b5bdd5e7d2bcbe833e3c359a1d3d246677bd2601543d0ea8033a852d01bd00af003caebf82bd3e16103db62d3abd67f53ebcaa291c3d5542963cf787313d040295bdd7720f3d7b11c53d4d2c25bc7f48db3c2ed6a83c9eac5d3c6af794bdb404c33c3792173c94e821bdfb3fb23d3242d83cefd26c3b6327d73c2899b1bd00701cbda89a223dff746bbd05b6d3bd7ff89fbcb99c4e3a2b6fed3cc65cb43c4965f33c20b0bbbd, NULL, '1234567899');
 
 -- --------------------------------------------------------
 
@@ -323,12 +303,12 @@ INSERT INTO `tbl_biometricprofile` (`id`, `user_id`, `face_template`, `fingerpri
 --
 
 CREATE TABLE `tbl_branch` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(100) NOT NULL,
-  `location` text DEFAULT NULL,
-  `description` text DEFAULT NULL,
+  `location` text,
+  `description` text,
   `status` enum('active','inactive') DEFAULT 'active',
-  `date_created` timestamp NULL DEFAULT current_timestamp()
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -346,8 +326,8 @@ INSERT INTO `tbl_branch` (`id`, `name`, `location`, `description`, `status`, `da
 --
 
 CREATE TABLE `tbl_branch_admins` (
-  `user_id` int(11) NOT NULL,
-  `branch_id` int(11) NOT NULL
+  `user_id` int NOT NULL,
+  `branch_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -366,10 +346,10 @@ INSERT INTO `tbl_branch_admins` (`user_id`, `branch_id`) VALUES
 --
 
 CREATE TABLE `tbl_card` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
   `card_uid` varchar(50) NOT NULL,
-  `status` enum('pending','active','revoked') NOT NULL DEFAULT 'pending',
+  `status` enum('pending','active','revoked') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'pending',
   `issued_at` date DEFAULT NULL,
   `expires_at` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -379,12 +359,13 @@ CREATE TABLE `tbl_card` (
 --
 
 INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `expires_at`) VALUES
-(1, 1, '12345677', 'pending', NULL, NULL),
-(2, 17, '12345678', 'active', '2026-05-13', '2029-05-13'),
-(3, 18, '12345666', 'pending', NULL, NULL),
+(1, 1, '1234567890', 'pending', NULL, NULL),
+(2, 17, '2143567890', 'active', '2026-05-13', '2029-05-13'),
+(3, 18, 'A1B2C3D4', 'pending', NULL, NULL),
 (8, 25, '1CE32146', 'pending', NULL, NULL),
 (9, 26, '6EEF3197', 'pending', NULL, NULL),
 (10, 27, '969E83D7', 'active', '2026-05-13', '2029-05-13'),
+(11, 28, '106FB1EF', 'pending', NULL, NULL),
 (12, 29, '8C9E5BC2', 'pending', NULL, NULL),
 (13, 30, 'CB4B6B03', 'pending', NULL, NULL),
 (14, 31, 'A0E5E16B', 'pending', NULL, NULL),
@@ -428,6 +409,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (52, 69, '6FB93BAF', 'pending', NULL, NULL),
 (53, 70, '4C23E5C4', 'pending', NULL, NULL),
 (54, 71, '7E6132C2', 'pending', NULL, NULL),
+(55, 72, '9609FA81', 'pending', NULL, NULL),
 (56, 73, '4D0D2CE2', 'pending', NULL, NULL),
 (57, 74, '308F1298', 'pending', NULL, NULL),
 (58, 75, '146F4D3A', 'pending', NULL, NULL),
@@ -592,6 +574,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (217, 234, '5C6E7D08', 'pending', NULL, NULL),
 (218, 235, 'E154295F', 'pending', NULL, NULL),
 (219, 236, 'FC9AF555', 'pending', NULL, NULL),
+(220, 237, '8E006260', 'pending', NULL, NULL),
 (221, 238, '78C403E5', 'pending', NULL, NULL),
 (222, 239, '42BD119D', 'pending', NULL, NULL),
 (223, 240, '30B11F30', 'pending', NULL, NULL),
@@ -708,6 +691,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (334, 351, '3A2D9A21', 'pending', NULL, NULL),
 (335, 352, 'F8962663', 'pending', NULL, NULL),
 (336, 353, '5964B91D', 'pending', NULL, NULL),
+(337, 354, 'B56EBE51', 'pending', NULL, NULL),
 (338, 355, '04EE6194', 'pending', NULL, NULL),
 (339, 356, '742D2AB5', 'pending', NULL, NULL),
 (340, 357, '220A8DEF', 'pending', NULL, NULL),
@@ -776,6 +760,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (403, 420, '130A1670', 'pending', NULL, NULL),
 (404, 421, 'B001F5AC', 'pending', NULL, NULL),
 (405, 422, '0A4A759B', 'pending', NULL, NULL),
+(406, 423, 'DEA06B8A', 'pending', NULL, NULL),
 (407, 424, '3F9DEC6D', 'pending', NULL, NULL),
 (408, 425, '01ACBA2E', 'pending', NULL, NULL),
 (409, 426, 'D50154E4', 'pending', NULL, NULL),
@@ -1477,13 +1462,13 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (1105, 1122, '3BB5E6F4', 'pending', NULL, NULL),
 (1106, 1123, '7A314BDF', 'pending', NULL, NULL),
 (1107, 1124, '8C91ED7C', 'pending', NULL, NULL),
-(1108, 1125, 'FC66688E', 'pending', NULL, NULL),
+(1108, 1125, 'FC66688E', 'pending', NULL, NULL);
+INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `expires_at`) VALUES
 (1109, 1126, '59F2F2FF', 'pending', NULL, NULL),
 (1110, 1127, 'CC1A1B23', 'pending', NULL, NULL),
 (1111, 1128, '98EEDB09', 'pending', NULL, NULL),
 (1112, 1129, 'C75FB56E', 'pending', NULL, NULL),
-(1113, 1130, '0182CA4A', 'pending', NULL, NULL);
-INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `expires_at`) VALUES
+(1113, 1130, '0182CA4A', 'pending', NULL, NULL),
 (1114, 1131, '53CB4150', 'pending', NULL, NULL),
 (1115, 1132, 'FC05FA7C', 'pending', NULL, NULL),
 (1116, 1133, '668FC634', 'pending', NULL, NULL),
@@ -1523,6 +1508,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (1150, 1167, '7A8F9016', 'pending', NULL, NULL),
 (1151, 1168, '99B7C59C', 'pending', NULL, NULL),
 (1152, 1169, 'A048AE3C', 'pending', NULL, NULL),
+(1153, 1170, '3E43E0B2', 'active', '2026-05-13', '2029-05-13'),
 (1154, 1171, 'E1284EE1', 'pending', NULL, NULL),
 (1155, 1172, '028F75E5', 'pending', NULL, NULL),
 (1156, 1173, '591F7A73', 'pending', NULL, NULL),
@@ -2017,11 +2003,7 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 (1645, 1662, 'CF4731D2', 'pending', NULL, NULL),
 (1646, 1663, 'E85B2465', 'pending', NULL, NULL),
 (1647, 1664, '7775C8C8', 'pending', NULL, NULL),
-(1648, 1665, 'F64D0E80', 'pending', NULL, NULL),
-(1650, 1667, 'C99A06C4', 'pending', NULL, NULL),
-(1651, 1668, '00000000', 'pending', NULL, NULL),
-(1652, 1669, '11111111', 'pending', NULL, NULL),
-(1653, 1673, '22222222', 'pending', NULL, NULL);
+(1648, 1665, 'F64D0E80', 'pending', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2030,9 +2012,9 @@ INSERT INTO `tbl_card` (`id`, `user_id`, `card_uid`, `status`, `issued_at`, `exp
 --
 
 CREATE TABLE `tbl_class` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `class_name` varchar(100) NOT NULL,
-  `description` text DEFAULT NULL
+  `description` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2066,15 +2048,15 @@ INSERT INTO `tbl_class` (`id`, `class_name`, `description`) VALUES
 --
 
 CREATE TABLE `tbl_event` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(100) NOT NULL,
   `start_datetime` datetime NOT NULL,
   `end_datetime` datetime NOT NULL,
-  `affects_attendance` tinyint(1) DEFAULT 1,
-  `created_by` int(11) DEFAULT NULL,
+  `affects_attendance` tinyint(1) DEFAULT '1',
+  `created_by` int DEFAULT NULL,
   `handshake` enum('1','2') DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2082,7 +2064,7 @@ CREATE TABLE `tbl_event` (
 --
 
 INSERT INTO `tbl_event` (`id`, `name`, `start_datetime`, `end_datetime`, `affects_attendance`, `created_by`, `handshake`, `created_at`, `updated_at`) VALUES
-(13, 'PTA Meeting', '2026-05-20 12:00:00', '2026-05-21 13:00:00', 1, 1, '2', '2026-04-24 13:17:43', '2026-04-25 09:23:36');
+(13, 'PTA Meeting', '2026-05-20 12:00:00', '2026-05-20 13:00:00', 1, 1, '2', '2026-04-24 13:17:43', '2026-04-25 09:23:36');
 
 -- --------------------------------------------------------
 
@@ -2091,11 +2073,11 @@ INSERT INTO `tbl_event` (`id`, `name`, `start_datetime`, `end_datetime`, `affect
 --
 
 CREATE TABLE `tbl_event_access_policy` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) NOT NULL,
-  `group_id` int(11) DEFAULT NULL,
-  `subgroup_id` int(11) DEFAULT NULL,
-  `auth_type_id` int(11) NOT NULL
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
+  `subgroup_id` int DEFAULT NULL,
+  `auth_type_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2113,8 +2095,8 @@ INSERT INTO `tbl_event_access_policy` (`id`, `event_id`, `group_id`, `subgroup_i
 --
 
 CREATE TABLE `tbl_event_checkin_checkout_range` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
   `checkin_start_datetime` datetime NOT NULL,
   `checkin_end_datetime` datetime NOT NULL,
   `checkout_start_datetime` datetime DEFAULT NULL,
@@ -2135,23 +2117,14 @@ INSERT INTO `tbl_event_checkin_checkout_range` (`id`, `event_id`, `checkin_start
 --
 
 CREATE TABLE `tbl_exception` (
-  `id` int(11) NOT NULL,
-  `title` varchar(100) NOT NULL,
-  `exception_type` enum('public_holiday','company_event','system_maintenance','emergency_closure','term_closure','other') NOT NULL DEFAULT 'public_holiday',
-  `description` text DEFAULT NULL,
+  `id` int NOT NULL,
+  `exception_type_id` int NOT NULL,
+  `description` text,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `date_created` timestamp NULL DEFAULT current_timestamp()
+  `created_by` int DEFAULT NULL,
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `tbl_exception`
---
-
-INSERT INTO `tbl_exception` (`id`, `title`, `exception_type`, `description`, `start_date`, `end_date`, `created_by`, `date_created`) VALUES
-(2, 'youth day', 'term_closure', 'added description', '2026-05-20', '2026-05-20', 17, '2026-05-24 22:44:14'),
-(7, 'closure', 'public_holiday', '', '2026-05-21', '2026-05-21', 17, '2026-05-19 18:14:07');
 
 -- --------------------------------------------------------
 
@@ -2160,13 +2133,13 @@ INSERT INTO `tbl_exception` (`id`, `title`, `exception_type`, `description`, `st
 --
 
 CREATE TABLE `tbl_group` (
-  `id` int(11) NOT NULL,
-  `branch_id` int(11) DEFAULT NULL,
-  `grouptype_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `branch_id` int DEFAULT NULL,
+  `grouptype_id` int DEFAULT NULL,
   `name` varchar(100) NOT NULL,
-  `date_created` timestamp NULL DEFAULT current_timestamp(),
-  `expected_weekly_hours` int(11) DEFAULT 40,
-  `absence_threshold` int(11) DEFAULT 0
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `expected_weekly_hours` int DEFAULT '40',
+  `absence_threshold` int DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2184,9 +2157,9 @@ INSERT INTO `tbl_group` (`id`, `branch_id`, `grouptype_id`, `name`, `date_create
 --
 
 CREATE TABLE `tbl_group_member` (
-  `group_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `joined_at` timestamp NULL DEFAULT current_timestamp(),
+  `group_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -2198,10 +2171,7 @@ INSERT INTO `tbl_group_member` (`group_id`, `user_id`, `joined_at`, `updated_at`
 (1, 17, '2026-03-27 16:29:42', NULL),
 (2, 1, '2026-03-27 16:29:42', NULL),
 (2, 17, '2026-03-27 15:03:41', NULL),
-(2, 18, '2026-05-04 07:33:56', NULL),
-(2, 1668, '2026-06-01 12:37:20', NULL),
-(2, 1669, '2026-06-01 12:37:20', NULL),
-(2, 1673, '2026-06-01 12:37:49', NULL);
+(2, 18, '2026-05-04 07:33:56', NULL);
 
 -- --------------------------------------------------------
 
@@ -2210,8 +2180,8 @@ INSERT INTO `tbl_group_member` (`group_id`, `user_id`, `joined_at`, `updated_at`
 --
 
 CREATE TABLE `tbl_group_supervisor` (
-  `group_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL
+  `group_id` int NOT NULL,
+  `user_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2230,111 +2200,12 @@ INSERT INTO `tbl_group_supervisor` (`group_id`, `user_id`) VALUES
 --
 
 CREATE TABLE `tbl_logs` (
-  `id` int(11) NOT NULL,
-  `category` enum('system','database','error','sync') NOT NULL,
-  `log_level` enum('info','warning','error','critical') DEFAULT 'info',
-  `description` text DEFAULT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `request_uri` varchar(512) DEFAULT NULL,
-  `context_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`context_data`)),
-  `date_created` timestamp NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `category` varchar(200) DEFAULT NULL,
+  `description` text,
+  `user_id` int DEFAULT NULL,
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `tbl_logs`
---
-
-INSERT INTO `tbl_logs` (`id`, `category`, `log_level`, `description`, `user_id`, `ip_address`, `request_uri`, `context_data`, `date_created`) VALUES
-(4, 'system', 'info', '[ichami] Admin modified calendar exception configurations for override ID: 2 (\'youth day\')', 17, '127.0.0.1', '/api/v1/exceptions', '{\"title\": \"youth day\", \"action\": \"exception_update\", \"exception_id\": 2, \"exception_type\": \"term_closure\"}', '2026-05-24 22:44:14'),
-(5, 'system', 'info', '[ichami] Admin registered terminal gate \'test\' (ID: 18) under branch ID: 4. Generated activation code: U4BERGFC', 17, '127.0.0.1', '/api/v1/terminal', '{\"name\": \"test\", \"action\": \"terminal_register\", \"terminal_id\": 18}', '2026-05-24 22:54:09'),
-(6, 'system', 'info', '[ichami] Admin updated hardware profile and policy permissions for terminal device \'test\' (ID: 18)', 17, '127.0.0.1', '/api/v1/terminal', '{\"name\": \"test\", \"action\": \"terminal_update\", \"terminal_id\": 18}', '2026-05-24 22:55:48'),
-(7, 'system', 'info', '[ichami] Admin purged physical hardware terminal gate maps for ID: 18 from deployment topologies', 17, '127.0.0.1', '/api/v1/terminal/18', '{\"action\": \"terminal_purge\", \"terminal_id\": 18}', '2026-05-24 22:56:05'),
-(8, 'error', 'error', '[System/Automated Task] Exception [Error]: Class \"App\\Modules\\Logs\\Controllers\\LoggerController\" not found', NULL, '127.0.0.1', '/api/v1/logs', '{\"code\": 0, \"file\": \"/home/ichami/Downloads/fastweb/smart-attendance-system/central-server/api/app/Core/Router.php\", \"line\": 113, \"stack_trace\": [\"#0 /home/ichami/Downloads/fastweb/smart-attendance-system/central-server/api/public/index.php(46): App\\\\Core\\\\Router->dispatch()\", \"#1 {main}\"], \"exception_class\": \"Error\"}', '2026-05-24 23:15:50'),
-(41, 'system', 'info', '[ichami] Dropped pending permission request reference ID: 1 from indexes', 17, '127.0.0.1', '/api/v1/permissions/1', '{\"action\": \"permission_delete\", \"permission_id\": 1}', '2026-05-25 10:58:58'),
-(58, 'system', 'info', '[ichami] User ID 1340 initiated a new permission request from 2026-05-25 to 2026-05-25', 17, '127.0.0.1', '/api/v1/permissions', '{\"action\": \"permission_create\", \"user_id\": 1340, \"permission_id\": 4}', '2026-05-25 12:33:27'),
-(60, 'system', 'info', '[ichami] User ID 39 initiated a new permission request from 2026-05-25 to 2026-05-25', 17, '127.0.0.1', '/api/v1/permissions', '{\"action\": \"permission_create\", \"user_id\": 39, \"permission_id\": 5}', '2026-05-25 12:36:10'),
-(61, 'system', 'info', '[ichami] Dropped pending permission request reference ID: 5 from indexes', 17, '127.0.0.1', '/api/v1/permissions/5', '{\"action\": \"permission_delete\", \"permission_id\": 5}', '2026-05-25 12:36:42'),
-(63, 'system', 'info', '[ichami] Dropped pending permission request reference ID: 4 from indexes', 17, '127.0.0.1', '/api/v1/permissions/4', '{\"action\": \"permission_delete\", \"permission_id\": 4}', '2026-05-25 12:37:11'),
-(70, 'system', 'info', '[ichami] User ID 1 initiated a new permission request from 2026-05-25 to 2026-05-25', 17, '127.0.0.1', '/api/v1/permissions', '{\"action\": \"permission_create\", \"user_id\": 1, \"permission_id\": 6}', '2026-05-25 12:56:54'),
-(71, 'system', 'info', '[ichami] User updated details for pending permission request ID: 6', 17, '127.0.0.1', '/api/v1/permissions', '{\"action\": \"permission_update\", \"user_id\": 1, \"permission_id\": 6}', '2026-05-25 12:57:45'),
-(73, 'system', 'info', '[ichami] Dropped pending permission request reference ID: 6 from indexes', 17, '127.0.0.1', '/api/v1/permissions/6', '{\"action\": \"permission_delete\", \"permission_id\": 6}', '2026-05-25 12:58:13'),
-(82, 'system', 'info', '[ichami] Admin ID 17 updated status of permission ID 2 to \'approved\'', 17, '127.0.0.1', '/api/v1/permissions/review', '{\"action\": \"permission_review\", \"status\": \"approved\", \"approver_id\": 17, \"permission_id\": 2}', '2026-05-25 13:22:56'),
-(84, 'system', 'info', '[ichami] Admin ID 17 updated status of permission ID 2 to \'rejected\'', 17, '127.0.0.1', '/api/v1/permissions/review', '{\"action\": \"permission_review\", \"status\": \"rejected\", \"approver_id\": 17, \"permission_id\": 2}', '2026-05-25 13:24:43'),
-(89, 'system', 'info', '[ichami] Admin ID 17 updated status of permission ID 2 to \'approved\'', 17, '127.0.0.1', '/api/v1/permissions/review', '{\"action\": \"permission_review\", \"status\": \"approved\", \"approver_id\": 17, \"permission_id\": 2}', '2026-05-25 13:35:10'),
-(107, 'system', 'info', '[ichami] User ID 1 initiated a new permission request from 2026-05-25 to 2026-05-26', 17, '127.0.0.1', '/api/v1/permissions', '{\"action\": \"permission_create\", \"user_id\": 1, \"permission_id\": 7}', '2026-05-25 14:55:36'),
-(109, 'system', 'info', '[ichami] Admin ID 17 updated status of permission ID 7 to \'approved\'', 17, '127.0.0.1', '/api/v1/permissions/review', '{\"action\": \"permission_review\", \"status\": \"approved\", \"approver_id\": 17, \"permission_id\": 7}', '2026-05-25 14:56:06'),
-(161, 'system', 'info', '[ichami] Created manual daily attendance override for Employee ID 1170 on date 2026-05-19 (Status: PRESENT, Hours: 0)', 17, '127.0.0.1', '/api/v1/attendance', '{\"event_id\": null, \"action_type\": \"manual_override_create\", \"hours_assigned\": 0, \"attendance_date\": \"2026-05-19\", \"status_assigned\": \"present\", \"attendance_context\": \"daily\", \"target_employee_id\": 1170}', '2026-05-25 20:14:06'),
-(200, 'error', 'error', '[System/Automated Task] Exception [Error]: Failed opening required \'/home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Controllers/../../config/cookie.php\' (include_path=\'.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php\')', NULL, '154.72.169.177', '/api/v1/auth/login', '{\"exception_class\":\"Error\",\"file\":\"/home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Controllers/AuthController.php\",\"line\":14,\"code\":0,\"stack_trace\":[\"#0 [internal function]: App\\\\Modules\\\\Users\\\\Controllers\\\\AuthController->login()\",\"#1 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Router.php(117): call_user_func_array()\",\"#2 /home/fastxrdj/api.smartattendance.fastwebcm.org/public/index.php(47): App\\\\Core\\\\Router->dispatch()\",\"#3 {main}\"]}', '2026-05-31 02:52:39'),
-(201, 'system', 'info', '[ichami] Created identity profile for Staff: \'Fastweb admin\' (ID: 1667, Registration: STF-805472)', 17, '154.72.169.177', '/api/v1/users', '{\"user_id\":1667,\"user_type\":\"staff\",\"action\":\"user_create\"}', '2026-05-31 03:15:20'),
-(205, 'system', 'info', '[admin] Admin registered terminal gate \'prod-test\' (ID: 19) under branch ID: 4. Generated activation code: 9GRMEKHM', 1667, '154.72.170.91', '/api/v1/terminal', '{\"terminal_id\":19,\"name\":\"prod-test\",\"action\":\"terminal_register\"}', '2026-05-31 21:43:19'),
-(206, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 19)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":19,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-05-31 22:00:15'),
-(208, 'system', 'info', '[admin] Admin purged physical hardware terminal gate maps for ID: 19 from deployment topologies', 1667, '154.72.170.91', '/api/v1/terminal/19', '{\"terminal_id\":19,\"action\":\"terminal_purge\"}', '2026-05-31 22:05:34'),
-(209, 'system', 'info', '[admin] Admin registered terminal gate \'prod-test\' (ID: 20) under branch ID: 5. Generated activation code: 4W4CJJF9', 1667, '154.72.170.91', '/api/v1/terminal', '{\"terminal_id\":20,\"name\":\"prod-test\",\"action\":\"terminal_register\"}', '2026-05-31 22:06:15'),
-(210, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-05-31 22:55:37'),
-(211, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.170.91', '/api/v1/sync/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[21,22,23]}', '2026-05-31 22:56:28'),
-(212, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 2 queue items', NULL, '154.72.170.91', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[21,23]}', '2026-05-31 22:56:30'),
-(214, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 01:04:19'),
-(215, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 01:09:52'),
-(216, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.170.91', '/api/v1/sync/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[21,22,23]}', '2026-06-01 01:10:02'),
-(217, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 3 queue items', NULL, '154.72.170.91', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[21,22,23]}', '2026-06-01 01:10:03'),
-(218, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.170.91', '/api/v1/sync/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[21,22,23]}', '2026-06-01 01:21:16'),
-(219, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 3 queue items', NULL, '154.72.170.91', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[21,22,23]}', '2026-06-01 01:21:17'),
-(220, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 01:44:11'),
-(221, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.170.91', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 01:46:31'),
-(222, 'sync', 'info', '[System/Automated Task] Successfully updated biometric face templates for 1 employees via terminal uplink', NULL, '154.72.170.91', '/api/v1/sync/uplink/user-templates', '{\"updated_employee_ids\":[17]}', '2026-06-01 01:46:32'),
-(223, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.170.91', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 01:53:42'),
-(224, 'sync', 'info', '[System/Automated Task] Processed and bundled 1 daily metrics summaries from edge node logs', NULL, '154.72.170.91', '/api/v1/sync/uplink/summaries-batch', '{\"total_summaries_processed\":1}', '2026-06-01 01:53:43'),
-(225, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 03:17:59'),
-(226, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.170.91', '/api/v1/sync/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[21,22,23]}', '2026-06-01 03:18:02'),
-(227, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 3 queue items', NULL, '154.72.170.91', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[21,22,23]}', '2026-06-01 03:18:03'),
-(228, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.170.91', '/api/v1/sync/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[21,22,23]}', '2026-06-01 03:30:13'),
-(229, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 2 queue items', NULL, '154.72.170.91', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[21,23]}', '2026-06-01 03:30:14'),
-(230, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 20)', NULL, '154.72.170.91', '/api/v1/terminal/activate', '{\"terminal_id\":20,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 03:36:39'),
-(231, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.170.91', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 03:51:47'),
-(233, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 434', NULL, '154.72.170.91', '/api/v1/auth/refresh', NULL, '2026-06-01 04:28:44'),
-(234, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 435', NULL, '154.72.169.106', '/api/v1/auth/refresh', NULL, '2026-06-01 10:09:38'),
-(235, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 436', NULL, '154.72.169.106', '/api/v1/auth/refresh', NULL, '2026-06-01 10:43:01'),
-(236, 'system', 'info', '[admin] Admin registered terminal gate \'test-prod\' (ID: 21) under branch ID: 4. Generated activation code: C6AXSCVP', 1667, '154.72.169.106', '/api/v1/terminal', '{\"terminal_id\":21,\"name\":\"test-prod\",\"action\":\"terminal_register\"}', '2026-06-01 11:07:37'),
-(237, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 21)', NULL, '154.72.169.106', '/api/v1/terminal/activate', '{\"terminal_id\":21,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 11:07:58'),
-(238, 'sync', 'info', '[System/Automated Task] Dispatched 3 pending payload changes to requesting hardware node', NULL, '154.72.169.106', '/api/v1/sync/updates?terminal_id=21&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":3,\"queue_ids\":[24,25,26]}', '2026-06-01 11:08:47'),
-(239, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 3 queue items', NULL, '154.72.169.106', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[24,25,26]}', '2026-06-01 11:08:48'),
-(240, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.169.106', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 11:11:52'),
-(241, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 437', NULL, '154.72.169.106', '/api/v1/auth/refresh', NULL, '2026-06-01 11:14:11'),
-(242, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 438', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 12:17:20'),
-(243, 'system', 'info', '[admin] Created identity profile for Staff: \'Peter Leke\' (ID: 1668, Registration: STF-891296)', 1667, '154.72.169.138', '/api/v1/users', '{\"user_id\":1668,\"user_type\":\"staff\",\"action\":\"user_create\"}', '2026-06-01 12:21:33'),
-(244, 'system', 'info', '[ichami] Created identity profile for Staff: \'Tayu Prosper\' (ID: 1669, Registration: STF-781919)', 17, '154.72.169.138', '/api/v1/users', '{\"user_id\":1669,\"user_type\":\"staff\",\"action\":\"user_create\"}', '2026-06-01 12:21:44'),
-(245, 'error', 'critical', '[ichami] Exception [mysqli_sql_exception]: Duplicate entry \'ichami\' for key \'username\'', 17, '154.72.169.138', '/api/v1/users', '{\"exception_class\":\"mysqli_sql_exception\",\"file\":\"/home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php\",\"line\":90,\"code\":1062,\"stack_trace\":[\"#0 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php(90): mysqli_stmt->execute()\",\"#1 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Models/Users.php(108): App\\\\Core\\\\Database->query()\",\"#2 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Controllers/UserRegistrationController.php(89): App\\\\Modules\\\\Users\\\\Models\\\\Users->createUser()\",\"#3 [internal function]: App\\\\Modules\\\\Users\\\\Controllers\\\\UserRegistrationController->register()\",\"#4 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Router.php(117): call_user_func_array()\",\"#5 /home/fastxrdj/api.smartattendance.fastwebcm.org/public/index.php(48): App\\\\Core\\\\Router->dispatch()\",\"#6 {main}\"]}', '2026-06-01 12:31:28'),
-(246, 'error', 'critical', '[ichami] Exception [mysqli_sql_exception]: Duplicate entry \'ichami\' for key \'username\'', 17, '154.72.169.138', '/api/v1/users', '{\"exception_class\":\"mysqli_sql_exception\",\"file\":\"/home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php\",\"line\":90,\"code\":1062,\"stack_trace\":[\"#0 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php(90): mysqli_stmt->execute()\",\"#1 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Models/Users.php(108): App\\\\Core\\\\Database->query()\",\"#2 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Controllers/UserRegistrationController.php(89): App\\\\Modules\\\\Users\\\\Models\\\\Users->createUser()\",\"#3 [internal function]: App\\\\Modules\\\\Users\\\\Controllers\\\\UserRegistrationController->register()\",\"#4 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Router.php(117): call_user_func_array()\",\"#5 /home/fastxrdj/api.smartattendance.fastwebcm.org/public/index.php(48): App\\\\Core\\\\Router->dispatch()\",\"#6 {main}\"]}', '2026-06-01 12:31:40'),
-(247, 'error', 'critical', '[ichami] Exception [mysqli_sql_exception]: Duplicate entry \'ichami\' for key \'username\'', 17, '154.72.169.138', '/api/v1/users', '{\"exception_class\":\"mysqli_sql_exception\",\"file\":\"/home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php\",\"line\":90,\"code\":1062,\"stack_trace\":[\"#0 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Database.php(90): mysqli_stmt->execute()\",\"#1 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Models/Users.php(108): App\\\\Core\\\\Database->query()\",\"#2 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Modules/Users/Controllers/UserRegistrationController.php(89): App\\\\Modules\\\\Users\\\\Models\\\\Users->createUser()\",\"#3 [internal function]: App\\\\Modules\\\\Users\\\\Controllers\\\\UserRegistrationController->register()\",\"#4 /home/fastxrdj/api.smartattendance.fastwebcm.org/app/Core/Router.php(117): call_user_func_array()\",\"#5 /home/fastxrdj/api.smartattendance.fastwebcm.org/public/index.php(48): App\\\\Core\\\\Router->dispatch()\",\"#6 {main}\"]}', '2026-06-01 12:31:53'),
-(248, 'system', 'info', '[ichami] Created identity profile for Staff: \'Eho Josephine Nkombi\' (ID: 1673, Registration: STF-633107)', 17, '154.72.169.138', '/api/v1/users', '{\"user_id\":1673,\"user_type\":\"staff\",\"action\":\"user_create\"}', '2026-06-01 12:33:50'),
-(249, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 439', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 13:17:46'),
-(250, 'system', 'info', '[admin] Admin registered terminal gate \'peter-test\' (ID: 22) under branch ID: 4. Generated activation code: R6EPFUZY', 1667, '154.72.169.138', '/api/v1/terminal', '{\"terminal_id\":22,\"name\":\"peter-test\",\"action\":\"terminal_register\"}', '2026-06-01 13:17:46'),
-(251, 'system', 'info', '[admin] Admin registered terminal gate \'prosper-test\' (ID: 23) under branch ID: 4. Generated activation code: GX8C7S6X', 1667, '154.72.169.138', '/api/v1/terminal', '{\"terminal_id\":23,\"name\":\"prosper-test\",\"action\":\"terminal_register\"}', '2026-06-01 13:19:53'),
-(252, 'system', 'info', '[admin] Admin registered terminal gate \'phyna-test\' (ID: 24) under branch ID: 4. Generated activation code: H4WW6SHJ', 1667, '154.72.169.138', '/api/v1/terminal', '{\"terminal_id\":24,\"name\":\"phyna-test\",\"action\":\"terminal_register\"}', '2026-06-01 13:21:01'),
-(253, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 22)', NULL, '154.72.169.138', '/api/v1/terminal/activate', '{\"terminal_id\":22,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 13:46:19'),
-(254, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.169.138', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 13:46:51'),
-(255, 'sync', 'info', '[System/Automated Task] Successfully updated biometric face templates for 1 employees via terminal uplink', NULL, '154.72.169.138', '/api/v1/sync/uplink/user-templates', '{\"updated_employee_ids\":[1668]}', '2026-06-01 13:46:52'),
-(256, 'sync', 'info', '[System/Automated Task] Dispatched 6 pending payload changes to requesting hardware node', NULL, '154.72.169.138', '/api/v1/sync/updates?terminal_id=22&last_sync=2000-01-01+00%3A00%3A00', '{\"dispatched_count\":6,\"queue_ids\":[27,28,29,30,31,32]}', '2026-06-01 13:46:53'),
-(257, 'sync', 'info', '[System/Automated Task] Confirmed remote terminal handshake receipt for 6 queue items', NULL, '154.72.169.138', '/api/v1/sync/acknowledge', '{\"confirmed_queue_ids\":[27,28,29,30,31,32]}', '2026-06-01 13:46:54'),
-(258, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.169.138', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-01 13:49:59'),
-(259, 'sync', 'info', '[System/Automated Task] Processed and bundled 1 daily metrics summaries from edge node logs', NULL, '154.72.169.138', '/api/v1/sync/uplink/summaries-batch', '{\"total_summaries_processed\":1}', '2026-06-01 13:50:01'),
-(260, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 440', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 14:04:04'),
-(261, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 443', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 14:41:30'),
-(262, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 23)', NULL, '154.72.169.138', '/api/v1/terminal/activate', '{\"terminal_id\":23,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 15:12:20'),
-(263, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 444', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 15:22:36'),
-(264, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 441', NULL, '154.72.169.138', '/api/v1/auth/refresh', NULL, '2026-06-01 15:23:20'),
-(265, 'system', 'info', '[System/Automated Task] Terminal device status modified to: \'ACTIVE\' (Terminal ID: 24)', NULL, '154.72.169.138', '/api/v1/terminal/activate', '{\"terminal_id\":24,\"status\":\"active\",\"action\":\"terminal_status_change\"}', '2026-06-01 15:23:33'),
-(266, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 445', NULL, '143.105.152.146', '/api/v1/auth/refresh', NULL, '2026-06-01 17:54:35'),
-(267, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 447', NULL, '143.105.152.146', '/api/v1/auth/refresh', NULL, '2026-06-01 19:15:33'),
-(268, 'sync', 'info', '[System/Automated Task] Ingested 1 raw attendance log items from hardware uplink', NULL, '154.72.169.190', '/api/v1/sync/uplink/sessions-batch', '{\"total_records_processed\":1}', '2026-06-02 00:00:19'),
-(269, 'sync', 'info', '[System/Automated Task] Processed and bundled 1 daily metrics summaries from edge node logs', NULL, '154.72.169.190', '/api/v1/sync/uplink/summaries-batch', '{\"total_summaries_processed\":1}', '2026-06-02 00:00:20'),
-(270, 'database', 'critical', '[System/Automated Task] Database connection aborted: No such file or directory', NULL, '129.0.45.254', '/api/v1/sync/updates?terminal_id=9&last_sync=2000-01-01+00%3A00%3A00', '{\"host\":\"localhost\",\"port\":\"3306\"}', '2026-06-03 22:32:39'),
-(271, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 430', NULL, '129.0.79.244', '/api/v1/auth/refresh', NULL, '2026-06-15 21:39:42'),
-(272, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 450', NULL, '143.105.152.214', '/api/v1/auth/refresh', NULL, '2026-08-10 20:45:16'),
-(273, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 451', NULL, '143.105.152.214', '/api/v1/auth/refresh', NULL, '2026-08-10 22:27:39'),
-(274, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 452', NULL, '143.105.152.194', '/api/v1/auth/refresh', NULL, '2026-08-14 08:12:12'),
-(275, 'system', 'info', '[System/Automated Task] Revoked active refresh token sequence matrix record map ID: 453', NULL, '143.105.152.194', '/api/v1/auth/refresh', NULL, '2026-08-14 10:30:27');
 
 -- --------------------------------------------------------
 
@@ -2343,26 +2214,17 @@ INSERT INTO `tbl_logs` (`id`, `category`, `log_level`, `description`, `user_id`,
 --
 
 CREATE TABLE `tbl_permission` (
-  `id` int(11) NOT NULL,
-  `permission_type_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `initiatedby` int(11) DEFAULT NULL,
-  `reason` text DEFAULT NULL,
+  `id` int NOT NULL,
+  `permissiontype_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `initiatedby` int DEFAULT NULL,
+  `reason` text,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
   `additional_proof` varchar(100) DEFAULT NULL,
-  `requested_at` timestamp NULL DEFAULT current_timestamp()
+  `requested_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `tbl_permission`
---
-
-INSERT INTO `tbl_permission` (`id`, `permission_type_id`, `user_id`, `initiatedby`, `reason`, `start_date`, `end_date`, `status`, `additional_proof`, `requested_at`) VALUES
-(2, 2, 17, 17, 'Urgent family emergency requiring attention during morning working hours.', '2026-05-25', '2026-05-28', 'approved', NULL, '2026-05-25 10:15:25'),
-(3, 6, 18, 17, 'Out-of-station client deployment and systems integration training phase.', '2026-05-01', '2026-05-02', 'pending', NULL, '2026-05-25 10:15:25'),
-(7, 4, 1, 17, 'off for these days', '2026-05-25', '2026-05-26', 'approved', NULL, '2026-05-25 14:55:36');
 
 -- --------------------------------------------------------
 
@@ -2371,20 +2233,12 @@ INSERT INTO `tbl_permission` (`id`, `permission_type_id`, `user_id`, `initiatedb
 --
 
 CREATE TABLE `tbl_permission_approval` (
-  `id` int(11) NOT NULL,
-  `permission_id` int(11) NOT NULL,
-  `approver_id` int(11) DEFAULT NULL,
-  `remark` text DEFAULT NULL,
-  `date_approved` timestamp NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `permission_id` int NOT NULL,
+  `approver_id` int DEFAULT NULL,
+  `remark` text,
+  `date_approved` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `tbl_permission_approval`
---
-
-INSERT INTO `tbl_permission_approval` (`id`, `permission_id`, `approver_id`, `remark`, `date_approved`) VALUES
-(1, 2, 17, 'ok permission granted', '2026-05-25 13:22:56'),
-(4, 7, 17, 'yes i approve', '2026-05-25 14:56:06');
 
 -- --------------------------------------------------------
 
@@ -2393,11 +2247,11 @@ INSERT INTO `tbl_permission_approval` (`id`, `permission_id`, `approver_id`, `re
 --
 
 CREATE TABLE `tbl_refreshtokens` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
   `token_hash` varchar(1025) NOT NULL,
-  `revoked` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `revoked` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `expires_at` timestamp NOT NULL,
   `revoked_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -2407,318 +2261,30 @@ CREATE TABLE `tbl_refreshtokens` (
 --
 
 INSERT INTO `tbl_refreshtokens` (`id`, `user_id`, `token_hash`, `revoked`, `created_at`, `expires_at`, `revoked_at`) VALUES
-(143, 17, '$2y$10$sbSDOKGBZDibHQQ/kx8o9.2JuAHMJ3B7aiGOpxeUj/AXCOLK3XJd.', 1, '2026-05-17 19:25:28', '2026-06-16 19:25:28', '2026-05-17 19:28:55'),
-(144, 17, '$2y$10$dQWjNybV2AI1YquV7pW3ZuW5Q7RhtLmQbXzRj7lyePih3ZZxNmpli', 1, '2026-05-17 19:28:55', '2026-06-16 19:28:55', '2026-05-17 19:36:22'),
-(145, 17, '$2y$10$hkfLX/rzm53vDyo3Jg.DHud4hOVUs5x.Ss2H8Opzn4LBSbLJmS2oe', 1, '2026-05-17 19:36:40', '2026-06-16 19:36:40', '2026-05-17 19:39:23'),
-(146, 17, '$2y$10$idbjOHDtWeeeeTo9E0sV/uLaibm1.3z8vqo.SDhcp06B4b281IHZ6', 1, '2026-05-17 19:39:33', '2026-06-16 19:39:33', '2026-05-17 19:41:28'),
-(147, 17, '$2y$10$1mPftR1CCh7HSXfndPMuCuapIpIb.5LPDKNMJNz1CZzSVkz4WnZa6', 1, '2026-05-17 19:41:28', '2026-06-16 19:41:28', '2026-05-19 10:53:47'),
-(148, 17, '$2y$10$pfziTlH2MGFzfSVaoLR/AOYk8O.S8kjuCOb8ebbOc17jVVCbiSGEy', 0, '2026-05-19 10:53:30', '2026-06-18 10:53:30', NULL),
-(149, 17, '$2y$10$0XRGJ.0we5Jmwo/4sNHi/OqP7QufU0I32AU7brUgaM5HUZh2sAeO.', 1, '2026-05-19 10:53:47', '2026-06-18 10:53:47', '2026-05-19 10:55:53'),
-(150, 17, '$2y$10$wHgIoE4XPNxCiEjUxjso..3fbf19zraopvcxWpOZsGN7nh2XCA3ES', 1, '2026-05-19 10:55:53', '2026-06-18 10:55:53', '2026-05-19 11:10:45'),
-(151, 17, '$2y$10$OUre70sTQoVtzgTG7xap1OK2bSkKsKWchtTIthN.zYxvSyNXDUHTm', 0, '2026-05-19 11:10:46', '2026-06-18 11:10:46', NULL),
-(152, 17, '$2y$10$rNQfwgSrhdkyeqDQuFrN5OD5oQQZsLO1QJNXO5hLcHQRifjsbXuXS', 1, '2026-05-19 11:11:00', '2026-06-18 11:11:00', '2026-05-19 11:35:02'),
-(153, 17, '$2y$10$LqTHT5.eWOdlrPHJTBhhnu/lN0um4jyrQPED8owaIjCEngvUvy6zS', 1, '2026-05-19 11:35:02', '2026-06-18 11:35:02', '2026-05-19 12:42:27'),
-(154, 17, '$2y$10$oOCQEY/93paNJkrh3t0ReO9ALC8fzfb3ipNK0LwnrwTEq9hGcIbcK', 1, '2026-05-19 12:42:27', '2026-06-18 12:42:27', '2026-05-19 12:57:49'),
-(155, 17, '$2y$10$a5lAgk9TK/fRdFn0jrmKA.XN3ZH9mbIkCaW1l5ZBiT33m0m0S.LEW', 1, '2026-05-19 12:57:49', '2026-06-18 12:57:49', '2026-05-19 12:59:37'),
-(156, 17, '$2y$10$CdWEAn0e9VFdOylqbxqfLOsB3f7sWGg.8saOxJ8l87SuvfrZN4gFy', 1, '2026-05-19 12:59:38', '2026-06-18 12:59:38', '2026-05-19 13:04:58'),
-(157, 17, '$2y$10$3Fbts4M.oVWorD2SK.NvZeYFdjPJtxvMonTaVCSG1SAAXGHcXJ5pe', 1, '2026-05-19 13:04:58', '2026-06-18 13:04:58', '2026-05-19 13:11:24'),
-(158, 17, '$2y$10$7QtPtgOdWg3FyDZVFN9ry.Gj2o/XX1MXROTCL.fZkotuYDGw6QZOW', 1, '2026-05-19 13:11:24', '2026-06-18 13:11:24', '2026-05-19 13:12:44'),
-(159, 17, '$2y$10$XX7KPh28gsgdfbJMPBHfCO/NTgGpiEVX/1DKUhWAYkxGkLdu.tfsG', 1, '2026-05-19 13:12:45', '2026-06-18 13:12:45', '2026-05-19 16:44:06'),
-(160, 17, '$2y$10$5EHyXLhnmF/1Vxj9lauuXeFe/BlB7gXOakkeIt0McXEKbx./VfoUi', 1, '2026-05-19 16:44:07', '2026-06-18 16:44:07', '2026-05-19 17:35:28'),
-(161, 17, '$2y$10$LcDLvhQnTQ0uEDoKDWbU2emhtQT620m2KP2DN0Ngn0lS2LT4JG2bu', 1, '2026-05-19 17:35:28', '2026-06-18 17:35:28', '2026-05-19 17:35:32'),
-(162, 17, '$2y$10$J7.Xzbl6bXTcUP.ej92o5e1X9nz78lBahsf0.fdVXU2I7VroK40Xi', 1, '2026-05-19 17:35:32', '2026-06-18 17:35:32', '2026-05-19 17:41:50'),
-(163, 17, '$2y$10$sbDWlPcEbPVbG/d2KkbONePj67XFgS2f/AzfONbUdR.i/HA7UYtk2', 1, '2026-05-19 17:41:51', '2026-06-18 17:41:51', '2026-05-19 17:49:09'),
-(164, 17, '$2y$10$f5cvxmqwux5BGFGJhcqPGOaaCnuN15v27yEKsT9IWUPs4KcNbDzii', 1, '2026-05-19 17:49:09', '2026-06-18 17:49:09', '2026-05-19 17:50:28'),
-(165, 17, '$2y$10$Dq5.ajXSV.Pf0G5fBWzl8uKNjmup/PON3q8CAXdJWU5TOP6QQNhrW', 1, '2026-05-19 17:50:28', '2026-06-18 17:50:28', '2026-05-19 17:52:36'),
-(166, 17, '$2y$10$jsg0mn.xYBpOYD2b6llmxONro1AFYWVr0GmcmpmrNwN8XkkUcAnzS', 0, '2026-05-19 17:52:36', '2026-06-18 17:52:36', NULL),
-(167, 17, '$2y$10$IciV7t0YH4SO1RVqe8m2rODjug1AmkgIZehOXKXAxeuyWOPVdRsea', 1, '2026-05-19 17:54:16', '2026-06-18 17:54:16', '2026-05-19 17:55:30'),
-(168, 17, '$2y$10$nX58.qFSa.F8WaXYUM.pqepRWVjshD7ZJQFoGy39TOPfowTTMPfUe', 1, '2026-05-19 17:55:30', '2026-06-18 17:55:30', '2026-05-19 17:56:43'),
-(169, 17, '$2y$10$n4m8U8WAKAhMVKboGGs6xOVUXYRPs1.TVDD6fE8bqPGrN6wrwhkhS', 1, '2026-05-19 17:56:43', '2026-06-18 17:56:43', '2026-05-19 18:35:10'),
-(170, 17, '$2y$10$fjU.wBeJDw0w9vLoaz2cHuPV5dlGNdrQeudNoi1mVDPvmCRYQcJHq', 1, '2026-05-19 18:35:10', '2026-06-18 18:35:10', '2026-05-19 19:09:35'),
-(171, 17, '$2y$10$UNa2TaGafiA5BWfT3UIkB.Gvla.YIvqUjLpEf.d/9Ua6aMSRI9JVC', 1, '2026-05-19 19:09:35', '2026-06-18 19:09:35', '2026-05-20 09:04:19'),
-(172, 17, '$2y$10$BB4wI2.Z33x6ZhQDwclIw.55HH3So5phyL7DOVG4Wib6IWNOveEJW', 1, '2026-05-20 09:04:19', '2026-06-19 09:04:19', '2026-05-20 09:22:07'),
-(173, 17, '$2y$10$KAmK5EQNAgbVAixaDao60ONTp4450NAr0d579AxKTL1OqnOzoyuRa', 1, '2026-05-20 09:22:07', '2026-06-19 09:22:07', '2026-05-20 09:28:44'),
-(174, 17, '$2y$10$4J8oW1LMfLJqnJmQBNqdiO6K8qCEFtAXGBfx/C3.W1Rlnr3u8voYS', 1, '2026-05-20 09:28:44', '2026-06-19 09:28:44', '2026-05-20 09:30:20'),
-(175, 17, '$2y$10$rIoehuFMT7o1mX41lutjXeRYnAUw1/HBDGOcHPFM1gV0E/Fy/YVPO', 1, '2026-05-20 09:30:21', '2026-06-19 09:30:21', '2026-05-20 09:38:27'),
-(176, 17, '$2y$10$4/t4JwAah7z0ZCNhr21jruzcU1/mE1bR.ny0GqeidCrhf91kGNy9.', 1, '2026-05-20 09:38:28', '2026-06-19 09:38:28', '2026-05-20 09:49:52'),
-(177, 17, '$2y$10$Q8DUHA1AR7rEZ/N0h3xk.O/LJFmRxUkV7thceoTHFnb7i0uc51EU.', 1, '2026-05-20 09:49:52', '2026-06-19 09:49:52', '2026-05-20 09:52:12'),
-(178, 17, '$2y$10$xeJSBty54XARyB5AY4/SnuEobK1EM9bX22txiWu60y7Nvu/45530i', 1, '2026-05-20 09:52:12', '2026-06-19 09:52:12', '2026-05-20 17:13:12'),
-(179, 17, '$2y$10$aymalTzCWLcmi4PRf7Hr7.vU6nuS5hRe.0O9PxEgiE5ciwVS7YtWi', 0, '2026-05-20 09:54:21', '2026-06-19 09:54:21', NULL),
-(180, 17, '$2y$10$2ej.RjzFTyzhPX/bPrDHn.N3XZyzl0TnWIuu62W7eDH3kEjxJCtXa', 0, '2026-05-20 09:55:54', '2026-06-19 09:55:54', NULL),
-(181, 17, '$2y$10$qL4qnrwGVbbc96xHwLgTT.2Yy0nIk7.zM/zuR3SFxvTnSMHpPo5zO', 1, '2026-05-20 17:13:12', '2026-06-19 17:13:12', '2026-05-20 21:47:37'),
-(182, 17, '$2y$10$Eupcrrh1.1mqJgFCHI7vwOXr9RGnGeR14se9CfewRdZJbPWG7mKde', 1, '2026-05-20 21:47:37', '2026-06-19 21:47:37', '2026-05-20 23:03:28'),
-(183, 17, '$2y$10$dyngGF6xKwwfBOJh2uf1HesjfjJocGmGq26Tupy3y9NxOK3hCj33S', 1, '2026-05-20 23:03:28', '2026-06-19 23:03:28', '2026-05-21 09:11:31'),
-(184, 17, '$2y$10$lWBYtOKaEja/zyS.AE2K3OW9IboEHlwcAC7xs4.8VsUIGSl0AQXCa', 1, '2026-05-21 09:11:31', '2026-06-20 09:11:31', '2026-05-21 11:41:30'),
-(185, 17, '$2y$10$VgKc3OsQCTGEgcHSni0FcuSraXOjrhn1DvtAhWFgwQ6swAmHhirH6', 1, '2026-05-21 11:41:30', '2026-06-20 11:41:30', '2026-05-21 12:17:48'),
-(186, 17, '$2y$10$vRE5hT3tDfe.Rfpbdo2P1ee8JkD5fyIjzJV1dEpv75uf7aaE3ACjW', 0, '2026-05-21 12:17:48', '2026-06-20 12:17:48', NULL),
-(187, 17, '$2y$10$p7ZZSOz2gd9mjLWJGUl4BuZn6SFvCQEDujYaQqhFi4itXZRvKE05i', 1, '2026-05-21 12:17:59', '2026-06-20 12:17:59', '2026-05-21 13:03:58'),
-(188, 17, '$2y$10$b5TBWSzlv3MDcM.lY7yJyOrNC1zzxdR87M.pwFUyvpaU5BxW.fV7i', 1, '2026-05-21 13:03:58', '2026-06-20 13:03:58', '2026-05-21 13:04:56'),
-(189, 17, '$2y$10$KL5FbEw7EWk8qxUXc3vHAemIYmiQ3hVco/fpnPxk2A/2.3jKibE4a', 1, '2026-05-21 13:04:56', '2026-06-20 13:04:56', '2026-05-21 13:06:26'),
-(190, 17, '$2y$10$5quX2AB8EnDtJeqXpbXt6./sqQczyLiNa2TiTaLYoemE8gp8wPWGS', 1, '2026-05-21 13:06:26', '2026-06-20 13:06:26', '2026-05-21 13:56:53'),
-(191, 17, '$2y$10$3b32nACWDz2q7VuZyVSEouzegy/BPzYF7l2fHzuFdk2iw5sQ5CMIS', 1, '2026-05-21 13:56:53', '2026-06-20 13:56:53', '2026-05-21 13:57:54'),
-(192, 17, '$2y$10$Uve0wncGyMxcRDticL7T6uQ2cnGd4JyqQWoUNSF6bZ5N4WOOSKmF6', 1, '2026-05-21 13:57:54', '2026-06-20 13:57:54', '2026-05-21 14:04:52'),
-(193, 17, '$2y$10$RoHUcZe2rxtum8v3mxLeL.c0vKpWD4wWzdzki16GREIFle.KFXfhy', 1, '2026-05-21 14:04:52', '2026-06-20 14:04:52', '2026-05-21 14:09:25'),
-(194, 17, '$2y$10$C4IfLVFl4cpEACRhMAn3k.TQhIdq4qLBPfStjMAfHG/17P8H.luDW', 1, '2026-05-21 14:09:25', '2026-06-20 14:09:25', '2026-05-21 14:11:32'),
-(195, 17, '$2y$10$VHuW6OOXAKNs3..4xfXTGerUDxWAkgmJ.jrZ0NzG8PWqVwXRwOaH6', 1, '2026-05-21 14:11:32', '2026-06-20 14:11:32', '2026-05-21 14:16:41'),
-(196, 17, '$2y$10$TkpaeaImyr8KQmy83gZx6uu2HaL4kecNC2Zr36PHARgA0zcjKfLEi', 1, '2026-05-21 14:16:41', '2026-06-20 14:16:41', '2026-05-21 14:20:32'),
-(197, 17, '$2y$10$H2iCJn9MZ2mOWN7kr8LTROPjdGYbymkbapOJ6vlnXggmx9p1dvUCa', 1, '2026-05-21 14:20:32', '2026-06-20 14:20:32', '2026-05-21 14:44:27'),
-(198, 17, '$2y$10$ZW5Owq72j4ZLmA3s1.VYku99kJaaFhuLjV20OXj5Xon7fs4FT4ngK', 1, '2026-05-21 14:44:27', '2026-06-20 14:44:27', '2026-05-21 15:23:25'),
-(199, 17, '$2y$10$WZ/XTK37LiKjbtOeHW5xvebwIPIX70wRlQj8AFYAiiNMtiG91PQnO', 1, '2026-05-21 15:23:25', '2026-06-20 15:23:25', '2026-05-21 16:00:31'),
-(200, 17, '$2y$10$5NKytRk5rSMid1RxwPnN4eAsT0IV8WARRre3m8KGmsj/dLH/mbiaC', 1, '2026-05-21 16:00:31', '2026-06-20 16:00:31', '2026-05-21 20:43:14'),
-(201, 17, '$2y$10$3uN9a4fO30ojWvXQ1EQQgOK1xRN8uZxSmieZD.lpFDypnr.7x9lLG', 1, '2026-05-21 20:43:14', '2026-06-20 20:43:14', '2026-05-22 07:27:39'),
-(202, 17, '$2y$10$W1wGFApig9J2kC2NPhddien4jxcIj.u/nFbXIjxENHsZQ.rHBs9PO', 1, '2026-05-22 07:27:39', '2026-06-21 07:27:39', '2026-05-22 07:54:23'),
-(203, 17, '$2y$10$rOaChrPEMItYFj6Td6j4XOcXa.k0eBX4NdBDV0MzhSMb4U.1lHR0u', 1, '2026-05-22 07:54:23', '2026-06-21 07:54:23', '2026-05-22 09:19:32'),
-(204, 17, '$2y$10$7X1rRtMx8QyNP8enln4gpuI4qk3cfPmuuN5Wc7Aq5gff4c740Dilm', 0, '2026-05-22 09:19:32', '2026-06-21 09:19:32', NULL),
-(205, 17, '$2y$10$fOAEpA7onQpTVdDE5fDdTeDfJ4VT9e0P7ZzMqa0oy9VvGhgxz220e', 1, '2026-05-22 09:19:49', '2026-06-21 09:19:49', '2026-05-22 10:27:19'),
-(206, 17, '$2y$10$DQAwCWQjSDGPgd7iLLjtLuxBVuDJkCGLdbsnpOtUM9X5kMqPiszH.', 1, '2026-05-22 10:27:19', '2026-06-21 10:27:19', '2026-05-22 10:27:38'),
-(207, 17, '$2y$10$YF9BmDBT/0OQQveexAZ7yORV2Y/KQALs.aHTEpK.eO753HXdU53oq', 1, '2026-05-22 10:27:38', '2026-06-21 10:27:38', '2026-05-22 10:55:11'),
-(208, 17, '$2y$10$MTRO/RDppImhJ1frk.QlWuaaWiDBnwTqNA6rQJ4t/CHs5YRzjPtpm', 1, '2026-05-22 10:55:11', '2026-06-21 10:55:11', '2026-05-22 10:56:14'),
-(209, 17, '$2y$10$qjpwGnHenwCBaW4b2T/gnO/ntMsqxXfV1CspPPROOgPRpGqGQlZlK', 1, '2026-05-22 10:56:14', '2026-06-21 10:56:14', '2026-05-23 07:55:02'),
-(210, 17, '$2y$10$WkIrnUTw/vo9HKTV492CRuW8MCsnWOVXpU2mWLbwgz3/75l3A8ufu', 1, '2026-05-23 07:55:02', '2026-06-22 07:55:02', '2026-05-23 11:43:47'),
-(211, 17, '$2y$10$FLaQ2v4wWfczldOWWm1Rqu7AFwgEtUYnvPMbnC9F54Z9dhkar3ihO', 1, '2026-05-23 11:43:47', '2026-06-22 11:43:47', '2026-05-23 12:18:49'),
-(212, 17, '$2y$10$PwcMGhD2pbRQOuL2pVvGTewZR/RlIAiHRu3PJ7I9ogGbO2jB1RshK', 1, '2026-05-23 12:18:49', '2026-06-22 12:18:49', '2026-05-23 15:00:20'),
-(213, 17, '$2y$10$QbSPP4MKynoghcQ4QLI5bOlCHdSehjRm0kttbPMgqNmQo6G4ZhwoG', 1, '2026-05-23 15:00:20', '2026-06-22 15:00:20', '2026-05-23 15:10:27'),
-(214, 17, '$2y$10$t/ILLpUbQObgXnso/jBX1ucr.NFUbCB..vjqO03Gs7CdVlU7shz7y', 1, '2026-05-23 15:10:27', '2026-06-22 15:10:27', '2026-05-23 15:12:28'),
-(215, 17, '$2y$10$7bvvBfL7jhlLH2175uWLT.A1KnwQlaIdAL2rUJVKZ5y3uawRMMiJW', 1, '2026-05-23 15:12:28', '2026-06-22 15:12:28', '2026-05-23 16:32:35'),
-(216, 17, '$2y$10$xktfpCFJyhrUSb.YdlTHkO4Oud7VpTOJhUXMbX55/r42Z9pFbqqBy', 1, '2026-05-23 16:32:35', '2026-06-22 16:32:35', '2026-05-23 17:09:51'),
-(217, 17, '$2y$10$uMcV9o1/R2iXcJ0.OV8nQ.QJoT4iWBerbPZz6MHbylnjmR7UCzp8y', 1, '2026-05-23 17:09:51', '2026-06-22 17:09:51', '2026-05-23 17:11:16'),
-(218, 17, '$2y$10$EqS2Pv8dnmLqZSXa/Cy2c.PWn3IKdMU744hLTAGE7jI4zqqhdUssu', 1, '2026-05-23 17:11:16', '2026-06-22 17:11:16', '2026-05-23 17:12:44'),
-(219, 17, '$2y$10$tWuaEWglKCynSIAZRAXMO.gLEK504vLOJ/GXD9/.a4MqrBLn9aFR2', 1, '2026-05-23 17:12:44', '2026-06-22 17:12:44', '2026-05-23 17:13:41'),
-(220, 17, '$2y$10$atU4bF6BbDItpDeaCMjbpOdj3urjQ8J2G.TJtGAY93iQ9wYAdE4Kq', 1, '2026-05-23 17:13:41', '2026-06-22 17:13:41', '2026-05-23 17:21:29'),
-(221, 17, '$2y$10$AZPnVaXgESCXJkdKY7C9k.c5ozl1TWzNx0NnjM3CRiUoRvLtbnhqy', 1, '2026-05-23 17:21:29', '2026-06-22 17:21:29', '2026-05-23 17:33:12'),
-(222, 17, '$2y$10$/KbGarkEWc5PgMaeodPQYOYHJoHKBagcsJ6Cxy6pArOxPs5fXZa2O', 1, '2026-05-23 17:33:12', '2026-06-22 17:33:12', '2026-05-23 17:37:31'),
-(223, 17, '$2y$10$4aG7jY5k9fdXCla6tpLl/uONXpwOr61znyEPCArca2JN8gU2Ih3tu', 1, '2026-05-23 17:37:31', '2026-06-22 17:37:31', '2026-05-23 17:43:41'),
-(224, 17, '$2y$10$swSezaVZfBX4j/mzjn.SGO8ISDWCsm976/tGctP0KoRMSGmlQKkTK', 0, '2026-05-23 17:43:41', '2026-06-22 17:43:41', NULL),
-(225, 17, '$2y$10$nTL64ubJ5TCEz9JIxivn3urStotmGMH5iZAqB.HQRTvn9sejXc.Rq', 1, '2026-05-23 17:43:52', '2026-06-22 17:43:52', '2026-05-23 17:54:52'),
-(226, 17, '$2y$10$ZVCZzX3m.u1Yp5hcTnpTce5LRQ0AxCYuTJbfykae/BTvyIbJZR3cq', 1, '2026-05-23 17:54:52', '2026-06-22 17:54:52', '2026-05-23 18:09:46'),
-(227, 17, '$2y$10$/rDcNallWmW2Y307c2xCGuzdVhF7INpS6d4zSlNbC4Vx3.wTVkjoO', 1, '2026-05-23 18:09:46', '2026-06-22 18:09:46', '2026-05-23 21:42:50'),
-(228, 17, '$2y$10$QqjSnt9wx0pIuJ.POamQIuaNfnwtv7QIM07sxQmPABH.f6QKgEoNq', 1, '2026-05-23 21:42:50', '2026-06-22 21:42:50', '2026-05-23 21:49:02'),
-(229, 17, '$2y$10$9hMUi.ucnc5uzHQc5T5WF..n8miQoLj5OrCAXnV0G89JZ04SJdgK2', 1, '2026-05-23 21:49:02', '2026-06-22 21:49:02', '2026-05-23 21:55:35'),
-(230, 17, '$2y$10$TlNE6Gz5c5.UOphyKTfHJ.sLnXfFEoeP0GCLBUIMy1ABWQXbiwvxK', 1, '2026-05-23 21:55:46', '2026-06-22 21:55:46', '2026-05-24 09:54:25'),
-(231, 17, '$2y$10$sbNug49sp3Wz3MVYBGo4WeDpE.QGV3ybePdtraemw3UoPVbjSXu5G', 1, '2026-05-24 09:54:25', '2026-06-23 09:54:25', '2026-05-24 10:09:21'),
-(232, 17, '$2y$10$y.fPZpNGBbsp7GzvtvZxmufylFl1mV77QSLrYJ4oIPDa0jxtBMtt6', 1, '2026-05-24 10:09:21', '2026-06-23 10:09:21', '2026-05-24 17:22:01'),
-(233, 17, '$2y$10$ZymcCxMXx8eU2jRUS.164.69yEkFvfWWYcJJ0Kbrtl0uDX3wNDbE6', 1, '2026-05-24 17:22:01', '2026-06-23 17:22:01', '2026-05-24 17:32:03'),
-(234, 17, '$2y$10$1VD5WOlQTaxlJsH26jAMK.234guH0.RV3ONxTCmeP.hf9riqQZIaC', 1, '2026-05-24 17:32:03', '2026-06-23 17:32:03', '2026-05-24 17:41:13'),
-(235, 17, '$2y$10$tdtCT9l1bixpHzPdex3hQuc6/gyV2.pherzPSnk8.XUUheE1Q/JNy', 1, '2026-05-24 17:41:13', '2026-06-23 17:41:13', '2026-05-24 17:55:09'),
-(236, 17, '$2y$10$kfjRSJKKet5t0i.ZU/bNduHKrN4OxExarS7VwzYbBf5FzrnDdufzC', 1, '2026-05-24 17:55:09', '2026-06-23 17:55:09', '2026-05-24 18:06:38'),
-(237, 17, '$2y$10$PJsCa1fXoWkrvigyVOP1BOONnv3MfpeFDvwAb5j8keLGKBompJgP6', 1, '2026-05-24 18:06:38', '2026-06-23 18:06:38', '2026-05-24 20:26:11'),
-(238, 17, '$2y$10$yjmwxZiBfdoAWz.3Yx1ik.x/hnb66HYn3X7gB0t4i2rPc1uT9bMei', 1, '2026-05-24 20:26:12', '2026-06-23 20:26:12', '2026-05-24 20:49:56'),
-(239, 17, '$2y$10$AAqhs7rCi4h2IlKCNQi5qeECPg9I88m7s1/9qRb4DjmH5zpVI1Ii.', 1, '2026-05-24 20:49:56', '2026-06-23 20:49:56', '2026-05-24 21:06:46'),
-(240, 17, '$2y$10$vCC5B7er2AC4wni7RXJefuc7p17X424yuE1/5ZCBN.K7BnIrOLzAO', 1, '2026-05-24 21:06:46', '2026-06-23 21:06:46', '2026-05-24 21:08:20'),
-(241, 17, '$2y$10$SMopmIyBm09TgItg3YvGXOpSrPagKlCaXI79APdud.cyHyEvlAIJC', 1, '2026-05-24 21:08:20', '2026-06-23 21:08:20', '2026-05-24 22:15:47'),
-(242, 17, '$2y$10$WwoDRVYOp2nAOTEiNAugDeXN.58Gc/EQ39RryOCpVCfxgOKL1zy0C', 1, '2026-05-24 22:15:47', '2026-06-23 22:15:47', '2026-05-24 22:29:55'),
-(243, 17, '$2y$10$BLQ0dcCSL20eDOXE.S7Cguwo8lJF6q3TsUY34XjbyFakGGeQKjWia', 1, '2026-05-24 22:29:55', '2026-06-23 22:29:55', '2026-05-24 22:40:15'),
-(244, 17, '$2y$10$qN2djXBUgI.a408eLfmzYu8wuqQxK10Pbuw2eVbgFk2iljQi9EHe.', 1, '2026-05-24 22:40:15', '2026-06-23 22:40:15', '2026-05-24 22:43:57'),
-(245, 17, '$2y$10$Spm2Cj1KZX4.jOMuGDJ2UufkLpc0tp62pwuGBa/jcHUH3vYRB7n6i', 1, '2026-05-24 22:43:57', '2026-06-23 22:43:57', '2026-05-24 22:53:20'),
-(246, 17, '$2y$10$HrZWJfknK1eOo2jx.xP7SOYceI8T.dqNiOEmdg1X/9Myo6iIvyRE2', 1, '2026-05-24 22:53:20', '2026-06-23 22:53:20', '2026-05-24 22:55:34'),
-(247, 17, '$2y$10$lXhcFNryXK3ur.9IkvDqr.vl8cItqMw38eABOPTBwoAi4nErW561u', 1, '2026-05-24 22:55:34', '2026-06-23 22:55:34', '2026-05-25 00:50:22'),
-(248, 17, '$2y$10$NZD/qdTYmaGDiUKX9iVJ9uW8RXke4bkgblAC4vRzF6X/SqD2nvMMa', 1, '2026-05-25 00:50:22', '2026-06-24 00:50:22', '2026-05-25 00:51:15'),
-(249, 17, '$2y$10$wCYBuFq3dGOMmkeBsZuFcOSBPtx3z8be4k5k9/gt6yCVGWVi5GBxe', 1, '2026-05-25 00:51:15', '2026-06-24 00:51:15', '2026-05-25 00:54:01'),
-(250, 17, '$2y$10$c557yTT.XdfJ4Sl6fjSit.HDV6//8Qhoe99BaSFIsp.7D.wZwO/h.', 1, '2026-05-25 00:54:01', '2026-06-24 00:54:01', '2026-05-25 00:55:27'),
-(251, 17, '$2y$10$p.I8HuGxvqB76/gNGZxyg.7vBzeRFbaXEKXiENFTyzzW9CNT/LmMy', 1, '2026-05-25 00:55:27', '2026-06-24 00:55:27', '2026-05-25 00:56:35'),
-(252, 17, '$2y$10$y74HUW3h24SUcJpJdoPNh.e/BJmBgQ/bLemtlU/uJCp20vG9qWWoW', 1, '2026-05-25 00:56:35', '2026-06-24 00:56:35', '2026-05-25 00:58:13'),
-(253, 17, '$2y$10$j42K4/8GpNyGT7KLmJuTAuOwZplrGQuCU7YVJpE9t9Hoxj2DZwXjq', 1, '2026-05-25 00:58:13', '2026-06-24 00:58:13', '2026-05-25 00:59:34'),
-(254, 17, '$2y$10$UUKEBV64gUIVRsJPlLAnMuyrBVqPPbbNmUlXcN7kFGsAoakdSlV5a', 1, '2026-05-25 00:59:34', '2026-06-24 00:59:34', '2026-05-25 01:01:18'),
-(255, 17, '$2y$10$/MBIPP4q6CR1OYuDDujqnOkydWhPwlo3F8WfANKJqLExPjXQxvJkS', 1, '2026-05-25 01:01:18', '2026-06-24 01:01:18', '2026-05-25 01:02:23'),
-(256, 17, '$2y$10$r042rxFSwaPIeshXUVWHIuT2nJAzBt6RPozKKVe1GSva5KJO1HUBS', 1, '2026-05-25 01:02:24', '2026-06-24 01:02:24', '2026-05-25 01:04:33'),
-(257, 17, '$2y$10$TV8NmbZZggFIl0mJTeeHZulw9CxKWJwycHWI/5I7hvyX9lsoCJUPW', 1, '2026-05-25 01:04:33', '2026-06-24 01:04:33', '2026-05-25 01:06:01'),
-(258, 17, '$2y$10$y7F7P7xV.4a.7ZDUaGXtHO8Yx/K8lo.enQH/JMrSul8KJn71ufPsa', 1, '2026-05-25 01:06:01', '2026-06-24 01:06:01', '2026-05-25 01:07:44'),
-(259, 17, '$2y$10$09f2zMC3xdU4Jnke1SYZO.JAT2zjq7r7tO734WlbgiJnGaBWVTY1q', 1, '2026-05-25 01:07:44', '2026-06-24 01:07:44', '2026-05-25 01:09:58'),
-(260, 17, '$2y$10$xQA9Q1NbTgMSldMzUf1pNejt5FZHI7VwJdA4WzC1Dv2LcP4x1hoyi', 1, '2026-05-25 01:09:58', '2026-06-24 01:09:58', '2026-05-25 01:12:59'),
-(261, 17, '$2y$10$iXOOsz29cjfCYvMNwBQZ0.Oc9ekqaXZk/vy9SMS4HyGKJKu7fiUxW', 1, '2026-05-25 01:12:59', '2026-06-24 01:12:59', '2026-05-25 01:14:11'),
-(262, 17, '$2y$10$SpRuUp6xQmp4kIdCrRj3UuQmArTlw9yzVHTT3tCiUD9T0ApIIpZJm', 1, '2026-05-25 01:14:11', '2026-06-24 01:14:11', '2026-05-25 01:15:26'),
-(263, 17, '$2y$10$EnU20W9mkO.BEB3r4yO0zu/QvW9WcPzAhRyZgHjOhlCE1JwKGUxdG', 1, '2026-05-25 01:15:26', '2026-06-24 01:15:26', '2026-05-25 01:17:35'),
-(264, 17, '$2y$10$8XNayjWS4z0pGHQyzFCZJuhJZbAgCYnJYDf63m3r1Kc/f85KG1udu', 1, '2026-05-25 01:17:35', '2026-06-24 01:17:35', '2026-05-25 01:18:36'),
-(265, 17, '$2y$10$Lf4xpSK8kskpMJ6wZ4/rpOTUR34jzURM4EqpI70fU6LiMmUbiWXh2', 1, '2026-05-25 01:18:36', '2026-06-24 01:18:36', '2026-05-25 01:20:11'),
-(266, 17, '$2y$10$nKTms2ej/OwG810QXJfYSeHUrNdh.K7X6AXMKWRxlFAVd7EPQKJpy', 1, '2026-05-25 01:20:12', '2026-06-24 01:20:12', '2026-05-25 10:06:36'),
-(267, 17, '$2y$10$W536IRvBP/t4H9IXw5/dAuy8OpGGzdjwcQZymnhYVn3TyiAWIrCxC', 1, '2026-05-25 10:06:36', '2026-06-24 10:06:36', '2026-05-25 10:09:53'),
-(268, 17, '$2y$10$qUc8P8hcouLaYy8fxNt.e.HH1XZYHjIH3su6tzHkFCGzhWcI2STsC', 1, '2026-05-25 10:09:53', '2026-06-24 10:09:53', '2026-05-25 10:15:43'),
-(269, 17, '$2y$10$2uLHb7tPuisvXoUSubiNBu9ZaNDR7zgoaVgCmvMMXARW8yd1SEMEK', 1, '2026-05-25 10:15:43', '2026-06-24 10:15:43', '2026-05-25 10:21:20'),
-(270, 17, '$2y$10$z0Hw0vDZ9phHYRRBlRbSFuCcuBZ.w.uMQdIlXszJ.K.9JRqPAnIoi', 1, '2026-05-25 10:21:20', '2026-06-24 10:21:20', '2026-05-25 10:23:10'),
-(271, 17, '$2y$10$yx.kaD6uQKHW0N2W8qTeTORHTJE6Edirq7MTK3REj2i484MuwaqtS', 1, '2026-05-25 10:23:10', '2026-06-24 10:23:10', '2026-05-25 10:24:14'),
-(272, 17, '$2y$10$ZRw1D9dKtvQoLJvZ3t5g9eN3LkNbuJsfV2QtAZlDAdtEftEprNfKK', 1, '2026-05-25 10:24:14', '2026-06-24 10:24:14', '2026-05-25 10:25:43'),
-(273, 17, '$2y$10$K/3mXdBOY7N/eaJCFkqPVOZzP0clU3b8JvLibq9MnZ3Q/ISFA6Fju', 1, '2026-05-25 10:25:43', '2026-06-24 10:25:43', '2026-05-25 10:29:27'),
-(274, 17, '$2y$10$41YQRejsUYTxK23pwirdBujdHvgKkdKU3LqMTdRdRAy2.X5nUOnAG', 1, '2026-05-25 10:29:27', '2026-06-24 10:29:27', '2026-05-25 10:30:31'),
-(275, 17, '$2y$10$EPItyRNiOJALYRB113vcju6apU4qXG0fttfLCjmAfc6hPHMV2IpIy', 1, '2026-05-25 10:30:31', '2026-06-24 10:30:31', '2026-05-25 10:43:39'),
-(276, 17, '$2y$10$4MokEDgpwaSTbfyPqVvy6eFqF8UAf7nj356ZbiKZ6f7u684BP02D.', 1, '2026-05-25 10:43:39', '2026-06-24 10:43:39', '2026-05-25 10:46:12'),
-(277, 17, '$2y$10$aTq49gQmc3C8OJtyLXYSEuam1lwqbGYKoN5/V8X.x1R2nHog2Su8O', 1, '2026-05-25 10:46:12', '2026-06-24 10:46:12', '2026-05-25 10:56:48'),
-(278, 17, '$2y$10$ibSqAvdhuq/y9n4sg2MrDu48wecTk3gGkXmRejF.3xO.a7FCBN9wG', 1, '2026-05-25 10:56:48', '2026-06-24 10:56:48', '2026-05-25 10:58:33'),
-(279, 17, '$2y$10$A5iFJWnq/z0TiLYJL6eWeewEzUU6yztCDgQOm0AoTnKjeuD.HCd5.', 1, '2026-05-25 10:58:33', '2026-06-24 10:58:33', '2026-05-25 11:00:15'),
-(280, 17, '$2y$10$6CJxmYlvsi9yZaA69l54xOo1QCh7q1aRd1iev/tZm8g.Q02W3S2Nq', 1, '2026-05-25 11:00:15', '2026-06-24 11:00:15', '2026-05-25 11:03:55'),
-(281, 17, '$2y$10$QYMmi8K.Lqha4yk/nIDrGeih65A5tgTnd0/uuTiDpgDIApTbA8XXW', 1, '2026-05-25 11:03:55', '2026-06-24 11:03:55', '2026-05-25 11:20:51'),
-(282, 17, '$2y$10$b8lLydGjV6.QbsZSR20xzuGNwvIEH/c/uw6641Z.WHHyXLSz5XLyC', 1, '2026-05-25 11:20:51', '2026-06-24 11:20:51', '2026-05-25 11:22:15'),
-(283, 17, '$2y$10$fXCfcq0NdJRXqtURrmoGPuB94NQsj2CxOQ8YCm4814.VixekcImQ6', 1, '2026-05-25 11:22:15', '2026-06-24 11:22:15', '2026-05-25 11:25:59'),
-(284, 17, '$2y$10$6hSaCr1FTdvR2Sv.R9ObqOnPd6RAG9fBkquCA/B3KOQAr0uLKFcge', 1, '2026-05-25 11:25:59', '2026-06-24 11:25:59', '2026-05-25 11:39:09'),
-(285, 17, '$2y$10$64gwCptcUno42XhA/Qc8/.Rp9j4ZzBqzPtUEoMOfvEV7UyxVw6T7.', 1, '2026-05-25 11:39:09', '2026-06-24 11:39:09', '2026-05-25 11:43:24'),
-(286, 17, '$2y$10$PWoJym20z3o4qkcSy5ctlOTuW.9HBwZtZYd2f7Bbr2dRG6Qmlpu8.', 1, '2026-05-25 11:43:24', '2026-06-24 11:43:24', '2026-05-25 11:46:19'),
-(287, 17, '$2y$10$xVG/vrKbObYTeaJvcsf6S.qkBhTrLVQFEBKDBIrfswc/5xyr9XRzu', 1, '2026-05-25 11:46:19', '2026-06-24 11:46:19', '2026-05-25 12:04:20'),
-(288, 17, '$2y$10$m1hXTT9xTS4qwle875tAPe7z6b2YK6bvOt5y8GMxK/W6ldZx8aMPm', 1, '2026-05-25 12:04:21', '2026-06-24 12:04:21', '2026-05-25 12:07:27'),
-(289, 17, '$2y$10$bsd1yjogEyy0hWwT29wPm.CWHYtnw2uRz41.KHW2AZsc.2G7RNdue', 1, '2026-05-25 12:07:28', '2026-06-24 12:07:28', '2026-05-25 12:09:25'),
-(290, 17, '$2y$10$U//sXQoOglOHAoWjiAtxg.ZVQrCKaud5LfbsCsHgtwOVIyvZaaBEa', 1, '2026-05-25 12:09:25', '2026-06-24 12:09:25', '2026-05-25 12:10:37'),
-(291, 17, '$2y$10$rm2K9wZMX5mTGRInT.mgsO1T3rjhMUv9goKt8WckLDN57t6IIeUhq', 1, '2026-05-25 12:10:37', '2026-06-24 12:10:37', '2026-05-25 12:13:33'),
-(292, 17, '$2y$10$XTcdEW8tZfvJ.PnUaKbpMOKuBe0P1XtMzpOy7GWBxr5vZXquwOWzi', 1, '2026-05-25 12:13:33', '2026-06-24 12:13:33', '2026-05-25 12:22:49'),
-(293, 17, '$2y$10$3tEwkmd.r/3sMfSNAActdOSCWvLewxuvqDGRAJ7ebbFhJN72.7t6C', 0, '2026-05-25 12:22:49', '2026-06-24 12:22:49', NULL),
-(294, 17, '$2y$10$q.cJsmD3aJ5KBzwKpvroc.UgAs6yNWQS/q44f0v9LDfLaKkrsUaSC', 1, '2026-05-25 12:28:58', '2026-06-24 12:28:58', '2026-05-25 12:29:53'),
-(295, 17, '$2y$10$Pm3xGI1NqsNS3gPzkZqELO1EqFwc/Uq83ue3dI6iJjkHcb1infUrS', 1, '2026-05-25 12:29:53', '2026-06-24 12:29:53', '2026-05-25 12:33:27'),
-(296, 17, '$2y$10$eZ4h.CfAz3rwlBNp5mQmAuLi24D4em1elo/Dro6xUJ9YNicRxoh3.', 1, '2026-05-25 12:33:27', '2026-06-24 12:33:27', '2026-05-25 12:35:52'),
-(297, 17, '$2y$10$kr09.coKp.to3/JRtb3vHeZhKka4rr4nVZNLfZqWBxBcIeMezVsE2', 1, '2026-05-25 12:35:53', '2026-06-24 12:35:53', '2026-05-25 12:37:07'),
-(298, 17, '$2y$10$f5FAFpWsetrYnOcgke6wtOoDKNkd0m5/MTSdwwASWXEK.PjMh/yZm', 1, '2026-05-25 12:37:07', '2026-06-24 12:37:07', '2026-05-25 12:40:24'),
-(299, 17, '$2y$10$5mmGThp2FSCXoNi1z02xwuxUJdRbOL8is9YT7QkB7Q6BndqJwqcGi', 1, '2026-05-25 12:40:24', '2026-06-24 12:40:24', '2026-05-25 12:46:58'),
-(300, 17, '$2y$10$h0TffwXgtO5KQeDRN9CCJOK3twB87C0fLrHp73K682W4rj5JGEDsO', 1, '2026-05-25 12:46:58', '2026-06-24 12:46:58', '2026-05-25 12:50:36'),
-(301, 17, '$2y$10$IJ35j6TjJYjuPu/C6gRw5einCN.KFWdGgCpnDpFJ11YjrIRIHK8Pm', 1, '2026-05-25 12:50:36', '2026-06-24 12:50:36', '2026-05-25 12:52:34'),
-(302, 17, '$2y$10$U6HYKsYmjRgbRrEB3QlGVepPvjcu77/T4QfLiPS6Nt90IARyR1e.C', 1, '2026-05-25 12:52:34', '2026-06-24 12:52:34', '2026-05-25 12:55:42'),
-(303, 17, '$2y$10$/yLYPvmuLcgTkLFaWHNrAOoakJjObVKebKakfoTTArKeYXXzsQtou', 1, '2026-05-25 12:55:42', '2026-06-24 12:55:42', '2026-05-25 12:56:54'),
-(304, 17, '$2y$10$VNoqqKX2LGxfl5jZIxXb8.eLG8ocuamEqry.127i3i3HEB/zAiTEO', 1, '2026-05-25 12:56:54', '2026-06-24 12:56:54', '2026-05-25 12:58:01'),
-(305, 17, '$2y$10$BsPl5rNb9i/PwZ0Nhno3Lu2xEUpLFMUmU0n5blDWzlpheJx.ipIAK', 1, '2026-05-25 12:58:01', '2026-06-24 12:58:01', '2026-05-25 12:59:06'),
-(306, 17, '$2y$10$prvz23D6GLV0MLVxXP1dR.A4QCnGjHY4BOXsVPtEVr10NmPya8GUe', 1, '2026-05-25 12:59:06', '2026-06-24 12:59:06', '2026-05-25 13:00:18'),
-(307, 17, '$2y$10$dbFh0gpBPrHgHXGCNvXGUe8neGy.Alp9aUamviep1.cslqVk.Vsqm', 1, '2026-05-25 13:00:18', '2026-06-24 13:00:18', '2026-05-25 13:01:28'),
-(308, 17, '$2y$10$r/.2.y7RPalK3KQVc7d7pOd22zU3blKluFoi5je90MaxVA4KGjqv2', 1, '2026-05-25 13:01:28', '2026-06-24 13:01:28', '2026-05-25 13:06:05'),
-(309, 17, '$2y$10$3tng5quN2hHH4k8OghTBYuGFvv6NuXwHn10k5EC0c2a2JSvc9UlCG', 1, '2026-05-25 13:06:05', '2026-06-24 13:06:05', '2026-05-25 13:06:06'),
-(310, 17, '$2y$10$MiuP6YP76jEF5ywOT2ItBOfKyDPkoCkvaD1LNgBEJ8Z73uoPqEfny', 1, '2026-05-25 13:06:06', '2026-06-24 13:06:06', '2026-05-25 13:09:44'),
-(311, 17, '$2y$10$RN5M6k.y5APmUC7UD7dOb.LnbSBGH./hIk9bi6aNuLkeIxaWo7uTC', 1, '2026-05-25 13:09:44', '2026-06-24 13:09:44', '2026-05-25 13:20:51'),
-(312, 17, '$2y$10$yctGN.WPaqSoWA0jVekhtu99Q.n6SZYx38ddfMDsLvDqwxBVlVpVK', 1, '2026-05-25 13:20:51', '2026-06-24 13:20:51', '2026-05-25 13:22:56'),
-(313, 17, '$2y$10$I2mKTkLIid1/quOSUaAR8eYtRYdKLS17J5Z.swvL6yAD4axGSowqS', 1, '2026-05-25 13:22:56', '2026-06-24 13:22:56', '2026-05-25 13:24:43'),
-(314, 17, '$2y$10$uRBNV4ZatdqzdGWSjxmLCuHg29hHaqI5JH60WIpyIDnsKSoG6uX9K', 1, '2026-05-25 13:24:43', '2026-06-24 13:24:43', '2026-05-25 13:27:02'),
-(315, 17, '$2y$10$ggOvIusKaOA/A3/3MSYNuO16JZVBVCuHYO2Yhu0ul5GzzkvhtLNae', 1, '2026-05-25 13:27:02', '2026-06-24 13:27:02', '2026-05-25 13:28:50'),
-(316, 17, '$2y$10$Ak1LKr1uLGa55m5kbaIBXeTd6mz/Vgg0fAE3xJ53fjSBhiZ5F8H.G', 1, '2026-05-25 13:28:50', '2026-06-24 13:28:50', '2026-05-25 13:29:53'),
-(317, 17, '$2y$10$1ueFwhBZjWv4NOccKeGBvu1anU6NeFN5jvZRSBoDGzRuL4RNr4ETG', 1, '2026-05-25 13:29:54', '2026-06-24 13:29:54', '2026-05-25 13:34:48'),
-(318, 17, '$2y$10$AF14/HKeaRe9VDXmSa9ZiOfBfII7xT9u83eMHHXdvbvXhmJ8s.cnu', 1, '2026-05-25 13:34:48', '2026-06-24 13:34:48', '2026-05-25 13:35:51'),
-(319, 17, '$2y$10$t7L3SOVRBtmHijwTLas5D.mzEVJVvz.r3f4DWAUi29F2TnSUroA3K', 1, '2026-05-25 13:35:51', '2026-06-24 13:35:51', '2026-05-25 13:37:02'),
-(320, 17, '$2y$10$8ZtYVsni68FkzGrFQr4Kq.MfAA.CJLHf3a4sMaJdote2ipldqAOla', 1, '2026-05-25 13:37:02', '2026-06-24 13:37:02', '2026-05-25 13:38:10'),
-(321, 17, '$2y$10$x6t4ozRR0U1o2CZXI6pnL.2t7BJKBJ1yULWplKVWS9aaddWQMbSUa', 1, '2026-05-25 13:38:10', '2026-06-24 13:38:10', '2026-05-25 13:39:25'),
-(322, 17, '$2y$10$ctDzVhW/T1QPD5jXuVcdqO4BHfwHLxbd2mtszP1mtprxpHmf.Z.wm', 1, '2026-05-25 13:39:25', '2026-06-24 13:39:25', '2026-05-25 13:43:55'),
-(323, 17, '$2y$10$IL1RRdpuv2pzhT8r.e7ZM.APSnF68WFQTwvwbvN3Xe.rZnjdvHLJW', 1, '2026-05-25 13:43:55', '2026-06-24 13:43:55', '2026-05-25 14:04:38'),
-(324, 17, '$2y$10$lyp5IuduKdnm3WWhrhp5uO64cBncVEpniBs9Q81TSQO2KSNGNs19i', 1, '2026-05-25 14:04:38', '2026-06-24 14:04:38', '2026-05-25 14:06:08'),
-(325, 17, '$2y$10$6e4Sp6bugK32bBHrO9U/MeLYOpvV90G8zsIn10DVkI/5d8jxzFa1K', 1, '2026-05-25 14:06:09', '2026-06-24 14:06:09', '2026-05-25 14:07:14'),
-(326, 17, '$2y$10$KlL8hp1Vfad6Hnb98IiRke4EwP0cbWwgR6XpeeRNvKnj.KGcYlMsS', 1, '2026-05-25 14:07:14', '2026-06-24 14:07:14', '2026-05-25 14:08:42'),
-(327, 17, '$2y$10$7LOn8Y6t1.GZBOYyST.5/uQIsbNc9spSwGmw4HRIkLaQKatZSTPpO', 1, '2026-05-25 14:08:43', '2026-06-24 14:08:43', '2026-05-25 14:13:57'),
-(328, 17, '$2y$10$rwBebO8vm.Cob0HevH.A4e4EZIKfUPFXg6uJlGNadQo2spH730O.C', 1, '2026-05-25 14:13:57', '2026-06-24 14:13:57', '2026-05-25 14:16:34'),
-(329, 17, '$2y$10$FN6uGeFHNA.c4fmGJtfl2upOrdcvYNJRJMqErxFe9Pymp6ZYJIU/i', 1, '2026-05-25 14:16:34', '2026-06-24 14:16:34', '2026-05-25 14:17:47'),
-(330, 17, '$2y$10$7NGH83EYqgsmDwi9RIov4u1riREKsmALbHlfc0oV0KkHLPA6xxNBu', 1, '2026-05-25 14:17:47', '2026-06-24 14:17:47', '2026-05-25 14:22:38'),
-(331, 17, '$2y$10$WxdMor6rBTP7rmx1tjZTNONq5l1cIcDlB/ja1FIxUPVtUlw2tkeei', 1, '2026-05-25 14:22:38', '2026-06-24 14:22:38', '2026-05-25 14:24:10'),
-(332, 17, '$2y$10$ZBOJljtau3uwquVw/YPEeu/THWeciFQlzFUutfn/cu370YiQNucjS', 1, '2026-05-25 14:24:10', '2026-06-24 14:24:10', '2026-05-25 14:27:39'),
-(333, 17, '$2y$10$S1fxborq0TOh29CaGtGM7.QrQlwLYSKTEuHuWvhhKZ8L0G8EHKTp2', 1, '2026-05-25 14:27:40', '2026-06-24 14:27:40', '2026-05-25 14:53:18'),
-(334, 17, '$2y$10$xQJmfU5LNq8LBdLLmJ5kGOhTg93Wt8Ptr/YwJDgIs7RISKXIGxpta', 1, '2026-05-25 14:53:18', '2026-06-24 14:53:18', '2026-05-25 14:54:37'),
-(335, 17, '$2y$10$L2wThJ26S9ON.luqMCHNi.35jPQohDRPTkjBOXBKR8c6QR5RHoP.G', 1, '2026-05-25 14:54:37', '2026-06-24 14:54:37', '2026-05-25 14:55:41'),
-(336, 17, '$2y$10$wyPXwd3GDghO7aaep4JcIus8VGL6b1jGsfSxowEw08dvEYaqg8/se', 1, '2026-05-25 14:55:41', '2026-06-24 14:55:41', '2026-05-25 14:57:03'),
-(337, 17, '$2y$10$AV9sEColyb67jww0TiiuUuoxDEmWxBRjJMD1IgvRNoXOHDR84wiSG', 1, '2026-05-25 14:57:03', '2026-06-24 14:57:03', '2026-05-25 14:58:16'),
-(338, 17, '$2y$10$JjRAoi7xUkewzfLV9Tvvu.SN1QMNnAWRC2eVaCTTNwdt6jf1LyxKW', 1, '2026-05-25 14:58:16', '2026-06-24 14:58:16', '2026-05-25 15:01:39'),
-(339, 17, '$2y$10$2U4XK9aUuY7I0oFsSMvOLenCIQXLHOBUQcN2mevyRTnknniMLRnYK', 1, '2026-05-25 15:01:39', '2026-06-24 15:01:39', '2026-05-25 15:25:08'),
-(340, 17, '$2y$10$ubsB1qcjzDriNJMGRQL2GutmbmgRxl1RCElu6pyrFyuxxVGPrCMo6', 1, '2026-05-25 15:25:09', '2026-06-24 15:25:09', '2026-05-25 15:31:22'),
-(341, 17, '$2y$10$nU8qVi0OUvoA7LDm0JgmX.gs8J2szN.J4msra1vP9uM90keGtEFBq', 1, '2026-05-25 15:31:22', '2026-06-24 15:31:22', '2026-05-25 15:35:57'),
-(342, 17, '$2y$10$5oLcfqgzRN7z9kMMYVnXEOrVhzOBR9FO85iEXlF.2KUUDxJcsCeVa', 1, '2026-05-25 15:35:57', '2026-06-24 15:35:57', '2026-05-25 15:37:15'),
-(343, 17, '$2y$10$U6vmotfaY2j.B/gcDP5e4O0wprSzzTF7RLIq8ldeNvNfUZMvek2d2', 1, '2026-05-25 15:37:15', '2026-06-24 15:37:15', '2026-05-25 15:41:52'),
-(344, 17, '$2y$10$FDtm4F3N3Y6Fi.8ewKc25OMQ4gJjWpXDsBbC/n2wwXrGGVrVqmZ62', 1, '2026-05-25 15:41:52', '2026-06-24 15:41:52', '2026-05-25 15:45:32'),
-(345, 17, '$2y$10$gTkdK4VHWJZueBURLGGemuW4TJnYjcHG3/yPXzhCaLk7MsC.b9w4m', 1, '2026-05-25 15:45:32', '2026-06-24 15:45:32', '2026-05-25 15:47:46'),
-(346, 17, '$2y$10$PK0yJgxNPbaASJICzos4quK9PMsm4E4qQ.4IoW6Zc48pAYNMGDa7u', 1, '2026-05-25 15:47:46', '2026-06-24 15:47:46', '2026-05-25 15:50:58'),
-(347, 17, '$2y$10$7bKWuDfx.7HC.7BaoG2DGemSxEV7wH9rc5bpvFbDI64gDcw.EnfU.', 1, '2026-05-25 15:50:58', '2026-06-24 15:50:58', '2026-05-25 15:55:24'),
-(348, 17, '$2y$10$bK8GCoiEm9NBMeAfCYO4fufXqA3.AKXBGp86S/dwp1ybXJNmMrvyG', 1, '2026-05-25 15:55:24', '2026-06-24 15:55:24', '2026-05-25 15:57:02'),
-(349, 17, '$2y$10$.XirCLGZH1a5na5DBhmEGOQ3JQ.2kexxum3GTkEL4p6OosO4dOwPK', 1, '2026-05-25 15:57:02', '2026-06-24 15:57:02', '2026-05-25 15:58:10'),
-(350, 17, '$2y$10$.CFqs450RYaehnmar/MMUu4/fKi8IihgyRzRXPWLgnItS/wJxJpjG', 1, '2026-05-25 15:58:10', '2026-06-24 15:58:10', '2026-05-25 15:59:11'),
-(351, 17, '$2y$10$ZibgqGBw1VO5V5Fby8od0eoKY5it/tJ1hOAq4waZf.UyUXR9iEoR.', 1, '2026-05-25 15:59:11', '2026-06-24 15:59:11', '2026-05-25 16:00:12'),
-(352, 17, '$2y$10$JA6SVY85o7hRoRw1thd8q.7Llwq0NFU3C9JJWusg4KkTQz3j3iOAm', 1, '2026-05-25 16:00:12', '2026-06-24 16:00:12', '2026-05-25 16:03:44'),
-(353, 17, '$2y$10$9QBtozWjGmwVgk/WhmlDKuC78ZmnF4AAWh6543BVH5dAFOk1bEQ9S', 1, '2026-05-25 16:03:44', '2026-06-24 16:03:44', '2026-05-25 16:05:42'),
-(354, 17, '$2y$10$rhZ57yxfRp.i2yzHsF8XRumvmORkrZ5CIQAFvGHgp4EGpTp.XK5Cq', 1, '2026-05-25 16:05:42', '2026-06-24 16:05:42', '2026-05-25 16:07:07'),
-(355, 17, '$2y$10$JD9sAjmNLB/3MYVisANkKuUHZpluDX90HqdfjEMejJpXWIOMcfnvm', 1, '2026-05-25 16:07:07', '2026-06-24 16:07:07', '2026-05-25 16:11:42'),
-(356, 17, '$2y$10$GEIO1bw1B4tRwlCj85GED.3dvKfnC4czVDrO0.pAkhio7Z6frsxWe', 1, '2026-05-25 16:11:42', '2026-06-24 16:11:42', '2026-05-25 16:15:02'),
-(357, 17, '$2y$10$38eDNCMVjCnqS0/l4lJFl.s3WDAk9yd4HQrtpuHsD31YqysFcT06a', 1, '2026-05-25 16:15:02', '2026-06-24 16:15:02', '2026-05-25 16:16:21'),
-(358, 17, '$2y$10$/45eds1ag3nZ7TDaPq51gu.HxKklcQhpn83l5HpdO4KPYU1C5CSx6', 1, '2026-05-25 16:16:21', '2026-06-24 16:16:21', '2026-05-25 16:19:15'),
-(359, 17, '$2y$10$./qjLaKTbvwVKY7.F8Jy7.gIzMA//df75QsXQ0UbXn9Bds3UKMXYO', 1, '2026-05-25 16:19:15', '2026-06-24 16:19:15', '2026-05-25 16:21:47'),
-(360, 17, '$2y$10$naFzYNAibeZD9CqQ04.z8en7QjHX90/Z9XqHdVGdqbWFSTudTqlBu', 1, '2026-05-25 16:21:47', '2026-06-24 16:21:47', '2026-05-25 16:23:11'),
-(361, 17, '$2y$10$LiGjm8BFmBqBsiau0hwapOEWasorJprhux.Q1B2I.2hdhB9OuvVEm', 1, '2026-05-25 16:23:12', '2026-06-24 16:23:12', '2026-05-25 16:28:07'),
-(362, 17, '$2y$10$D06uMCy9jiAvIQCUNaSIU.Wai2R/gsOT1/XoUGXiQ3bYVZNMxpDMO', 1, '2026-05-25 16:28:07', '2026-06-24 16:28:07', '2026-05-25 16:32:09'),
-(363, 17, '$2y$10$fSfz8hMmLIPuPEH8fVUt8OR3NjQthHBASpUNONGx0OJTyjw7iYxMS', 1, '2026-05-25 16:32:09', '2026-06-24 16:32:09', '2026-05-25 16:33:40'),
-(364, 17, '$2y$10$7bN6dJz5WYCTN/yAhVx4XOkYXO/G5UQyQsMuuZIP2yFn1tnEIshRq', 1, '2026-05-25 16:33:40', '2026-06-24 16:33:40', '2026-05-25 16:35:00'),
-(365, 17, '$2y$10$LbjFHJJ5Nv145pxnPct5.e1SWKmlYKn.KwNDfGY8cyCZQ7ankuLeu', 1, '2026-05-25 16:35:00', '2026-06-24 16:35:00', '2026-05-25 16:40:26'),
-(366, 17, '$2y$10$6qLDU7vLLi59nZaS7ULpF.77hda.zFFFFsRg2TA2tTuLTNErsRKJi', 1, '2026-05-25 16:40:26', '2026-06-24 16:40:26', '2026-05-25 16:43:23'),
-(367, 17, '$2y$10$NQa0.FrFuRCckN0Fg38A4OYh8iXz2soubSR6HRlkb0gCCRbLNGIJq', 1, '2026-05-25 16:43:23', '2026-06-24 16:43:23', '2026-05-25 16:44:57'),
-(368, 17, '$2y$10$X0fD89HoNydyWhAlnO5wPeCm.lg6FSMZVYB/M1lXWyyqFA261x1mu', 1, '2026-05-25 16:44:57', '2026-06-24 16:44:57', '2026-05-25 16:48:18'),
-(369, 17, '$2y$10$BxMHo6TNKbKu1TkH7Ai8tOK7CzJ6F1BaXRVt8HRDy/UkIKnvUfPVa', 1, '2026-05-25 16:48:18', '2026-06-24 16:48:18', '2026-05-25 16:50:52'),
-(370, 17, '$2y$10$GFQLlMlt7EoGPv6B7AydG.RPJ0jc7hufz5SD5e/AvOSfAehXb3u3W', 1, '2026-05-25 16:50:52', '2026-06-24 16:50:52', '2026-05-25 16:51:58'),
-(371, 17, '$2y$10$jwvgiJpX/E.J/4xKoVCgU.4ejgTLKLsEU.altgavsEUtm9vMJpVD.', 1, '2026-05-25 16:51:58', '2026-06-24 16:51:58', '2026-05-25 16:53:27'),
-(372, 17, '$2y$10$YnQeHWkB3phi6LqfNz3e0OAPPGvuJe343fpIuWrn7sVg3rBUrYYMW', 1, '2026-05-25 16:53:27', '2026-06-24 16:53:27', '2026-05-25 16:54:57'),
-(373, 17, '$2y$10$ix6wVTS3PAGWXtb7a9HsbOczyBjXbRFFtrynfVnmRmjSd98S.FzeC', 1, '2026-05-25 16:54:57', '2026-06-24 16:54:57', '2026-05-25 16:56:33'),
-(374, 17, '$2y$10$Yl3SgJhs9JEP4/uW30pvhOBTtU0ezhYzvco35FuVgfL8/fcOaCjHK', 1, '2026-05-25 16:56:33', '2026-06-24 16:56:33', '2026-05-25 16:59:00'),
-(375, 17, '$2y$10$AVZvTppPqM/W34zEX6on.OmH6kdGznGxCsNM.ZpE8Sy6ZpH6vAPnK', 1, '2026-05-25 16:59:00', '2026-06-24 16:59:00', '2026-05-25 17:02:53'),
-(376, 17, '$2y$10$XD45gAG/S6mOsUmzeoH3oekhIM1YoiHkKnW5emKDsDMKzpcIF1bQO', 1, '2026-05-25 17:02:53', '2026-06-24 17:02:53', '2026-05-25 17:14:20'),
-(377, 17, '$2y$10$IYwXWZwXQqTQ/4GTNKV7xumhC784dvV55RqbIqXZJFi.f78Ll/jLC', 1, '2026-05-25 17:14:21', '2026-06-24 17:14:21', '2026-05-25 17:16:17'),
-(378, 17, '$2y$10$hF88PcppSJLli2t6TVlzS.Yz76qKI9BNWwD.H9ryS9WzgxJtVLE5u', 1, '2026-05-25 17:16:17', '2026-06-24 17:16:17', '2026-05-25 17:17:44'),
-(379, 17, '$2y$10$Qc6ZM55j7wBmE5fHuHnf5eeN6v.SKR/UtnvlBMEc1tZTf9hRz9HvC', 1, '2026-05-25 17:17:44', '2026-06-24 17:17:44', '2026-05-25 17:19:50'),
-(380, 17, '$2y$10$wsyBaC/wr5win3Pjs2v31eG3x8WEcvP7Qa94O85CL1iCtCrFRzwci', 1, '2026-05-25 17:19:50', '2026-06-24 17:19:50', '2026-05-25 17:21:10'),
-(381, 17, '$2y$10$ui3Za6OjJIjfatIQTNO82O.dLkrHo4SLtq/nIZQyfetS9cI2ZC/dK', 1, '2026-05-25 17:21:10', '2026-06-24 17:21:10', '2026-05-25 19:11:20'),
-(382, 17, '$2y$10$leMA5KLml/xfor3phXpHSOezMcoBq0FEBTySh2kLc9EBveFY78Nkq', 1, '2026-05-25 19:11:20', '2026-06-24 19:11:20', '2026-05-25 19:12:45'),
-(383, 17, '$2y$10$zyv1rF2MsxqGyV51twYJUeWP8AaBKWmOUWljjq.8Za09/VDSMI0Zq', 1, '2026-05-25 19:12:45', '2026-06-24 19:12:45', '2026-05-25 20:05:27'),
-(384, 17, '$2y$10$BsiOEauhY79tuUaQqtCVtOyF7ZFn2AOq/3KOLrrqNCyTRUbGikEwC', 1, '2026-05-25 20:05:27', '2026-06-24 20:05:27', '2026-05-25 20:09:05'),
-(385, 17, '$2y$10$BBHwqH6bbZk9K4KwOPpUXunWMKpcVoxO7jvueda2771/eS9vBi7Fi', 1, '2026-05-25 20:09:05', '2026-06-24 20:09:05', '2026-05-25 20:10:51'),
-(386, 17, '$2y$10$nwp2W4tSehQGO5v2WcKsZO4wTAKjsaVTV/ApxqRF4sVDidmR9IhoS', 1, '2026-05-25 20:10:51', '2026-06-24 20:10:51', '2026-05-25 20:14:06'),
-(387, 17, '$2y$10$oq5v6ChZr6LLjUqHImEkkeAAjf54DONKIptzwXTv0C743ZfjGukY2', 1, '2026-05-25 20:14:06', '2026-06-24 20:14:06', '2026-05-25 20:16:44'),
-(388, 17, '$2y$10$irOwR92v.uWg7B5.tiG0gO3wE6AH5iX.Aqw5PFDyC7LLH7mQmpqQ2', 1, '2026-05-25 20:16:44', '2026-06-24 20:16:44', '2026-05-25 20:19:14'),
-(389, 17, '$2y$10$h3FZHC0/56ADPPjqLSDcMeR9inuGrmrxj.FvN/.NzDQQN42A8eVZe', 1, '2026-05-25 20:19:14', '2026-06-24 20:19:14', '2026-05-25 20:20:24'),
-(390, 17, '$2y$10$08dNefV.OCjyryDbUZzY1eLbhm0xwheTx9/iKqXz2EPb5XA6aaSde', 1, '2026-05-25 20:20:24', '2026-06-24 20:20:24', '2026-05-25 20:26:50'),
-(391, 17, '$2y$10$4kyuZq0bDU9b2LaAm0/oreymWnLyrx27rWv1KxWX/HUGGRzcI.BGW', 1, '2026-05-25 20:26:50', '2026-06-24 20:26:50', '2026-05-25 20:29:54'),
-(392, 17, '$2y$10$ILGMMPZZ2F5X.j3TmmQHSegzMtyTz7AypPV1OtO9mc0HUzulQbzzK', 1, '2026-05-25 20:29:54', '2026-06-24 20:29:54', '2026-05-25 20:31:21'),
-(393, 17, '$2y$10$dIWouL4PFQ1/eLkBTGBWB.ueMoV1337UMSKamjNKNtW8Om076gEpy', 1, '2026-05-25 20:31:21', '2026-06-24 20:31:21', '2026-05-25 20:33:12'),
-(394, 17, '$2y$10$T/TCROut7Zdtoytj5QTWC.bahQdg8EIUmMRrIB27cy3hqHQS8apGG', 1, '2026-05-25 20:33:12', '2026-06-24 20:33:12', '2026-05-25 20:41:27'),
-(395, 17, '$2y$10$WmHuvwDhqmxn2LFGLs1Cqe70GTkLb8620FCm4HXFJGy6hwnvqLuTe', 1, '2026-05-25 20:41:28', '2026-06-24 20:41:28', '2026-05-27 11:41:29'),
-(396, 17, '$2y$10$JdDvZh0aDKwv7ddXy/H.5efJ1m/Pr5qNlgHtknY5hnTFSk.iPQfP2', 1, '2026-05-27 11:41:29', '2026-06-26 11:41:29', '2026-05-27 11:42:45'),
-(397, 17, '$2y$10$VOuzQ06u/n0ckFXPnfbKp.2gxkut9Tt5xfioxJVlq1eupBGHjtsAy', 1, '2026-05-27 11:42:45', '2026-06-26 11:42:45', '2026-05-27 11:44:26'),
-(398, 17, '$2y$10$Ur5iMQ6vthdC2/wXPDTxBOAmlAO1TXldaPbcDHWKVRJuq4hPPJ/Cy', 1, '2026-05-27 11:44:26', '2026-06-26 11:44:26', '2026-05-27 11:51:34'),
-(399, 17, '$2y$10$uv6KtXfBD1ntRw0JoTlq7u7fSXcNYBrg2QmecBk6LRd9wsTcEcXxO', 1, '2026-05-27 11:51:34', '2026-06-26 11:51:34', '2026-05-27 11:52:51'),
-(400, 17, '$2y$10$HQpZIZjH23vFs46pE73/wuob/omoS7RNem/Leo6zv5Yda60bHiOXO', 1, '2026-05-27 11:52:51', '2026-06-26 11:52:51', '2026-05-27 12:00:38'),
-(401, 17, '$2y$10$UCKqhjIbyHG2gbm5zoYHVeO95/Wy4Tv6SyRygZWOmYOfDJDIpFwKO', 1, '2026-05-27 12:00:39', '2026-06-26 12:00:39', '2026-05-27 12:03:57'),
-(402, 17, '$2y$10$RVrfHlRGj7lz5p2hjlkfeOl9ugy5kE6Cg/JqHy3V0qZdorXwCZD3W', 1, '2026-05-27 12:03:57', '2026-06-26 12:03:57', '2026-05-27 12:07:58'),
-(403, 17, '$2y$10$ZoIo6yQAaZgF5tDrnbAZK.CfyPGNofClDjr9z3XPsGZ2pamk0sOLu', 1, '2026-05-27 12:07:59', '2026-06-26 12:07:59', '2026-05-27 12:09:46'),
-(404, 17, '$2y$10$Cyny0kfDHnUjtKJ313S7a.vBcsLcToltBShTceCzWVlrdJ85oFyVO', 1, '2026-05-27 12:09:46', '2026-06-26 12:09:46', '2026-05-27 12:12:33'),
-(405, 17, '$2y$10$2h/fvcjoZFAz9fzI6Jw.c.LItNZY1iRmjXePenDN2YWXV/892XHkG', 1, '2026-05-27 12:12:33', '2026-06-26 12:12:33', '2026-05-27 12:18:07'),
-(406, 17, '$2y$10$w1Q1wK3WQ/Q.kftwmVrsM.01MIX4gHp6Ux0MQCbeuQD0BNb7omEZO', 1, '2026-05-27 12:18:07', '2026-06-26 12:18:07', '2026-05-27 12:19:18'),
-(407, 17, '$2y$10$uaRQJSutbMPkwdkG7HCXLuKiVasOlWDieLgwdxf0hmzP7Eb9o0rLG', 1, '2026-05-27 12:19:18', '2026-06-26 12:19:18', '2026-05-27 12:20:25'),
-(408, 17, '$2y$10$lQjUgw1AtyYV/pthR5FVT.0cL0tOvlhyDaqpT7MsbCEMKPllVsxEa', 1, '2026-05-27 12:20:25', '2026-06-26 12:20:25', '2026-05-27 12:22:40'),
-(409, 17, '$2y$10$GAAboHktjLSY0gmbP.E8Xe8IYURDQ7KF7RwDw2TH./Gw/harO6I2u', 1, '2026-05-27 12:22:40', '2026-06-26 12:22:40', '2026-05-27 12:38:47'),
-(410, 17, '$2y$10$WuPs5UVdnq6FrIOkDVGFkeAZeYfxOGkK.rfkb5fBjMzCPiBn8Z376', 1, '2026-05-27 12:38:47', '2026-06-26 12:38:47', '2026-05-27 12:43:03'),
-(411, 17, '$2y$10$jgEG82ODv7Ay5.u9X4mE/uLsP8b0td4QpX28gV0bcXqnh2ce8ZoM.', 1, '2026-05-27 12:43:03', '2026-06-26 12:43:03', '2026-05-27 12:44:16'),
-(412, 17, '$2y$10$r2zwOfck9oxG4xeEe3auEucddddfLURweTNDwcxZn67Agz.BXQyGK', 1, '2026-05-27 12:44:16', '2026-06-26 12:44:16', '2026-05-27 12:45:27'),
-(413, 17, '$2y$10$BHdtmUDdGU5buEWYeh55BeDIAZP1A0QL/rmcb1be3SbQw.MmNyzge', 1, '2026-05-27 12:45:27', '2026-06-26 12:45:27', '2026-05-27 12:46:29'),
-(414, 17, '$2y$10$udybk/2.x0Jc9WZrPJNPDOhTYGiHhwR/nEUi9asWinHrrpVC1Yydq', 1, '2026-05-27 12:46:29', '2026-06-26 12:46:29', '2026-05-27 12:51:01'),
-(415, 17, '$2y$10$mtLbApIkn94Ergm3WBMaheJ9bH5KoLGVMGR9PQA.5puffBnvtssC6', 1, '2026-05-27 12:51:02', '2026-06-26 12:51:02', '2026-05-27 12:52:20'),
-(416, 17, '$2y$10$2hMv1yUrxrgNK5ZuPB49/OsyGsA2GjMn5KLlQP3.kf2C0lVzcNPBa', 1, '2026-05-27 12:52:20', '2026-06-26 12:52:20', '2026-05-27 12:54:45'),
-(417, 17, '$2y$10$XWdA3Tix5oqAtiLOj6Nhte0GVI.BFE2LwMXxCwfMv62grIFsuwZJ.', 1, '2026-05-27 12:54:45', '2026-06-26 12:54:45', '2026-05-27 12:55:54'),
-(418, 17, '$2y$10$96VXRtyyvAUWDvGy6GQkXe/Owibg6cCmcvdi46TNERbjKjaGQUnvO', 1, '2026-05-27 12:55:55', '2026-06-26 12:55:55', '2026-05-27 14:05:26'),
-(419, 17, '$2y$10$X6mczi7ZPEVUUNXsIcB32u9gtJxbXdUdZmRnzH1m0M/LFe5YN9/9u', 1, '2026-05-27 14:05:26', '2026-06-26 14:05:26', '2026-05-27 14:06:30'),
-(420, 17, '$2y$10$CfkRdH07sE2RslmOAKiyh.gH7mPpiFY1MSSuAe6H4H9SyRnQ2nWVu', 1, '2026-05-27 14:06:30', '2026-06-26 14:06:30', '2026-05-27 14:07:39'),
-(421, 17, '$2y$10$dIEbgMo4ooLhCszblHHi9O2EWqUkNfJ15cMjDBn5WpHT.ExwmW4jG', 1, '2026-05-27 14:07:39', '2026-06-26 14:07:39', '2026-05-27 15:18:03'),
-(422, 17, '$2y$10$7bFscfHI9KAWJNrjqHfE9Os75QZU3OMo/G0p89Z43BlqrFLbWv9lO', 1, '2026-05-27 15:18:03', '2026-06-26 15:18:03', '2026-05-27 15:20:40'),
-(423, 17, '$2y$10$SJ1MZqxPmZyVB67rQpKdlefGIeqLafG/nN2ik6NqXl35A2nMj8PXS', 1, '2026-05-27 15:20:40', '2026-06-26 15:20:40', '2026-05-27 19:15:48'),
-(424, 17, '$2y$10$2Loj9b/5sIoeSKkq8wI2We5jKVl0p8UCpCLwpboQpP8uuUCvL/Vtm', 1, '2026-05-27 19:15:48', '2026-06-26 19:15:48', '2026-05-27 23:39:54'),
-(425, 17, '$2y$10$cRDM/CqbVyx0vuiJMTDL7.NCTqk7YTS6Zse21eUefBRWIgsdCgBTu', 0, '2026-05-27 23:39:54', '2026-06-26 23:39:54', NULL),
-(426, 1667, '$2y$10$Emuoo4l.c8qXQp/Z4VgMk.Q5EzQ9Z5oyEayRh5YlIEVyoXDgnN/cG', 1, '2026-05-31 03:18:34', '2026-06-30 08:18:34', '2026-05-31 04:03:21'),
-(427, 17, '$2y$10$ZwbFI3CKlXfi3c4ll/GMQOaMa9zk0WvtnsUPPk0Nlwcvhvum198pG', 1, '2026-05-31 03:21:35', '2026-06-30 08:21:35', '2026-05-31 04:10:34'),
-(428, 1667, '$2y$10$GsYTRMrYszsHs5fW2XGkDOq1GGM.ErwdNnPjZzomcATLEO7CcTlly', 0, '2026-05-31 04:03:21', '2026-06-30 09:03:21', NULL),
-(429, 17, '$2y$10$Spt3N.uOfxrEwlrJIjnF1eROyziEF/jRYxW.lL8XjROP4sY6UEEpy', 1, '2026-05-31 04:10:34', '2026-06-30 09:10:34', '2026-05-31 12:56:30'),
-(430, 17, '$2y$10$hUXqm.td2ureFy4QANqdre/srEzPmK6ivqGrsEPI5WBUpE6rebrpW', 1, '2026-05-31 12:56:30', '2026-06-30 17:56:30', '2026-06-15 21:39:42'),
-(431, 1667, '$2y$10$8ybBG.3C9UznZnCg7PfEWeQF7x/NW5B297WyhtltnlhuFsM967EbW', 1, '2026-05-31 21:16:51', '2026-07-01 02:16:51', '2026-05-31 22:05:26'),
-(432, 1667, '$2y$10$CyesFLuj0QaqsKLhmgtbCuYX0O6zfO3zuz9Ava7ZvEhWdfJiyW.Xu', 1, '2026-05-31 22:05:26', '2026-07-01 03:05:26', '2026-05-31 22:58:05'),
-(433, 1667, '$2y$10$noBJ1/P8GISPbJ/1uAm51edKV.PQNAq9VTaDT7eLnxLZCIjMVg6Ba', 1, '2026-05-31 22:58:05', '2026-07-01 03:58:05', '2026-06-01 03:56:54'),
-(434, 1667, '$2y$10$ke8Zns6dx2lwk823iy/xRuNWVIPMq.slg6i0hupDFJz1ViwnRYDlq', 1, '2026-06-01 03:56:54', '2026-07-01 08:56:54', '2026-06-01 04:28:44'),
-(435, 1667, '$2y$10$o/1sIHLikd/O6sf1N6zeWe13trKjjujHn59qrvHeaSChuL7eHS2T6', 1, '2026-06-01 04:28:44', '2026-07-01 09:28:44', '2026-06-01 10:09:38'),
-(436, 1667, '$2y$10$MUVlAYeFCwxyymPXkylU5eElFClslQIewIUiXQRWPLRarnI64d0vG', 1, '2026-06-01 10:09:38', '2026-07-01 15:09:38', '2026-06-01 10:43:01'),
-(437, 1667, '$2y$10$8.UelyEUuHKUV0PNhnBg1uDX/QeF6WuTkoJXWMUsZpDlqUC0q3zn.', 1, '2026-06-01 10:43:01', '2026-07-01 15:43:01', '2026-06-01 11:14:11'),
-(438, 1667, '$2y$10$iwtq7Bb/Hgl/ul0/yYchPe9j48Tq34BSpeoaKSLq/iqyEE2YFl.UK', 1, '2026-06-01 11:14:11', '2026-07-01 16:14:11', '2026-06-01 12:17:20'),
-(439, 1667, '$2y$10$ohLNRgqDN8ejQyboyFvfROJlr48at3q50k.EnXQD0VuXF5J8Ncrj2', 1, '2026-06-01 12:17:21', '2026-07-01 17:17:21', '2026-06-01 13:17:46'),
-(440, 17, '$2y$10$vHG50h57w2BNWdr0SPuIlO5lZG4xQvR71t5b4nNIb7CBhXQcv9fKO', 1, '2026-06-01 12:19:00', '2026-07-01 17:19:00', '2026-06-01 14:04:04'),
-(441, 17, '$2y$10$g8cui8Q5NbcLlKQNeAUQaeId7H3LCUUX.yDpP0erd7ssbMgQ3HaOm', 1, '2026-06-01 12:29:22', '2026-07-01 17:29:22', '2026-06-01 15:23:20'),
-(442, 1667, '$2y$10$zKOSUniSCBO9WzaY4tAoeeSg6Mmh1RMtPnq/kXgMU.iFWmweOB7c2', 0, '2026-06-01 13:17:46', '2026-07-01 18:17:46', NULL),
-(443, 17, '$2y$10$fiX0Bfz8R9WixJYzqPMM4.J8YLPikXdalC0X4fuDoyk1JeA8mZzM6', 1, '2026-06-01 14:04:04', '2026-07-01 19:04:04', '2026-06-01 14:41:30'),
-(444, 17, '$2y$10$OCkBcp1lnvmg5UwPQz/VLuuvYZo5EUylOsHmSEPJwH6iOnEzq7MSu', 1, '2026-06-01 14:41:30', '2026-07-01 19:41:30', '2026-06-01 15:22:36'),
-(445, 17, '$2y$10$kvJDdszhEiNGeP/gnjnmQ.YKk3ltGfxocaBgRcdgyEegAnH//5b36', 1, '2026-06-01 15:22:36', '2026-07-01 20:22:36', '2026-06-01 17:54:35'),
-(446, 17, '$2y$10$fzUng328hhNd7yCltSPBz.MLHBlec.ethJjDOnI378QFRvDmylpTq', 0, '2026-06-01 15:23:20', '2026-07-01 20:23:20', NULL),
-(447, 17, '$2y$10$z9g5ZZWHGs8Q1lrKho9NQOyEzh4cFrOFl1qxZHZ75HM32RxjoIOeW', 1, '2026-06-01 17:54:35', '2026-07-01 22:54:35', '2026-06-01 19:15:33'),
-(448, 17, '$2y$10$0H6yQ6H3oM2XeZJLjyrw.OA0lN4TPrX5ldEdMLHdJMxJBqEEFOchS', 0, '2026-06-01 19:15:33', '2026-07-02 00:15:33', NULL),
-(449, 17, '$2y$10$HOEE/nhx2ZOsfVjPrrW1HuPSeruW359.kt0oIN509vuS0HeAd7ZA2', 0, '2026-06-15 21:39:42', '2026-07-16 02:39:42', NULL),
-(450, 1667, '$2y$10$2AchACb/G28y.O2vRRB3m.DsqZBmteX43sielHxVNGrkKnXhum5n.', 1, '2026-08-09 14:39:38', '2026-09-08 19:39:38', '2026-08-10 20:45:16'),
-(451, 1667, '$2y$10$ZZehHu3jRX./3WaV3CxkYORp6hepq9iac40UJNiw3Rl7/VeF19bV6', 1, '2026-08-10 20:45:16', '2026-09-10 01:45:16', '2026-08-10 22:27:39'),
-(452, 1667, '$2y$10$SFo7S46ABfl8aydQ9yvsnefZZ4o4ZLYLrnrojctbb/P19qeufdYVy', 1, '2026-08-10 22:27:39', '2026-09-10 03:27:39', '2026-08-14 08:12:12'),
-(453, 1667, '$2y$10$fhdHt8VzArmqtKs42CmzVu5JUE7CyEl0a6XPggSp7sjCFsmmgYdTG', 1, '2026-08-14 08:12:12', '2026-09-13 13:12:12', '2026-08-14 10:30:27'),
-(454, 1667, '$2y$10$JhRVo8cIZkeuuEPqw/kOfO6Rfo6qjtrWRRM8SRRK6mDYZXZI0jRWu', 0, '2026-08-14 10:30:27', '2026-09-13 15:30:27', NULL);
+(99, 17, '$2y$10$mtIHa8NIBoM6PVN9RuQ/ZeHNZzC3YA4O9KaaKhPWkZV4Xw7JF0iem', 0, '2026-05-13 18:59:32', '2026-06-12 18:59:32', NULL),
+(100, 17, '$2y$10$7/Hd0qrL65qzcO1u9rbcFueru.8N3y1KUGDNXgAjayZkyhYmCJ99q', 0, '2026-05-13 19:09:36', '2026-06-12 19:09:36', NULL),
+(101, 17, '$2y$10$e4syR/.YFs.oERdWfeGtRuZR.XxsXucbpua28jItQPpRJadUJX8fK', 0, '2026-05-13 19:32:10', '2026-06-12 19:32:10', NULL),
+(102, 17, '$2y$10$Psj.Bv7KZxMhdBySza0HO.E/Xw4e8uKfzZfi1.s9nOqUTIQqAz4C2', 0, '2026-05-13 20:03:03', '2026-06-12 20:03:03', NULL),
+(103, 17, '$2y$10$Tafxf4BL3S.hDFJ52DMSB.YKgBjutfawNei2OtbNT6AWfbtUDHMZ6', 0, '2026-05-13 20:50:10', '2026-06-12 20:50:10', NULL),
+(104, 17, '$2y$10$6YKsJl1nboP//qYh1k/wLePMUUlZKQxEQm/sCVTacgpTC4Q60mG3i', 0, '2026-05-13 21:20:43', '2026-06-12 21:20:43', NULL),
+(105, 17, '$2y$10$QlHmKR/oKjZSTR4YunKoAeFEL4xpj5G00C5hVFUzJN2RvFkdTatXi', 0, '2026-05-13 21:51:15', '2026-06-12 21:51:15', NULL),
+(106, 17, '$2y$10$ZPcu8UkQVB/FOk8Mu2tiTOfFj9z61YEA2ORqtCbnVIlo7nSNUonwW', 0, '2026-05-13 22:06:56', '2026-06-12 22:06:56', NULL),
+(107, 17, '$2y$10$Isa6y/HYAyL760WAdXxbCOcRamn4W4AKQku6zk860B.9KHA1WmbwS', 0, '2026-05-13 22:44:48', '2026-06-12 22:44:48', NULL),
+(108, 17, '$2y$10$dZO4vl4LyDQHwLtmGN7JTukjCNFTnS202dBNULeuq7lvXwqoc8WeC', 0, '2026-05-15 09:29:13', '2026-06-14 09:29:13', NULL),
+(109, 17, '$2y$10$EE7HuafSwElO9ZjNsNIkYuO06qI.i1G1avn3qHwehwN8A3nqJObOa', 0, '2026-05-15 12:17:50', '2026-06-14 12:17:50', NULL),
+(110, 17, '$2y$10$CDTsOmSjckgH4C9yYcr.subeSgE4nYvlMhrq5yfCLlbVkVfdVhS8S', 0, '2026-05-15 13:06:46', '2026-06-14 13:06:46', NULL),
+(111, 17, '$2y$10$2rvT9ZfRn4l0n7W7xGd9t.btJqe74TNmP9lcaDmE4WyH3McEO12Cy', 0, '2026-05-15 13:18:31', '2026-06-14 13:18:31', NULL),
+(112, 17, '$2y$10$XhGRn2b3SJICquqFngIRUeANNbqzLT3XmiQxkIozbf9mGlJnMX8O2', 0, '2026-05-15 15:33:26', '2026-06-14 15:33:26', NULL),
+(113, 17, '$2y$10$u.2jaCgVsgrDzqBMdFFWJ.QvabDnXtzzfeaFXsB.dFBtNhe0GyLmG', 0, '2026-05-15 16:11:36', '2026-06-14 16:11:36', NULL),
+(114, 17, '$2y$10$CACuAHA8yUuiMYL1e8.sae9ly9QLRXnSlctOwrHdEm8cFGC3C0J/K', 0, '2026-05-16 08:32:16', '2026-06-15 08:32:16', NULL),
+(115, 17, '$2y$10$ofdRAy6MOc18BZTx3XKtNuLuUtzgLeR7KJNIsxRkKiirSv1gV/11q', 0, '2026-05-16 09:32:20', '2026-06-15 09:32:20', NULL),
+(116, 17, '$2y$10$fCAvH2NQv9XtXBIAkm4B7eQF9fu0SK45voeWibfHTcjWpMzOXFQ5a', 0, '2026-05-16 10:08:20', '2026-06-15 10:08:20', NULL),
+(117, 17, '$2y$10$obczPhKI29pN4Q6KE5Gdjuz2eRX1Q5sl1Q62ZsxKSN.fJ4.gz1zJq', 0, '2026-05-16 11:22:43', '2026-06-15 11:22:43', NULL),
+(118, 17, '$2y$10$Q4Ti8LAM.gWUt/lsVyeLBePP54/410intDk4BT83p.SsZqihCN2Om', 0, '2026-05-16 12:34:18', '2026-06-15 12:34:18', NULL),
+(119, 17, '$2y$10$mjtYMyVku.w9vPoaTAO2LOxLObV63U81dzhxsRmjL42iCdt2XHCey', 0, '2026-05-16 13:06:51', '2026-06-15 13:06:51', NULL),
+(120, 17, '$2y$10$9qXBWuoJnEILYdHZm.CPseFOF9tak2MyQzq0GN71FuHdSs5bAzk3C', 1, '2026-08-12 22:15:27', '2026-09-11 23:15:27', '2026-08-12 22:45:21'),
+(121, 17, '$2y$10$ldC9uhjVsB6fgFnrphw7DO.eWnNo.g7FfA5VF40XRh4UZMy.50m8.', 0, '2026-08-12 22:45:21', '2026-09-11 23:45:21', NULL),
+(122, 17, '$2y$10$ma6rTaVgedQ1DPU8.WCFUuJZR6P.e.QYK/xrWhDGFOpUInuDo5KMi', 0, '2026-08-12 22:46:00', '2026-09-11 23:46:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -2727,9 +2293,9 @@ INSERT INTO `tbl_refreshtokens` (`id`, `user_id`, `token_hash`, `revoked`, `crea
 --
 
 CREATE TABLE `tbl_staff` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `role_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `role_id` int DEFAULT NULL,
   `sregno` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -2740,6 +2306,7 @@ CREATE TABLE `tbl_staff` (
 INSERT INTO `tbl_staff` (`id`, `user_id`, `role_id`, `sregno`) VALUES
 (2, 17, 1, 'STA-0001'),
 (5, 27, 2, 'T00011'),
+(6, 28, 2, 'T00012'),
 (7, 39, 2, 'T00004'),
 (8, 40, 2, 'T00015'),
 (9, 41, 2, 'T000016'),
@@ -2835,11 +2402,7 @@ INSERT INTO `tbl_staff` (`id`, `user_id`, `role_id`, `sregno`) VALUES
 (99, 1422, 2, 'T00050'),
 (100, 1423, 2, 'T00051'),
 (101, 1424, 2, 'T00053'),
-(102, 1425, 2, 'T00054'),
-(103, 1667, 1, 'STF-805472'),
-(104, 1668, 2, 'STF-891296'),
-(105, 1669, 1, 'STF-781919'),
-(106, 1673, 1, 'STF-633107');
+(102, 1425, 2, 'T00054');
 
 -- --------------------------------------------------------
 
@@ -2848,10 +2411,10 @@ INSERT INTO `tbl_staff` (`id`, `user_id`, `role_id`, `sregno`) VALUES
 --
 
 CREATE TABLE `tbl_student` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
   `regno` varchar(100) NOT NULL,
-  `class_id` int(11) DEFAULT NULL
+  `class_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -2896,6 +2459,7 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 (49, 69, 'SS25A0864', 1),
 (50, 70, 'SS25A0865', 1),
 (51, 71, 'SS25A0866', 1),
+(52, 72, 'SS25A0867', 1),
 (53, 73, 'SS25A0868', 1),
 (54, 74, 'SS25A0869', 1),
 (55, 75, 'SS25A0870', 1),
@@ -3060,6 +2624,7 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 (214, 234, 'SS25A0731', 3),
 (215, 235, 'SS25A0732', 3),
 (216, 236, 'SS25A0733', 3),
+(217, 237, 'SS25A0736', 3),
 (218, 238, 'SS25A0737', 3),
 (219, 239, 'SS25A0738', 3),
 (220, 240, 'SS25A0739', 3),
@@ -3176,6 +2741,7 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 (331, 351, 'SS25A0454', 5),
 (332, 352, 'SS25A0455', 5),
 (333, 353, 'SS25A0456', 5),
+(334, 354, 'SS25A0457', 5),
 (335, 355, 'SS25A0459', 5),
 (336, 356, 'SS25A0460', 5),
 (337, 357, 'SS25A0465', 5),
@@ -3244,6 +2810,7 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 (400, 420, 'SS25A0586', 5),
 (401, 421, 'SS25A0587', 5),
 (402, 422, 'SS25A0588', 5),
+(403, 423, 'SS25A0591', 5),
 (404, 424, 'SS25A0592', 5),
 (405, 425, 'SS25A0594', 5),
 (406, 426, 'SS25A0595', 5),
@@ -3990,6 +3557,7 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 (1147, 1167, 'SS25A0719', 4),
 (1148, 1168, 'SS25A0720', 4),
 (1149, 1169, 'SS25A0721', 4),
+(1150, 1170, 'SS25A0722', 4),
 (1151, 1171, 'SS25A0723', 4),
 (1152, 1172, 'SS25A0725', 4),
 (1153, 1173, 'SS25A0728', 4),
@@ -4407,12 +3975,12 @@ INSERT INTO `tbl_student` (`id`, `user_id`, `regno`, `class_id`) VALUES
 --
 
 CREATE TABLE `tbl_subgroup` (
-  `id` int(11) NOT NULL,
-  `group_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
   `name` varchar(100) NOT NULL,
-  `absence_threshold` int(11) NOT NULL,
-  `date_created` timestamp NULL DEFAULT current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `absence_threshold` int NOT NULL,
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -4422,9 +3990,9 @@ CREATE TABLE `tbl_subgroup` (
 --
 
 CREATE TABLE `tbl_subgroup_member` (
-  `subgroup_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `joined_at` timestamp NULL DEFAULT current_timestamp()
+  `subgroup_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -4434,13 +4002,13 @@ CREATE TABLE `tbl_subgroup_member` (
 --
 
 CREATE TABLE `tbl_sync_queue` (
-  `id` int(11) NOT NULL,
-  `terminal_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `terminal_id` int NOT NULL,
   `entity_type` varchar(100) NOT NULL,
-  `entity_id` int(11) NOT NULL,
+  `entity_id` int NOT NULL,
   `action` enum('upsert','delete') NOT NULL,
-  `status` enum('pending','sent','sync') NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `status` enum('pending','sent','sync') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4455,31 +4023,7 @@ INSERT INTO `tbl_sync_queue` (`id`, `terminal_id`, `entity_type`, `entity_id`, `
 (5, 9, 'tbl_user', 17, 'upsert', 'sync', '2026-05-04 09:56:16'),
 (6, 10, 'tbl_user', 17, 'upsert', 'pending', '2026-05-16 13:40:21'),
 (7, 10, 'tbl_user', 1, 'upsert', 'pending', '2026-05-16 13:40:21'),
-(8, 10, 'tbl_user', 18, 'upsert', 'pending', '2026-05-16 13:40:21'),
-(21, 20, 'tbl_user', 1, 'upsert', 'sync', '2026-05-31 22:06:15'),
-(22, 20, 'tbl_user', 17, 'upsert', 'sent', '2026-05-31 22:06:15'),
-(23, 20, 'tbl_user', 18, 'upsert', 'sync', '2026-05-31 22:06:15'),
-(24, 21, 'tbl_user', 1, 'upsert', 'sync', '2026-06-01 11:07:37'),
-(25, 21, 'tbl_user', 17, 'upsert', 'sync', '2026-06-01 11:07:37'),
-(26, 21, 'tbl_user', 18, 'upsert', 'sync', '2026-06-01 11:07:37'),
-(27, 22, 'tbl_user', 1, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(28, 22, 'tbl_user', 17, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(29, 22, 'tbl_user', 18, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(30, 22, 'tbl_user', 1668, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(31, 22, 'tbl_user', 1669, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(32, 22, 'tbl_user', 1673, 'upsert', 'sync', '2026-06-01 13:17:46'),
-(33, 23, 'tbl_user', 1, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(34, 23, 'tbl_user', 17, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(35, 23, 'tbl_user', 18, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(36, 23, 'tbl_user', 1668, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(37, 23, 'tbl_user', 1669, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(38, 23, 'tbl_user', 1673, 'upsert', 'pending', '2026-06-01 13:19:53'),
-(39, 24, 'tbl_user', 1, 'upsert', 'pending', '2026-06-01 13:21:01'),
-(40, 24, 'tbl_user', 17, 'upsert', 'pending', '2026-06-01 13:21:01'),
-(41, 24, 'tbl_user', 18, 'upsert', 'pending', '2026-06-01 13:21:01'),
-(42, 24, 'tbl_user', 1668, 'upsert', 'pending', '2026-06-01 13:21:01'),
-(43, 24, 'tbl_user', 1669, 'upsert', 'pending', '2026-06-01 13:21:01'),
-(44, 24, 'tbl_user', 1673, 'upsert', 'pending', '2026-06-01 13:21:01');
+(8, 10, 'tbl_user', 18, 'upsert', 'pending', '2026-05-16 13:40:21');
 
 -- --------------------------------------------------------
 
@@ -4488,14 +4032,14 @@ INSERT INTO `tbl_sync_queue` (`id`, `terminal_id`, `entity_type`, `entity_id`, `
 --
 
 CREATE TABLE `tbl_terminal` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(200) NOT NULL,
   `slug` varchar(100) NOT NULL,
   `activation_code` varchar(200) NOT NULL,
-  `branch_id` int(11) NOT NULL,
+  `branch_id` int NOT NULL,
   `status` enum('pending','active','revoked') DEFAULT 'pending',
-  `date_created` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4503,13 +4047,9 @@ CREATE TABLE `tbl_terminal` (
 --
 
 INSERT INTO `tbl_terminal` (`id`, `name`, `slug`, `activation_code`, `branch_id`, `status`, `date_created`, `updated_at`) VALUES
+(6, 'Updated Entrance Kiosk', 'updated-entrance-kiosk', '$2y$10$pyXW59FzAkQ8sqAYfVoVj..JEyk3wUCWGaF3e1Ln7l7ENFv2JaJW6', 4, 'pending', '2026-03-27 18:59:11', '2026-04-25 10:00:28'),
 (9, 'Main Entrance Terminal', 'main-entrance-01', '$2y$10$AIQm4ttO7kcOv.jZ9pbI7u0PycC2u4qyZLQSUDfSVNLPRajGQu6/e', 4, 'active', '2026-04-13 09:55:00', '2026-04-25 10:00:28'),
-(10, 'Test Terminal', 'test-terminal', '$2y$10$95A1tmbnPLsTjHF49mKYh.bhRccIVgrYD4u8g7J7R7J4bdiYTemf6', 4, 'pending', '2026-05-16 09:40:33', '2026-05-16 13:40:21'),
-(20, 'prod-test', 'prod-test', '$2y$10$TPJ5yY74FIIjmjJ32sEJMOMX2BqKEBzdd0XCZmTKlsDe1CCErvY9W', 5, 'active', '2026-05-31 22:06:15', '2026-05-31 22:06:15'),
-(21, 'test-prod', 'test-prod', '$2y$10$B3sX4M8R91bGVnt1rot9aeVOekRwljvfObCe0jkB02GCaIC.LtJDS', 4, 'active', '2026-06-01 11:07:37', '2026-06-01 11:07:37'),
-(22, 'peter-test', 'peter-test', '$2y$10$wfzPIgw5riVDPe3uNJGNGePRzCJ.iSm/Io0OlSqj9F5xt5hBia4d6', 4, 'active', '2026-06-01 13:17:46', '2026-06-01 13:17:46'),
-(23, 'prosper-test', 'prosper-test', '$2y$10$khTKSrEfefpl6dtKri2/Ku/5XPJOFm2Y/zJbdiFIcWMirKBzyIsH2', 4, 'active', '2026-06-01 13:19:53', '2026-06-01 13:19:53'),
-(24, 'phyna-test', 'phyna-test', '$2y$10$aDxdK0zobPGiQ2Y.gEUGAu5vmJkZt9umho4ExnXgKTvbM1l9RQyda', 4, 'active', '2026-06-01 13:21:01', '2026-06-01 13:21:01');
+(10, 'Test Terminal', 'test-terminal', '$2y$10$95A1tmbnPLsTjHF49mKYh.bhRccIVgrYD4u8g7J7R7J4bdiYTemf6', 4, 'pending', '2026-05-16 09:40:33', '2026-05-16 13:40:21');
 
 -- --------------------------------------------------------
 
@@ -4518,12 +4058,12 @@ INSERT INTO `tbl_terminal` (`id`, `name`, `slug`, `activation_code`, `branch_id`
 --
 
 CREATE TABLE `tbl_terminal_access_policy` (
-  `id` int(11) NOT NULL,
-  `terminal_id` int(11) NOT NULL,
-  `group_id` int(11) DEFAULT NULL,
-  `subgroup_id` int(11) DEFAULT NULL,
-  `auth_type_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `id` int NOT NULL,
+  `terminal_id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
+  `subgroup_id` int DEFAULT NULL,
+  `auth_type_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -4533,21 +4073,13 @@ CREATE TABLE `tbl_terminal_access_policy` (
 
 INSERT INTO `tbl_terminal_access_policy` (`id`, `terminal_id`, `group_id`, `subgroup_id`, `auth_type_id`, `created_at`, `updated_at`) VALUES
 (3, 9, 1, NULL, 1, '2026-04-26 04:57:55', NULL),
+(5, 6, 2, NULL, 1, '2026-04-26 04:57:55', NULL),
+(6, 6, 2, NULL, 3, '2026-04-26 04:57:55', NULL),
 (11, 9, 2, NULL, 1, '2026-04-26 04:57:55', NULL),
 (12, 9, 2, NULL, 3, '2026-04-26 04:57:55', NULL),
 (38, 10, 1, NULL, 1, '2026-05-16 13:40:21', NULL),
 (39, 10, 1, NULL, 3, '2026-05-16 13:40:21', NULL),
-(40, 10, 2, NULL, 1, '2026-05-16 13:40:21', NULL),
-(55, 20, 2, NULL, 3, '2026-05-31 22:06:15', NULL),
-(56, 20, 2, NULL, 1, '2026-05-31 22:06:15', NULL),
-(57, 21, 2, NULL, 3, '2026-06-01 11:07:37', NULL),
-(58, 21, 2, NULL, 1, '2026-06-01 11:07:37', NULL),
-(59, 22, 2, NULL, 3, '2026-06-01 13:17:46', NULL),
-(60, 22, 2, NULL, 1, '2026-06-01 13:17:46', NULL),
-(61, 23, 2, NULL, 3, '2026-06-01 13:19:53', NULL),
-(62, 23, 2, NULL, 1, '2026-06-01 13:19:53', NULL),
-(63, 24, 2, NULL, 3, '2026-06-01 13:21:01', NULL),
-(64, 24, 2, NULL, 1, '2026-06-01 13:21:01', NULL);
+(40, 10, 2, NULL, 1, '2026-05-16 13:40:21', NULL);
 
 -- --------------------------------------------------------
 
@@ -4556,9 +4088,9 @@ INSERT INTO `tbl_terminal_access_policy` (`id`, `terminal_id`, `group_id`, `subg
 --
 
 CREATE TABLE `tbl_terminal_auth_capability` (
-  `terminal_id` int(11) NOT NULL,
-  `auth_type_id` int(11) NOT NULL,
-  `auth_step` int(11) NOT NULL
+  `terminal_id` int NOT NULL,
+  `auth_type_id` int NOT NULL,
+  `auth_step` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4566,21 +4098,13 @@ CREATE TABLE `tbl_terminal_auth_capability` (
 --
 
 INSERT INTO `tbl_terminal_auth_capability` (`terminal_id`, `auth_type_id`, `auth_step`) VALUES
+(6, 1, 1),
+(6, 3, 2),
 (9, 1, 1),
 (9, 3, 2),
 (10, 3, 1),
 (10, 1, 2),
-(10, 2, 3),
-(20, 3, 1),
-(20, 1, 2),
-(21, 3, 1),
-(21, 1, 2),
-(22, 3, 1),
-(22, 1, 2),
-(23, 3, 1),
-(23, 1, 2),
-(24, 3, 1),
-(24, 1, 2);
+(10, 2, 3);
 
 -- --------------------------------------------------------
 
@@ -4589,12 +4113,12 @@ INSERT INTO `tbl_terminal_auth_capability` (`terminal_id`, `auth_type_id`, `auth
 --
 
 CREATE TABLE `tbl_terminal_health` (
-  `id` int(11) NOT NULL,
-  `terminal_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `terminal_id` int NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
-  `last_heartbeat` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `user_agent` text,
+  `metadata` json DEFAULT NULL,
+  `last_heartbeat` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4602,10 +4126,7 @@ CREATE TABLE `tbl_terminal_health` (
 --
 
 INSERT INTO `tbl_terminal_health` (`id`, `terminal_id`, `ip_address`, `user_agent`, `metadata`, `last_heartbeat`) VALUES
-(1, 9, '154.72.169.220', 'python-requests/2.32.5', '{\"endpoint\":\"\\/api\\/v1\\/sync\\/updates?terminal_id=9&last_sync=2000-01-01+00%3A00%3A00\",\"method\":\"GET\",\"client_port\":\"35094\"}', '2026-06-15 15:00:27'),
-(164, 20, '154.72.170.91', 'python-requests/2.32.5', '{\"endpoint\":\"\\/api\\/v1\\/sync\\/updates?terminal_id=20&last_sync=2000-01-01+00%3A00%3A00\",\"method\":\"GET\",\"client_port\":\"48088\"}', '2026-06-01 03:55:53'),
-(307, 21, '154.72.169.135', 'python-requests/2.32.5', '{\"endpoint\":\"\\/api\\/v1\\/sync\\/updates?terminal_id=21&last_sync=2000-01-01+00%3A00%3A00\",\"method\":\"GET\",\"client_port\":\"49038\"}', '2026-06-02 21:40:05'),
-(429, 22, '154.72.169.138', 'python-requests/2.32.5', '{\"endpoint\":\"\\/api\\/v1\\/sync\\/updates?terminal_id=22&last_sync=2000-01-01+00%3A00%3A00\",\"method\":\"GET\",\"client_port\":\"39876\"}', '2026-06-01 14:14:06');
+(1, 9, '127.0.0.1', 'python-requests/2.32.5', '{\"method\": \"GET\", \"endpoint\": \"/api/v1/sync/updates?terminal_id=9&last_sync=2000-01-01+00%3A00%3A00\", \"client_port\": \"34306\"}', '2026-05-11 16:46:19');
 
 -- --------------------------------------------------------
 
@@ -4614,20 +4135,20 @@ INSERT INTO `tbl_terminal_health` (`id`, `terminal_id`, `ip_address`, `user_agen
 --
 
 CREATE TABLE `tbl_user` (
-  `id` int(11) NOT NULL,
-  `class_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `class_id` int DEFAULT NULL,
   `fname` varchar(100) NOT NULL,
   `lname` varchar(100) NOT NULL,
   `email` varchar(255) DEFAULT NULL,
-  `gender` enum('male','female') DEFAULT NULL,
+  `gender` enum('male','female') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `username` varchar(100) DEFAULT NULL,
   `password_hash` varchar(255) DEFAULT NULL,
   `user_type` enum('student','staff') NOT NULL,
   `status` enum('active','inactive','dismissed') DEFAULT 'active',
   `biometric_enrollment_status` enum('pending','completed') DEFAULT 'pending',
   `photo` varchar(50) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4641,6 +4162,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (25, 1, 'PRISLEY', 'NUMFOR', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:11:22', '2026-05-13 21:11:22'),
 (26, 1, 'CARL-ADRIAN A', 'ENYEJI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:11:22', '2026-05-13 21:11:22'),
 (27, NULL, 'Admin', 'Super', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:11:22', '2026-05-13 21:11:22'),
+(28, NULL, 'Peter', 'Leke', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:11:22', '2026-05-13 21:11:22'),
 (29, 1, 'BONNYUY PHANUEL', 'KANJOH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:19:02', '2026-05-13 21:19:02'),
 (30, 1, 'BERINYUY FEDORA', 'KANJOH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:19:02', '2026-05-13 21:19:02'),
 (31, 1, 'BILL CLINTON NGWA', 'TABUFOR', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:19:02', '2026-05-13 21:19:02'),
@@ -4684,6 +4206,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (69, 1, 'MARRIELLA ESDRAS MOMA', 'NTSANG', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (70, 1, 'MODECAI CHECK', 'AYANG', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (71, 1, 'KETURAH NJECK', 'ENI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
+(72, 1, '#NAME?', 'KEAFO-ON', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (73, 1, 'EDISON NDI', 'KYLE', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (74, 1, 'PRECIOUS-RUTH AFANWI', 'CHE', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (75, 1, 'SHALOM PRAISE CHO', 'NDE', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
@@ -4848,6 +4371,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (234, 3, 'RUTH SANI', 'NEH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (235, 3, 'HARIPH CHI', 'FRU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (236, 3, 'GRACE BIH', 'NGWABINWU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
+(237, 3, '#NAME?', 'PENANDJEU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (238, 3, 'PRINCELY NJI', 'NGWA', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (239, 3, 'BLESSING AWAH', 'NGULAH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
 (240, 3, 'EMMANUEL TENENG', 'NGULAH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:01', '2026-05-13 21:21:01'),
@@ -4964,6 +4488,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (351, 5, 'GODWILL NTALI', 'NTUMBON', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (352, 5, 'BLESSING BLINK YOUH', 'ACHOU', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (353, 5, 'FAVOUR AFUMBOM', 'TEBOH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
+(354, 5, '#NAME?', 'AMASHI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (355, 5, 'PHILEMON CHE', 'NJI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (356, 5, 'MILDRED ABIA', 'AMPO', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (357, 5, 'ANNA PRINCESS', 'ZIE', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
@@ -4973,12 +4498,12 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (361, 5, 'TAMBE GREAT KANWI', 'MBAH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (362, 5, 'QUEENSLY SHU', 'LUM', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (363, 5, 'OKWARA KIZITO', 'IKENNA', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
-(364, 5, 'JEMIMAH CHO', 'MAMBO', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
+(364, 5, 'JEMIMAH CHO', 'MAMBO', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02');
+INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
 (365, 5, 'PRECIOUS WONGIBE', 'TATAH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (366, 5, 'AFA\'ANWI CHE', 'ANGELBELLE', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (367, 5, 'POLETA NCHE', 'ZEE', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
-(368, 5, 'MARIETTE ANDZE', 'NKAMA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02');
-INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
+(368, 5, 'MARIETTE ANDZE', 'NKAMA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (369, 5, 'JOEL ANU', 'LESIGAH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (370, 5, 'TRINITY AFEMBI', 'MANKA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (371, 5, 'FAVOUR BRIGHT FEN', 'NSOH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
@@ -5033,6 +4558,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (420, 5, 'PRECIOUS MBONG', 'TEGHA', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (421, 5, 'KENUEL - ROLLINS AMABO', 'AMABO', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (422, 5, 'PERCY-NOEL CHO', 'TEKU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
+(423, 5, '#NAME?', 'AZAH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (424, 5, 'TREASURE BLESSING NSOH', 'NANGA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (425, 5, 'BERLICE-BRIGHT SHADZE', 'WIRSIY', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
 (426, 5, 'BRIGHTWILL CHE', 'KPWEGHE', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:02', '2026-05-13 21:21:02'),
@@ -5314,13 +4840,13 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (702, 11, 'FAVOUR AZAH', 'AWAWIN', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (703, 11, 'GOODNESS', 'TENENG', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (704, 11, 'PALMA ECHEH', 'ANCHIEMBE', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
-(705, 11, 'KETCHU SCARET FAVOUR NDE', 'SHURI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
+(705, 11, 'KETCHU SCARET FAVOUR NDE', 'SHURI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03');
+INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
 (706, 11, 'VICTORY BRAIN CHE', 'CHI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (707, 11, 'MANGG CHIVIR', 'JACINTA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (708, 11, 'NKWENTI TSE', 'FRU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (709, 11, 'AMBIA EPIPHANI', 'PRINCESS', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
-(710, 11, 'BLESSING NDI', 'BONGWIR', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03');
-INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
+(710, 11, 'BLESSING NDI', 'BONGWIR', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (711, 11, 'BRIGHT AWA', 'MULUH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (712, 11, 'ETHELDRINE FUHNWI', 'LUM', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
 (713, 11, 'EUCHARIA MASSAH', 'NDO', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:03', '2026-05-13 21:21:03'),
@@ -5653,13 +5179,13 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (1040, 2, 'KELLY BRIGHT MUSI', 'NDABOMBI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1041, 2, 'MIKEL MBONG', 'OTTIA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1042, 2, 'GLORY BENDEH', 'DINSE', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
-(1043, 2, 'QUINNEL FONCHAM', 'SUNGABI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
+(1043, 2, 'QUINNEL FONCHAM', 'SUNGABI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04');
+INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
 (1044, 2, 'UNGITOH BURIYA', 'ISABELLA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1045, 2, 'PRAISES -PRIDE MAFOUO', 'SUH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1046, 2, 'VICTORY MUSI', 'FOLAH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1047, 2, 'CHINYERE GEORGE', 'NGWEKUNG', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
-(1048, 2, 'ANGEL-BRIGHT', 'KHAN', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04');
-INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
+(1048, 2, 'ANGEL-BRIGHT', 'KHAN', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1049, 2, 'KETBRIGHT TAMBE', 'AZAH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1050, 2, 'GWA BATHSUA MANKA\'A', 'NDIFOR', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
 (1051, 2, 'QUEENBRIGHT AZAH', 'CHI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:04', '2026-05-13 21:21:04'),
@@ -5781,6 +5307,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (1167, 4, 'FOMEKONG DARWIN GODGIVE', 'MBOUZOUH', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
 (1168, 4, 'ANGEL FAITH ASANJI', 'FRU-NWI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
 (1169, 4, 'KUM SUCCESS', 'NING', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
+(1170, 4, '- NTSEH LARL ANYE', 'ADEY', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
 (1171, 4, 'FAVOUR LUM', 'NEBA', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
 (1172, 4, 'LISHA TCHAMI GHICHU EKEME', 'DINI', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
 (1173, 4, 'NOUBISSI LAURREN LEAH', 'NEH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:21:05', '2026-05-13 21:21:05'),
@@ -5990,14 +5517,14 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (1377, NULL, 'FELICIA MEH  ', 'AWAH', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1378, NULL, 'BLAISE NGINGO  ', 'NSWI', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1379, NULL, 'PETER   ', 'KHAN', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
-(1380, NULL, 'BLESSING BINENG  ', 'MBOM', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
+(1380, NULL, 'BLESSING BINENG  ', 'MBOM', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06');
+INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
 (1381, NULL, 'VERIA NYINGCHO  ', 'ANEMBOM', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1382, NULL, 'CHARLOTTE NINDUM  ', 'MUH', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1383, NULL, 'KELLIE CHABAH  ', 'AMBIA', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1384, NULL, 'TRACY   ', 'LUM', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1385, NULL, 'CHRISTA   ', 'SIRRI', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
-(1386, NULL, 'BILDAD MBIDZENYUY  ', 'LEMNYUY', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06');
-INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `username`, `password_hash`, `user_type`, `status`, `biometric_enrollment_status`, `photo`, `created_at`, `updated_at`) VALUES
+(1386, NULL, 'BILDAD MBIDZENYUY  ', 'LEMNYUY', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1387, NULL, 'VANESSA AWAH  ', 'BISANG', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1388, NULL, 'DESIRE   ', 'NWOPAN', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
 (1389, NULL, 'IRINE NEH  ', 'AKUMA', NULL, 'male', NULL, NULL, 'staff', 'active', 'pending', NULL, '2026-05-13 21:21:06', '2026-05-13 21:21:06'),
@@ -6276,11 +5803,7 @@ INSERT INTO `tbl_user` (`id`, `class_id`, `fname`, `lname`, `email`, `gender`, `
 (1662, 18, 'GODWILL', 'AZINWI', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:42:14', '2026-05-13 21:42:14'),
 (1663, 18, 'BRITA GWANYEBI', 'NDIPANG', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:42:14', '2026-05-13 21:42:14'),
 (1664, 18, 'PRECIOUS NJI', 'BIH', NULL, 'female', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:42:14', '2026-05-13 21:42:14'),
-(1665, 18, 'NKWENTI', 'FRU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:42:14', '2026-05-13 21:42:14'),
-(1667, NULL, 'Fastweb', 'admin', 'contact@fastwebcm.com', 'male', 'admin', '$2y$10$P.jN7xM1aGvcxlSpBOmkGOldSUbatXvnfAyIZGrS3IryE8TCmofXS', 'staff', 'active', 'pending', NULL, '2026-05-31 03:15:20', '2026-05-31 03:15:20'),
-(1668, NULL, 'Peter', 'Leke', 'peterleke@gmail.com', 'male', 'peterleke', '$2y$10$mAOJMW2mTdJf/XewhKAdOeuPvVheYVzgopLDBjL7OBEBNqvrkhriW', 'staff', 'active', 'pending', NULL, '2026-06-01 12:21:33', '2026-06-01 12:21:33'),
-(1669, NULL, 'Tayu', 'Prosper', 'prospertayu2@gmail.com', 'male', 'tayu', '$2y$10$DqDG2ht86grM.QYloZPs2u3vdQYOLyEaAyG1pld49ffNr62DICPsy', 'staff', 'active', 'pending', NULL, '2026-06-01 12:21:44', '2026-06-01 12:21:44'),
-(1673, NULL, 'Eho', 'Josephine Nkombi', 'josephineeho8@gmail.com', 'female', 'Eho', '$2y$10$oJjHE5Y0E8FOZvvyslos/.vixwr0bXt3g4wgGTeME9FZ0FyBswYcG', 'staff', 'active', 'pending', NULL, '2026-06-01 12:33:50', '2026-06-01 12:33:50');
+(1665, 18, 'NKWENTI', 'FRU', NULL, 'male', NULL, NULL, 'student', 'active', 'pending', NULL, '2026-05-13 21:42:14', '2026-05-13 21:42:14');
 
 --
 -- Indexes for dumped tables
@@ -6395,7 +5918,7 @@ ALTER TABLE `tbl_attendance_summary`
   ADD KEY `event_id` (`event_id`),
   ADD KEY `idx_summary_user` (`user_id`),
   ADD KEY `idx_summary_date` (`attendance_date`),
-  ADD KEY `idx_attendance_status` (`attendance_status`);
+  ADD KEY `idx_summary_status` (`attendance_status`);
 
 --
 -- Indexes for table `tbl_auth_session`
@@ -6472,6 +5995,7 @@ ALTER TABLE `tbl_event_checkin_checkout_range`
 ALTER TABLE `tbl_exception`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`),
+  ADD KEY `idx_exception_type` (`exception_type_id`),
   ADD KEY `idx_exception_date_range` (`start_date`,`end_date`);
 
 --
@@ -6504,8 +6028,7 @@ ALTER TABLE `tbl_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_logs_user` (`user_id`),
   ADD KEY `idx_logs_category` (`category`),
-  ADD KEY `idx_logs_time` (`date_created`),
-  ADD KEY `idx_logs_level` (`log_level`);
+  ADD KEY `idx_logs_time` (`date_created`);
 
 --
 -- Indexes for table `tbl_permission`
@@ -6514,9 +6037,9 @@ ALTER TABLE `tbl_permission`
   ADD PRIMARY KEY (`id`),
   ADD KEY `initiatedby` (`initiatedby`),
   ADD KEY `idx_permission_user` (`user_id`),
+  ADD KEY `idx_permission_type` (`permissiontype_id`),
   ADD KEY `idx_permission_status` (`status`),
-  ADD KEY `idx_permission_date_range` (`start_date`,`end_date`),
-  ADD KEY `tbl_permission_ibfk1` (`permission_type_id`);
+  ADD KEY `idx_permission_date_range` (`start_date`,`end_date`);
 
 --
 -- Indexes for table `tbl_permission_approval`
@@ -6616,8 +6139,7 @@ ALTER TABLE `tbl_user`
   ADD UNIQUE KEY `username` (`username`),
   ADD KEY `idx_user_type` (`user_type`),
   ADD KEY `idx_user_status` (`status`),
-  ADD KEY `idx_user_class` (`class_id`),
-  ADD KEY `idx_name` (`fname`,`lname`);
+  ADD KEY `idx_user_class` (`class_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -6627,73 +6149,73 @@ ALTER TABLE `tbl_user`
 -- AUTO_INCREMENT for table `lkup_attendance_status`
 --
 ALTER TABLE `lkup_attendance_status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `lkup_auth_type`
 --
 ALTER TABLE `lkup_auth_type`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `lkup_exception`
 --
 ALTER TABLE `lkup_exception`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `lkup_grouptype`
 --
 ALTER TABLE `lkup_grouptype`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `lkup_permission`
 --
 ALTER TABLE `lkup_permission`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `lkup_role`
 --
 ALTER TABLE `lkup_role`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `lkup_role_permission`
 --
 ALTER TABLE `lkup_role_permission`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_announcement`
 --
 ALTER TABLE `tbl_announcement`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_announcement_acknowledgement`
 --
 ALTER TABLE `tbl_announcement_acknowledgement`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_announcement_group`
 --
 ALTER TABLE `tbl_announcement_group`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_announcement_subgroup`
 --
 ALTER TABLE `tbl_announcement_subgroup`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_attendance_auth_log`
 --
 ALTER TABLE `tbl_attendance_auth_log`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_attendance_session`
@@ -6705,139 +6227,139 @@ ALTER TABLE `tbl_attendance_session`
 -- AUTO_INCREMENT for table `tbl_attendance_summary`
 --
 ALTER TABLE `tbl_attendance_summary`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_auth_session`
 --
 ALTER TABLE `tbl_auth_session`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_biometricprofile`
 --
 ALTER TABLE `tbl_biometricprofile`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `tbl_branch`
 --
 ALTER TABLE `tbl_branch`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tbl_card`
 --
 ALTER TABLE `tbl_card`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1654;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1650;
 
 --
 -- AUTO_INCREMENT for table `tbl_class`
 --
 ALTER TABLE `tbl_class`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `tbl_event`
 --
 ALTER TABLE `tbl_event`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `tbl_event_access_policy`
 --
 ALTER TABLE `tbl_event_access_policy`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `tbl_event_checkin_checkout_range`
 --
 ALTER TABLE `tbl_event_checkin_checkout_range`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `tbl_exception`
 --
 ALTER TABLE `tbl_exception`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_group`
 --
 ALTER TABLE `tbl_group`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_logs`
 --
 ALTER TABLE `tbl_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=276;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_permission`
 --
 ALTER TABLE `tbl_permission`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_permission_approval`
 --
 ALTER TABLE `tbl_permission_approval`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_refreshtokens`
 --
 ALTER TABLE `tbl_refreshtokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=455;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
 
 --
 -- AUTO_INCREMENT for table `tbl_staff`
 --
 ALTER TABLE `tbl_staff`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT for table `tbl_student`
 --
 ALTER TABLE `tbl_student`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1561;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1561;
 
 --
 -- AUTO_INCREMENT for table `tbl_subgroup`
 --
 ALTER TABLE `tbl_subgroup`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_sync_queue`
 --
 ALTER TABLE `tbl_sync_queue`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `tbl_terminal`
 --
 ALTER TABLE `tbl_terminal`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `tbl_terminal_access_policy`
 --
 ALTER TABLE `tbl_terminal_access_policy`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `tbl_terminal_health`
 --
 ALTER TABLE `tbl_terminal_health`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3456;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `tbl_user`
 --
 ALTER TABLE `tbl_user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1674;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1667;
 
 --
 -- Constraints for dumped tables
@@ -6885,16 +6407,6 @@ ALTER TABLE `tbl_attendance_auth_log`
   ADD CONSTRAINT `tbl_attendance_auth_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`),
   ADD CONSTRAINT `tbl_attendance_auth_log_ibfk_2` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`),
   ADD CONSTRAINT `tbl_attendance_auth_log_ibfk_3` FOREIGN KEY (`event_id`) REFERENCES `tbl_event` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `tbl_attendance_session`
---
-ALTER TABLE `tbl_attendance_session`
-  ADD CONSTRAINT `tbl_attendance_session_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`),
-  ADD CONSTRAINT `tbl_attendance_session_ibfk_2` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`),
-  ADD CONSTRAINT `tbl_attendance_session_ibfk_3` FOREIGN KEY (`checkin_terminal_id`) REFERENCES `tbl_terminal` (`id`),
-  ADD CONSTRAINT `tbl_attendance_session_ibfk_4` FOREIGN KEY (`checkout_terminal_id`) REFERENCES `tbl_terminal` (`id`),
-  ADD CONSTRAINT `tbl_attendance_session_ibfk_5` FOREIGN KEY (`event_id`) REFERENCES `tbl_event` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `tbl_attendance_summary`
@@ -6955,6 +6467,7 @@ ALTER TABLE `tbl_event_checkin_checkout_range`
 -- Constraints for table `tbl_exception`
 --
 ALTER TABLE `tbl_exception`
+  ADD CONSTRAINT `tbl_exception_ibfk_1` FOREIGN KEY (`exception_type_id`) REFERENCES `lkup_exception` (`id`),
   ADD CONSTRAINT `tbl_exception_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `tbl_user` (`id`) ON DELETE SET NULL;
 
 --
@@ -6988,7 +6501,7 @@ ALTER TABLE `tbl_logs`
 -- Constraints for table `tbl_permission`
 --
 ALTER TABLE `tbl_permission`
-  ADD CONSTRAINT `tbl_permission_ibfk1` FOREIGN KEY (`permission_type_id`) REFERENCES `lkup_permission` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tbl_permission_ibfk_1` FOREIGN KEY (`permissiontype_id`) REFERENCES `lkup_permission` (`id`) ON DELETE RESTRICT,
   ADD CONSTRAINT `tbl_permission_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `tbl_permission_ibfk_3` FOREIGN KEY (`initiatedby`) REFERENCES `tbl_user` (`id`) ON DELETE SET NULL;
 
@@ -7003,7 +6516,7 @@ ALTER TABLE `tbl_permission_approval`
 -- Constraints for table `tbl_refreshtokens`
 --
 ALTER TABLE `tbl_refreshtokens`
-  ADD CONSTRAINT `fk_token_userid` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ADD CONSTRAINT `fk_token_userid` FOREIGN KEY (`user_id`) REFERENCES `tbl_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Constraints for table `tbl_staff`
@@ -7037,19 +6550,19 @@ ALTER TABLE `tbl_subgroup_member`
 -- Constraints for table `tbl_sync_queue`
 --
 ALTER TABLE `tbl_sync_queue`
-  ADD CONSTRAINT `fk_terminal_id` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+  ADD CONSTRAINT `fk_terminal_id` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT;
 
 --
 -- Constraints for table `tbl_terminal`
 --
 ALTER TABLE `tbl_terminal`
-  ADD CONSTRAINT `tbl_terminal_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `tbl_branch` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ADD CONSTRAINT `tbl_terminal_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `tbl_branch` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Constraints for table `tbl_terminal_access_policy`
 --
 ALTER TABLE `tbl_terminal_access_policy`
-  ADD CONSTRAINT `fk_policy_auth` FOREIGN KEY (`auth_type_id`) REFERENCES `lkup_auth_type` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_policy_auth` FOREIGN KEY (`auth_type_id`) REFERENCES `lkup_auth_type` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_policy_group` FOREIGN KEY (`group_id`) REFERENCES `tbl_group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_policy_subgroup` FOREIGN KEY (`subgroup_id`) REFERENCES `tbl_subgroup` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_policy_terminal` FOREIGN KEY (`terminal_id`) REFERENCES `tbl_terminal` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;

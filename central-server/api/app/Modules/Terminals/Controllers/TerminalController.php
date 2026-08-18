@@ -136,34 +136,42 @@ class TerminalController extends Controller {
 
     //activate terminal
     public function activate()
-    {
-        $data = $this->getJsonInput();
+{
+    $data = $this->getJsonInput();
 
-        $terminalId = $this->t->verifyActivationcode($data["code"]);
-        if ($terminalId === 0) {
-            $this->json([
-                "success"=> false,
-                "message"=> "Invalid activation code"
-            ], 500);
-        }
-
-        try {
-            // now let get the terminal details
-            $data = $this->t->getTerminalData($terminalId);
-
-            $this->json([
-                "success" => true,
-                "data" => $data
-            ]);
-        } catch (Throwable $e) {
-            $this->json([
-                "success"=> false,
-                "message"=> $e->getMessage(),
-                "type"=> get_class($e)
-            ]);
-        }
-
+    if (empty($data["code"])) {
+        $this->json([
+            "success" => false,
+            "message" => "Activation code is required"
+        ], 400);
+        return;
     }
+
+    $terminalId = $this->t->verifyActivationcode(trim($data["code"]));
+    
+    if ($terminalId === 0) {
+        $this->json([
+            "success" => false,
+            "message" => "Invalid or expired activation code"
+        ], 400); 
+        return;
+    }
+
+    try {
+        $data = $this->t->getTerminalData($terminalId);
+
+        $this->json([
+            "success" => true,
+            "data" => $data
+        ]);
+    } catch (\Throwable $e) {
+        $this->json([
+            "success" => false,
+            "message" => $e->getMessage(),
+            "type" => get_class($e)
+        ], 500);
+    }
+}
 
     public function getAuthTypes()
     {

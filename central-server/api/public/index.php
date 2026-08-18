@@ -5,7 +5,10 @@ $allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
+    'http://smartattendance.fastwebcm.local',
     'http://smartattendance.fastwebcm.local:3000',
+    'http://smartattendance.fastwebcm.local:3002',
+    'http://smartattendance.fastwebcm.local:8087',
     'https://smartattendance.fastwebcm.org', // production url
 ];
 

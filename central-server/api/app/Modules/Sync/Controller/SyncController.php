@@ -74,8 +74,6 @@ class SyncController extends Controller {
         $data = $this->getJsonInput();
 
         $sessions = $data["sessions"] ?? [];
-        // log the request in the error logs
-        error_log("Received session uplink: " . json_encode($sessions));
 
         if (empty($sessions)) {
             $this->json([
@@ -92,6 +90,7 @@ class SyncController extends Controller {
                 "synced_local_ids" => $synced_local_ids
             ]);
         } catch (Throwable $e) {
+            error_log("error session uplinking:". $e);
             $this->json([
                 "success"=> false,
                 "message"=> $e->getMessage(),
@@ -105,8 +104,6 @@ class SyncController extends Controller {
         $data = $this->getJsonInput();
 
         $summaries = $data["summaries"] ?? [];
-        // log the request in the error logs (debugging)
-        error_log("Received summary uplink: " . json_encode($summaries));
 
         if (empty($summaries)) {
             $this->json([

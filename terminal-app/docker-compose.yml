@@ -45,9 +45,13 @@ services:
       - DB_PASSWORD=Password@2025
       - DB_NAME=db_terminal
       - ADMIN_API_URL=http://localhost:8087/api/v1 # The Central Admin IP
+      - CENTRAL_API_URL=http://smartattendance.fastwebcm.local/api/v1
     volumes:
       - ./api/sync_config.json:/app/sync_config.json
+      - ./api/.env:/app/.env
     restart: always
+    extra_hosts:
+      - "smartattendance.fastwebcm.local:host-gateway"
 
   # Next.js Frontend
   terminal-ui:

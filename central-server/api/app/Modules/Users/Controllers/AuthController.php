@@ -1,5 +1,7 @@
 <?php
 namespace App\Modules\Users\Controllers;
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
 
 use App\Core\Controller;
 use App\Modules\Users\Models\Users;
