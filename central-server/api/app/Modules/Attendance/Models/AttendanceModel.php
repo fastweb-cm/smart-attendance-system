@@ -653,7 +653,9 @@ public function getAttendanceSessions(
 
                 sess.terminal_id,
                 sess.checkin_terminal_id,
+                checkin_terminal.name AS checkin_terminal_name,
                 sess.checkout_terminal_id,
+                checkout_terminal.name AS checkout_terminal_name,
                 sess.terminal_session_id,
 
                 sess.attendance_context,
@@ -714,11 +716,15 @@ public function getAttendanceSessions(
                         ? (int)$session['checkin_terminal_id']
                         : null,
 
+                'checkin_terminal_name' => $session['checkin_terminal_name'],
+
                 'checkout_terminal_id' =>
                     $session['checkout_terminal_id'] !== null
                         ? (int)$session['checkout_terminal_id']
                         : null,
 
+                'checkout_terminal_name' => $session['checkout_terminal_name'],
+                        
                 'terminal_session_id' =>
                     $session['terminal_session_id'] !== null
                         ? (int)$session['terminal_session_id']

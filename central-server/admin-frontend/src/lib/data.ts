@@ -14,6 +14,7 @@ import {
   FileCode2,
   Activity,
   ShieldAlert,
+  History,
 } from "lucide-react"
 
 export const sidebarMenItems = [
@@ -84,6 +85,11 @@ export const sidebarMenItems = [
         title: "Attendance Report",
         url: "/admin/attendance",
         icon: FileSpreadsheet,
+      },
+      {
+        title: "Attendance Sessions",
+        url: "/admin/attendance/sessions",
+        icon: History,
       },
       // {
       //   title: "Attendance Summary",

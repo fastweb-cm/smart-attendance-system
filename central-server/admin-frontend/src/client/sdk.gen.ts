@@ -558,6 +558,7 @@ export const syncAttendanceSummary = <ThrowOnError extends boolean = false>(opti
  *
  */
 export const getAttendanceSessions = <ThrowOnError extends boolean = false>(options?: Options<GetAttendanceSessionsData, ThrowOnError>) => (options?.client ?? client).get<GetAttendanceSessionsResponses, GetAttendanceSessionsErrors, ThrowOnError>({
+    querySerializer: { parameters: { terminal_ids: { array: { explode: false } } } },
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/attendance/sessions',

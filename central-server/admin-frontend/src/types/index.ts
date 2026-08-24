@@ -1,6 +1,6 @@
 import { TerminalCreateFormValues } from "@/schema/terminal.schema";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import type { AttendanceLedgerData, FetchLogsResponses, GetAllPermissionsResponses, UserResponse } from "@/client";
+import type { AttendanceLedgerData, FetchLogsResponses, GetAllPermissionsResponses, UserResponse, AttendanceSessionReportData } from "@/client";
 
 interface Option {
   label: string
@@ -305,4 +305,35 @@ export interface UserTableProps {
   onView: (id: number) => void;
   onEdit: (user: UserResponse) => void;
   onDelete: (user: UserResponse) => void;
+}
+
+export interface AttendanceSessionQueryParams {
+  from_date?: string;
+  to_date?: string;
+  context?: 'all' | 'daily' | 'event';
+  event_id?: number;
+  terminal_ids?: number[];
+  status?: 'active' | 'completed' | 'missed checkout';
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AttendanceSessionMetrics {
+  total_recorded_sessions?: number;
+  currently_active?: number;
+  late_checkins?: number;
+  missed_checkouts?: number;
+}
+
+export interface AttendanceSessionFilterBarProps {
+  filters: AttendanceSessionQueryParams;
+  onFilterChange: (key: keyof AttendanceSessionQueryParams, value: unknown) => void;
+  onReset: () => void;
+}
+
+export interface AttendanceSessionTableProps {
+  sessions: AttendanceSessionReportData['sessions'];
+  paginationMeta: PaginationMetaProps;
+  isRefreshing?: boolean;
 }

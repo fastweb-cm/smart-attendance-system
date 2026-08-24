@@ -109,8 +109,16 @@ export const zAttendanceSession = z.object({
         z.int(),
         z.null()
     ])),
+    checkin_terminal_name: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
     checkout_terminal_id: z.optional(z.union([
         z.int(),
+        z.null()
+    ])),
+    checkout_terminal_name: z.optional(z.union([
+        z.string(),
         z.null()
     ])),
     terminal_session_id: z.optional(z.union([

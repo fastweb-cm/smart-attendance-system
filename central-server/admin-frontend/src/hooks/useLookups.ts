@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axiosClient";
 import { GroupWithSubgroupsLookup, Lookup, LookupBranch, LookupClass } from "@/types";
 import { User } from "@/client";
+import { listTerminalsOptions, listEventsOptions } from "@/client/@tanstack/react-query.gen";
 
 export const useClasses = (initialData?: LookupClass[]) => {
     return useQuery<LookupClass[]>({
@@ -102,4 +103,12 @@ export const useEmployee = (id?: number) => {
 };
 
 
+export const useTerminalsLookup = () => useQuery({
+  ...listTerminalsOptions({ query: { status: "active" } }),
+  select: (res) => (res.data ?? []).map(t => ({ id: t.id, name: t.name })),
+});
 
+export const useEventsLookup = () => useQuery({
+  ...listEventsOptions({}),
+  select: (res) => (res ?? []).map(e => ({ id: e.id!, name: e.name! })),
+});

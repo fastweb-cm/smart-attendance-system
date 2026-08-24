@@ -4,6 +4,8 @@ import { getAttendanceLedgerQuery, attendanceLedgerQueryKey, getUserAttendanceAn
 import { AttendanceQueryParams } from "@/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
+import { getAttendanceSessionsQuery, attendanceSessionsQueryKey } from "@/services/attendance/sessionQueries";
+import { AttendanceSessionQueryParams } from "@/types";
 
 // get attendance records with optional filters
 export const useAttendanceLedger = (
@@ -63,3 +65,20 @@ export const useUpdateAttendance = () => {
         }
     })
 }
+
+// real-time attendance sessions with polling for live tracking
+export const useAttendanceSessions = (
+  filters?: AttendanceSessionQueryParams,
+  options?: { live?: boolean }
+) => useQuery({
+  ...getAttendanceSessionsQuery(filters),
+  queryKey: attendanceSessionsQueryKey(filters),
+  // Poll only when viewing "today" — a live real-time board.
+  // Historical date-range queries shouldn't refetch on a timer.
+  refetchInterval: options?.live ? 15000 : false,
+  select: (response) => ({
+    sessions: response.data?.sessions || [],
+    metrics: response.data?.metrics || {},
+    meta: response.meta
+  })
+});

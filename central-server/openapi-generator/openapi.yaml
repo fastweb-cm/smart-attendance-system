@@ -264,9 +264,15 @@ components:
           type: ["integer", "null"]
           example: 3
 
+        checkin_terminal_name:
+          type: ["string", "null"]
+
         checkout_terminal_id:
           type: ["integer", "null"]
           example: 5
+
+        checkout_terminal_name:
+          type: ["string", "null"]
 
         terminal_session_id:
           type: ["integer", "null"]
@@ -3072,7 +3078,7 @@ paths:
           name: terminal_ids
           required: false
           style: form
-          explode: true
+          explode: false
           schema:
             type: array
             items:

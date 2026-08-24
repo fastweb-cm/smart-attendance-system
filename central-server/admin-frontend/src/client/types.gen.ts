@@ -124,7 +124,9 @@ export type AttendanceSession = {
      */
     terminal_id?: number;
     checkin_terminal_id?: number | null;
+    checkin_terminal_name?: string | null;
     checkout_terminal_id?: number | null;
+    checkout_terminal_name?: string | null;
     terminal_session_id?: number | null;
     attendance_context?: 'daily' | 'event';
     event_id?: number | null;
