@@ -234,6 +234,134 @@ components:
               type: integer
               example: 3
 
+    AttendanceSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1024
+          description: Unique attendance session ID
+
+        user_id:
+          type: integer
+          example: 42
+
+        employee_id:
+          type: string
+          example: "EMP-2026-0042"
+          description: Employee ID / registration number used for searching
+
+        user_name:
+          type: string
+          example: "John Doe"
+
+        terminal_id:
+          type: integer
+          example: 3
+          description: Primary terminal associated with the attendance session
+
+        checkin_terminal_id:
+          type: ["integer", "null"]
+          example: 3
+
+        checkout_terminal_id:
+          type: ["integer", "null"]
+          example: 5
+
+        terminal_session_id:
+          type: ["integer", "null"]
+          example: 7821
+
+        attendance_context:
+          type: string
+          enum: ["daily", "event"]
+          example: "daily"
+
+        event_id:
+          type: ["integer", "null"]
+          example: null
+
+        event_name:
+          type: ["string", "null"]
+          example: null
+
+        checkin_timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-24T08:07:32+01:00"
+
+        checkout_timestamp:
+          type: ["string", "null"]
+          format: date-time
+          example: "2026-08-24T17:04:12+01:00"
+
+        checkin_status:
+          type: string
+          enum: ["on time", "late"]
+          example: "late"
+
+        checkout_status:
+          type: ["string", "null"]
+          enum: ["on time", "early"]
+          example: "on time"
+
+        session_status:
+          type: string
+          enum: ["active", "completed", "missed checkout"]
+          example: "active"
+
+        sync_status:
+          type: string
+          enum: ["pending", "synced", "error"]
+          example: "synced"
+
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+          example: "2026-08-24T08:07:35+01:00"
+
+    AttendanceSessionMetrics:
+      type: object
+      required:
+        - total_recorded_sessions
+        - currently_active
+        - late_checkins
+        - missed_checkouts
+      properties:
+        total_recorded_sessions:
+          type: integer
+          example: 142
+          description: Total attendance sessions matching the selected filters
+
+        currently_active:
+          type: integer
+          example: 37
+          description: Sessions whose session_status is active
+
+        late_checkins:
+          type: integer
+          example: 18
+          description: Sessions whose checkin_status is late
+
+        missed_checkouts:
+          type: integer
+          example: 7
+          description: Sessions whose session_status is missed checkout
+
+    AttendanceSessionReportData:
+      type: object
+      required:
+        - metrics
+        - sessions
+      properties:
+        metrics:
+          $ref: "#/components/schemas/AttendanceSessionMetrics"
+
+        sessions:
+          type: array
+          description: Attendance sessions matching the selected filters
+          items:
+            $ref: "#/components/schemas/AttendanceSession"
     User:
       type: object
       required:
@@ -2880,6 +3008,154 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/v1/attendance/sessions:
+    get:
+      operationId: getAttendanceSessions
+      summary: Retrieve attendance sessions
+      description: |
+        Returns attendance session records for real-time attendance tracking.
+
+        By default, from_date and to_date are both set to the current date,
+        allowing the endpoint to be used as a real-time attendance report.
+
+        The report supports filtering by attendance context, event, check-in
+        and check-out terminals, session status, and free-text user search.
+      tags:
+        - Attendance
+
+      parameters:
+        - in: query
+          name: from_date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: |
+            Start date of the attendance session report range.
+            Defaults to today.
+          example: "2026-08-24"
+
+        - in: query
+          name: to_date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: |
+            End date of the attendance session report range.
+            Defaults to today.
+          example: "2026-08-24"
+
+        - in: query
+          name: context
+          required: false
+          schema:
+            type: string
+            enum: ["all", "daily", "event"]
+            default: "all"
+          description: |
+            Attendance context filter.
+            Use event to restrict results to event attendance sessions.
+          example: "all"
+
+        - in: query
+          name: event_id
+          required: false
+          schema:
+            type: integer
+          description: |
+            Filter sessions belonging to a specific event.
+            This filter is applicable when context is event.
+          example: 12
+
+        - in: query
+          name: terminal_ids
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+          description: |
+            Filter by one or more terminals involved in the attendance session.
+            A session matches when its check-in or check-out terminal is one
+            of the supplied terminal IDs.
+          example: [1, 2, 5]
+
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: ["active", "completed", "missed checkout"]
+          description: Filter sessions by session status.
+          example: "active"
+
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+          description: |
+            Free-text search against the user's name or employee/
+            registration ID.
+          example: "EMP-2026-0042"
+
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number.
+          example: 1
+
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          description: Maximum number of session records returned per page.
+          example: 25
+
+      responses:
+        "200":
+          description: Attendance session report generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+                  data:
+                    $ref: "#/components/schemas/AttendanceSessionReportData"
+
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/biometric/face/enroll:
     post:
       operationId: faceEnrollment
