@@ -4,8 +4,8 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteEvent, deleteException, deletePermission, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getAllPermissions, getAttendanceLedger, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, reviewPermission, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
-import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, DeleteUserResponse, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
+import { assignUsersToGroup, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteEvent, deleteException, deletePermission, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getAllPermissions, getAttendanceLedger, getAttendanceSessions, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, reviewPermission, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
+import type { AssignUsersToGroupData, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, DeleteUserResponse, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetAttendanceSessionsData, GetAttendanceSessionsResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -962,6 +962,69 @@ export const syncAttendanceSummaryMutation = (options?: Partial<Options<SyncAtte
     };
     return mutationOptions;
 };
+
+export const getAttendanceSessionsQueryKey = (options?: Options<GetAttendanceSessionsData>) => createQueryKey('getAttendanceSessions', options);
+
+/**
+ * Retrieve attendance sessions
+ *
+ * Returns attendance session records for real-time attendance tracking.
+ *
+ * By default, from_date and to_date are both set to the current date,
+ * allowing the endpoint to be used as a real-time attendance report.
+ *
+ * The report supports filtering by attendance context, event, check-in
+ * and check-out terminals, session status, and free-text user search.
+ *
+ */
+export const getAttendanceSessionsOptions = (options?: Options<GetAttendanceSessionsData>) => queryOptions<GetAttendanceSessionsResponse, AxiosError<DefaultError>, GetAttendanceSessionsResponse, ReturnType<typeof getAttendanceSessionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAttendanceSessions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAttendanceSessionsQueryKey(options)
+});
+
+export const getAttendanceSessionsInfiniteQueryKey = (options?: Options<GetAttendanceSessionsData>): QueryKey<Options<GetAttendanceSessionsData>> => createQueryKey('getAttendanceSessions', options, true);
+
+/**
+ * Retrieve attendance sessions
+ *
+ * Returns attendance session records for real-time attendance tracking.
+ *
+ * By default, from_date and to_date are both set to the current date,
+ * allowing the endpoint to be used as a real-time attendance report.
+ *
+ * The report supports filtering by attendance context, event, check-in
+ * and check-out terminals, session status, and free-text user search.
+ *
+ */
+export const getAttendanceSessionsInfiniteOptions = (options?: Options<GetAttendanceSessionsData>) => infiniteQueryOptions<GetAttendanceSessionsResponse, AxiosError<DefaultError>, InfiniteData<GetAttendanceSessionsResponse>, QueryKey<Options<GetAttendanceSessionsData>>, number | Pick<QueryKey<Options<GetAttendanceSessionsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<GetAttendanceSessionsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                page: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await getAttendanceSessions({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAttendanceSessionsInfiniteQueryKey(options)
+});
 
 /**
  * Enroll face biometric profile

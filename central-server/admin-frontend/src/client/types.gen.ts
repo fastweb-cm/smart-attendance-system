@@ -108,6 +108,63 @@ export type AttendanceLedgerData = {
     };
 };
 
+export type AttendanceSession = {
+    /**
+     * Unique attendance session ID
+     */
+    id?: number;
+    user_id?: number;
+    /**
+     * Employee ID / registration number used for searching
+     */
+    employee_id?: string;
+    user_name?: string;
+    /**
+     * Primary terminal associated with the attendance session
+     */
+    terminal_id?: number;
+    checkin_terminal_id?: number | null;
+    checkout_terminal_id?: number | null;
+    terminal_session_id?: number | null;
+    attendance_context?: 'daily' | 'event';
+    event_id?: number | null;
+    event_name?: string | null;
+    checkin_timestamp?: string;
+    checkout_timestamp?: string | null;
+    checkin_status?: 'on time' | 'late';
+    checkout_status?: 'on time' | 'early';
+    session_status?: 'active' | 'completed' | 'missed checkout';
+    sync_status?: 'pending' | 'synced' | 'error';
+    created_at?: string | null;
+};
+
+export type AttendanceSessionMetrics = {
+    /**
+     * Total attendance sessions matching the selected filters
+     */
+    total_recorded_sessions: number;
+    /**
+     * Sessions whose session_status is active
+     */
+    currently_active: number;
+    /**
+     * Sessions whose checkin_status is late
+     */
+    late_checkins: number;
+    /**
+     * Sessions whose session_status is missed checkout
+     */
+    missed_checkouts: number;
+};
+
+export type AttendanceSessionReportData = {
+    metrics: AttendanceSessionMetrics;
+    /**
+     * Attendance sessions matching the selected filters
+     */
+    sessions: Array<AttendanceSession>;
+};
+
 export type User = {
     id?: number;
     fname: string;
@@ -2384,6 +2441,95 @@ export type SyncAttendanceSummaryResponses = {
 };
 
 export type SyncAttendanceSummaryResponse = SyncAttendanceSummaryResponses[keyof SyncAttendanceSummaryResponses];
+
+export type GetAttendanceSessionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Start date of the attendance session report range.
+         * Defaults to today.
+         *
+         */
+        from_date?: string;
+        /**
+         * End date of the attendance session report range.
+         * Defaults to today.
+         *
+         */
+        to_date?: string;
+        /**
+         * Attendance context filter.
+         * Use event to restrict results to event attendance sessions.
+         *
+         */
+        context?: 'all' | 'daily' | 'event';
+        /**
+         * Filter sessions belonging to a specific event.
+         * This filter is applicable when context is event.
+         *
+         */
+        event_id?: number;
+        /**
+         * Filter by one or more terminals involved in the attendance session.
+         * A session matches when its check-in or check-out terminal is one
+         * of the supplied terminal IDs.
+         *
+         */
+        terminal_ids?: Array<number>;
+        /**
+         * Filter sessions by session status.
+         */
+        status?: 'active' | 'completed' | 'missed checkout';
+        /**
+         * Free-text search against the user's name or employee/
+         * registration ID.
+         *
+         */
+        search?: string;
+        /**
+         * Page number.
+         */
+        page?: number;
+        /**
+         * Maximum number of session records returned per page.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/attendance/sessions';
+};
+
+export type GetAttendanceSessionsErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAttendanceSessionsResponses = {
+    /**
+     * Attendance session report generated successfully
+     */
+    200: {
+        success: boolean;
+        data: AttendanceSessionReportData;
+        meta: PaginationMeta;
+    };
+};
+
+export type GetAttendanceSessionsResponse = GetAttendanceSessionsResponses[keyof GetAttendanceSessionsResponses];
 
 export type FaceEnrollmentData = {
     body: BiometricFaceEnrollRequest;
