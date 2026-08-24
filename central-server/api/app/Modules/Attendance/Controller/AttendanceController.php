@@ -61,6 +61,139 @@ public function ledger()
         ]);
     }
 }
+
+public function sessions()
+{
+    // Real-time report defaults to today
+    $defaultDate = date('Y-m-d');
+
+    $fromDate = isset($_GET['from_date']) && !empty($_GET['from_date'])
+        ? $_GET['from_date']
+        : $defaultDate;
+
+    $toDate = isset($_GET['to_date']) && !empty($_GET['to_date'])
+        ? $_GET['to_date']
+        : $defaultDate;
+
+    $context = isset($_GET['context']) && !empty($_GET['context'])
+        ? $_GET['context']
+        : 'all';
+
+    $eventId = isset($_GET['event_id']) && $_GET['event_id'] !== ''
+        ? (int)$_GET['event_id']
+        : null;
+
+    $status = isset($_GET['status']) && !empty($_GET['status'])
+        ? $_GET['status']
+        : null;
+
+    $searchQuery = isset($_GET['search']) && trim($_GET['search']) !== ''
+        ? trim($_GET['search'])
+        : null;
+
+    $page = isset($_GET['page'])
+        ? max(1, (int)$_GET['page'])
+        : 1;
+
+    $limit = isset($_GET['limit'])
+        ? max(1, min(100, (int)$_GET['limit']))
+        : 25;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Terminal filter
+    |--------------------------------------------------------------------------
+    |
+    | Supports:
+    |
+    | ?terminal_ids[]=1&terminal_ids[]=2
+    |
+    | Also accepts:
+    |
+    | ?terminal_ids=1,2
+    |
+    */
+
+    $terminalIds = [];
+
+    if (isset($_GET['terminal_ids'])) {
+
+        if (is_array($_GET['terminal_ids'])) {
+            $terminalIds = $_GET['terminal_ids'];
+        } else {
+            $terminalIds = explode(',', $_GET['terminal_ids']);
+        }
+
+        $terminalIds = array_values(
+            array_filter(
+                array_map('intval', $terminalIds),
+                fn($id) => $id > 0
+            )
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Basic validation
+    |--------------------------------------------------------------------------
+    */
+
+    $allowedContexts = ['all', 'daily', 'event'];
+    $allowedStatuses = ['active', 'completed', 'missed checkout'];
+
+    if (!in_array($context, $allowedContexts, true)) {
+        $this->json([
+            "success" => false,
+            "message" => "Invalid attendance context"
+        ]);
+        return;
+    }
+
+    if ($status !== null && !in_array($status, $allowedStatuses, true)) {
+        $this->json([
+            "success" => false,
+            "message" => "Invalid session status"
+        ]);
+        return;
+    }
+
+    if ($context === 'event' && $eventId === null) {
+        // We don't necessarily need to reject this.
+        // Leaving it null allows all event sessions.
+    }
+
+    try {
+
+        $result = $this->a->getAttendanceSessions(
+            $fromDate,
+            $toDate,
+            $context,
+            $eventId,
+            $terminalIds,
+            $status,
+            $searchQuery,
+            $page,
+            $limit
+        );
+
+        $this->json([
+            "success" => true,
+            "data" => [
+                "metrics" => $result['metrics'],
+                "sessions" => $result['sessions']
+            ],
+            "meta" => $result['meta']
+        ]);
+
+    } catch (Throwable $e) {
+
+        $this->json([
+            "success" => false,
+            "message" => "Failed to fetch attendance sessions",
+            "error" => $e->getMessage()
+        ]);
+    }
+}
 public function userDetail(int $id)
 {
     // Ensure input parameters are valid index identifiers

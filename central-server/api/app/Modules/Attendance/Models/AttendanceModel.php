@@ -407,6 +407,383 @@ public function getAttendanceLedger($start_date, $end_date, $status, $page = 1, 
     }
 }
 
+public function getAttendanceSessions(
+    string $fromDate,
+    string $toDate,
+    string $context = 'all',
+    ?int $eventId = null,
+    array $terminalIds = [],
+    ?string $status = null,
+    ?string $searchQuery = null,
+    int $page = 1,
+    int $limit = 25
+): array {
+    try {
+
+        $page = max(1, (int)$page);
+        $limit = max(1, min(100, (int)$limit));
+        $offset = ($page - 1) * $limit;
+
+        /*
+        |--------------------------------------------------------------------------
+        | BASE QUERY
+        |--------------------------------------------------------------------------
+        */
+
+        $baseSql = "
+            FROM tbl_attendance_session sess
+
+            INNER JOIN tbl_user u
+                ON sess.user_id = u.id
+
+            LEFT JOIN tbl_staff s
+                ON u.id = s.user_id
+
+            LEFT JOIN tbl_student st
+                ON u.id = st.user_id
+
+            LEFT JOIN lkup_role r
+                ON s.role_id = r.id
+
+            LEFT JOIN tbl_terminal checkin_terminal
+                ON sess.checkin_terminal_id = checkin_terminal.id
+
+            LEFT JOIN tbl_terminal checkout_terminal
+                ON sess.checkout_terminal_id = checkout_terminal.id
+
+            LEFT JOIN tbl_event e
+                ON sess.event_id = e.id
+
+            WHERE sess.checkin_timestamp >= ?
+            AND sess.checkin_timestamp <= ?
+        ";
+
+        $params = [
+            $fromDate . ' 00:00:00',
+            $toDate . ' 23:59:59'
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | CONTEXT FILTER
+        |--------------------------------------------------------------------------
+        */
+
+        if ($context !== 'all') {
+
+            $baseSql .= " AND sess.attendance_context = ?";
+            $params[] = $context;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | EVENT FILTER
+        |--------------------------------------------------------------------------
+        */
+
+        if ($eventId !== null) {
+
+            $baseSql .= " AND sess.event_id = ?";
+            $params[] = $eventId;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | TERMINAL FILTER
+        |--------------------------------------------------------------------------
+        |
+        | Match either the check-in terminal OR checkout terminal.
+        |
+        */
+
+        if (!empty($terminalIds)) {
+
+            $placeholders = implode(
+                ',',
+                array_fill(0, count($terminalIds), '?')
+            );
+
+            $baseSql .= "
+                AND (
+                    sess.checkin_terminal_id IN ($placeholders)
+                    OR
+                    sess.checkout_terminal_id IN ($placeholders)
+                )
+            ";
+
+            $params = array_merge(
+                $params,
+                $terminalIds,
+                $terminalIds
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SESSION STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        if ($status !== null) {
+
+            $baseSql .= " AND sess.session_status = ?";
+            $params[] = $status;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEARCH
+        |--------------------------------------------------------------------------
+        |
+        | Search:
+        | - First name
+        | - Last name
+        | - Employee ID / staff registration number
+        | - Student registration number
+        |
+        */
+
+        if ($searchQuery !== null) {
+
+            $baseSql .= "
+                AND (
+                    CONCAT(u.fname, ' ', u.lname) LIKE ?
+                    OR s.sregno LIKE ?
+                    OR st.regno LIKE ?
+                )
+            ";
+
+            $likeSearch = '%' . $searchQuery . '%';
+
+            $params[] = $likeSearch;
+            $params[] = $likeSearch;
+            $params[] = $likeSearch;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL RECORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $countSql = "
+            SELECT COUNT(*) AS total
+            $baseSql
+        ";
+
+        $countRes = $this->db->query($countSql, $params);
+
+        $totalRecords = $countRes
+            ? (int)$countRes->fetch_assoc()['total']
+            : 0;
+
+        $totalPages = $totalRecords > 0
+            ? (int)ceil($totalRecords / $limit)
+            : 0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | KPI METRICS
+        |--------------------------------------------------------------------------
+        */
+
+        $metricsSql = "
+            SELECT
+                COUNT(*) AS total_recorded_sessions,
+
+                SUM(
+                    CASE
+                        WHEN sess.session_status = 'active'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS currently_active,
+
+                SUM(
+                    CASE
+                        WHEN sess.checkin_status = 'late'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS late_checkins,
+
+                SUM(
+                    CASE
+                        WHEN sess.session_status = 'missed checkout'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS missed_checkouts
+
+            $baseSql
+        ";
+
+        $metricsRes = $this->db->query($metricsSql, $params);
+
+        $rawMetrics = $metricsRes
+            ? $metricsRes->fetch_assoc()
+            : [];
+
+        $metrics = [
+            'total_recorded_sessions' => (int)($rawMetrics['total_recorded_sessions'] ?? 0),
+            'currently_active'        => (int)($rawMetrics['currently_active'] ?? 0),
+            'late_checkins'           => (int)($rawMetrics['late_checkins'] ?? 0),
+            'missed_checkouts'        => (int)($rawMetrics['missed_checkouts'] ?? 0)
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | SESSION DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $dataSql = "
+            SELECT
+
+                sess.id,
+                sess.user_id,
+
+                CONCAT(u.fname, ' ', u.lname) AS user_name,
+
+                CASE
+                    WHEN u.user_type = 'staff'
+                    THEN s.sregno
+                    ELSE st.regno
+                END AS employee_id,
+
+                sess.terminal_id,
+                sess.checkin_terminal_id,
+                sess.checkout_terminal_id,
+                sess.terminal_session_id,
+
+                sess.attendance_context,
+                sess.event_id,
+                e.name AS event_name,
+
+                sess.checkin_timestamp,
+                sess.checkout_timestamp,
+
+                sess.checkin_status,
+                sess.checkout_status,
+                sess.session_status,
+                sess.sync_status,
+
+                sess.created_at
+
+            $baseSql
+
+            ORDER BY sess.checkin_timestamp DESC
+
+            LIMIT ? OFFSET ?
+        ";
+
+        $dataParams = $params;
+        $dataParams[] = $limit;
+        $dataParams[] = $offset;
+
+        $dataRes = $this->db->query($dataSql, $dataParams);
+
+        $rawSessions = $dataRes
+            ? $dataRes->fetch_all(MYSQLI_ASSOC)
+            : [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | FORMAT RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        $sessions = [];
+
+        foreach ($rawSessions as $session) {
+
+            $sessions[] = [
+
+                'id' => (int)$session['id'],
+
+                'user_id' => (int)$session['user_id'],
+
+                'employee_id' => $session['employee_id'],
+
+                'user_name' => $session['user_name'],
+
+                'terminal_id' => (int)$session['terminal_id'],
+
+                'checkin_terminal_id' =>
+                    $session['checkin_terminal_id'] !== null
+                        ? (int)$session['checkin_terminal_id']
+                        : null,
+
+                'checkout_terminal_id' =>
+                    $session['checkout_terminal_id'] !== null
+                        ? (int)$session['checkout_terminal_id']
+                        : null,
+
+                'terminal_session_id' =>
+                    $session['terminal_session_id'] !== null
+                        ? (int)$session['terminal_session_id']
+                        : null,
+
+                'attendance_context' =>
+                    $session['attendance_context'],
+
+                'event_id' =>
+                    $session['event_id'] !== null
+                        ? (int)$session['event_id']
+                        : null,
+
+                'event_name' =>
+                    $session['event_name'],
+
+                'checkin_timestamp' =>
+                    $session['checkin_timestamp']
+                        ? date('c', strtotime($session['checkin_timestamp']))
+                        : null,
+
+                'checkout_timestamp' =>
+                    $session['checkout_timestamp']
+                        ? date('c', strtotime($session['checkout_timestamp']))
+                        : null,
+
+                'checkin_status' =>
+                    $session['checkin_status'],
+
+                'checkout_status' =>
+                    $session['checkout_status'],
+
+                'session_status' =>
+                    $session['session_status'],
+
+                'sync_status' =>
+                    $session['sync_status'],
+
+                'created_at' =>
+                    $session['created_at']
+                        ? date('c', strtotime($session['created_at']))
+                        : null
+            ];
+        }
+
+        return [
+
+            'metrics' => $metrics,
+
+            'sessions' => $sessions,
+
+            'meta' => [
+                'total_records' => $totalRecords,
+                'current_page'  => $page,
+                'total_pages'   => $totalPages,
+                'limit'         => $limit
+            ]
+        ];
+
+    } catch (Throwable $e) {
+
+        throw $e;
+    }
+}
+
 /**
  * Fetches analytical summary metrics and history maps for an individual user
  * 
