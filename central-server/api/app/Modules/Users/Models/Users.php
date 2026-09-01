@@ -382,14 +382,12 @@ public function updateUser(): ?array
 public function listUsers(
     ?string $userType = null, 
     ?string $status = null, 
-    ?string $role = null, // Injected optional string role matching
+    ?string $role = null,
+    ?int $classId = null, // Numeric class ID sent from select dropdown
     ?string $search = null, 
     int $limit = 10, 
     int $offset = 0
 ): array {
-    // ---------------------------------------------------------
-    // 1. Build Base Query Conditions & Bind parameters
-    // ---------------------------------------------------------
     $conditions = [];
     $params = [];
 
@@ -402,26 +400,26 @@ public function listUsers(
         $params[] = $status;
     }
     if ($role) {
-        // Enforces lookup comparison mapping against the linked role description matrix
         $conditions[] = "r.role_name = ?";
         $params[] = $role;
     }
+    if ($classId !== null && $classId > 0) {
+        $conditions[] = "u.class_id = ?";
+        $params[] = $classId;
+    }
     
-    // Add flexible loose search match across names and registration numbers
     if ($search) {
         $conditions[] = "(u.fname LIKE ? OR u.lname LIKE ? OR s.regno LIKE ? OR st.sregno LIKE ?)";
         $searchParam = "%" . $search . "%";
         $params[] = $searchParam;
         $params[] = $searchParam;
         $params[] = $searchParam;
-        $params[] = $searchParam; // Appended additional search parameter coverage for staff reg strings
+        $params[] = $searchParam;
     }
 
     $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
 
-    // ---------------------------------------------------------
-    // 2. Count Total Records matching these exact criteria first
-    // ---------------------------------------------------------
+    // Count query
     $countSql = "SELECT COUNT(DISTINCT u.id) as total 
                  FROM tbl_user u
                  LEFT JOIN tbl_student s ON u.id = s.user_id
@@ -435,11 +433,9 @@ public function listUsers(
         $totalRecords = (int)$row['total'];
     }
 
-    // ---------------------------------------------------------
-    // 3. Pull Paginated Data rows
-    // ---------------------------------------------------------
+    // Data query
     $dataSql = "SELECT u.id, u.gender, u.status, u.biometric_enrollment_status, u.email,
-                       CONCAT(u.fname, ' ', u.lname) AS name, fname,lname,
+                       CONCAT(u.fname, ' ', u.lname) AS name, fname, lname,
                        c.class_name AS class, c.id AS class_id,
                        u.user_type,
                        r.role_name AS role, r.id AS role_id,
@@ -456,7 +452,6 @@ public function listUsers(
                 . $whereClause . 
                 " ORDER BY u.fname, u.lname ASC LIMIT ? OFFSET ?";
 
-    // Push pagination integers into executing variable parameter streams
     $dataParams = array_merge($params, [$limit, $offset]);
 
     $result = $this->db->query($dataSql, $dataParams);
@@ -467,9 +462,6 @@ public function listUsers(
         }
     }
 
-    // ---------------------------------------------------------
-    // 4. Return Structured Matrix Payload
-    // ---------------------------------------------------------
     return [
         "data" => $users,
         "meta" => [

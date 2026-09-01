@@ -2,6 +2,7 @@ import { AttendanceException } from "@/types";
 import {
   Home,
   Users,
+  Users2,
   UserPlus,
   Computer,
   AlertTriangle,
@@ -49,6 +50,20 @@ export const sidebarMenItems = [
         title: "Employees",
         icon: Users,
         url: "/admin/users"
+      },
+      {
+        title: "Groups",
+        icon: Users2,
+        children: [
+          {
+            title: "All Groups",
+            url: "/admin/groups",
+          },
+          {
+            title: "Add Group",
+            url: "/admin/groups/add",
+          }
+        ]
       },
 
       // {

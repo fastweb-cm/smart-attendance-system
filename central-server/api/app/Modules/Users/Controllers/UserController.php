@@ -15,26 +15,22 @@ public function index(): void
 {
     $query = $this->getQueryParams(); 
     
-    // Parse routing filters
     $userType = $query['user_type'] ?? null;
     $status   = $query['status'] ?? null;
-    $role     = $query['role'] ?? null;   // New query string captured from multi-tenant selector
-    $search   = $query['search'] ?? null; // Capture incoming text query string
+    $role     = $query['role'] ?? null;
+    $search   = $query['search'] ?? null;
 
-    // Normalize pagination keys safely from strings to integers
-    $limit = isset($query['limit']) ? max(1, (int)$query['limit']) : 10;
-    $page  = isset($query['page']) ? max(1, (int)$query['page']) : 1;
-    
-    // Calculate database pointer offset index position
+    // Parse class ID filter as integer (accepts key 'class_id' or 'class')
+    $classParam = $query['class_id'] ?? $query['class'] ?? null;
+    $classId    = ($classParam !== null && $classParam !== '') ? (int) $classParam : null;
+
+    $limit  = isset($query['limit']) ? max(1, (int)$query['limit']) : 10;
+    $page   = isset($query['page']) ? max(1, (int)$query['page']) : 1;
     $offset = ($page - 1) * $limit;
 
-    // Execute lookup sequence with the added role tracking parameter
-    $responseMatrix = (new Users())->listUsers($userType, $status, $role, $search, $limit, $offset);
-    
-    // Append current tracking window info to metadata layer for frontend ease
+    $responseMatrix = (new Users())->listUsers($userType, $status, $role, $classId, $search, $limit, $offset);
     $responseMatrix['meta']['current_page'] = $page;
 
-    // Stream formatted payload upstream to TanStack Query interface layers
     $this->json($responseMatrix);
 }
 

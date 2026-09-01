@@ -293,14 +293,41 @@ export type Group = {
     name: string;
     expected_weekly_hours?: number;
     absence_threshold: number;
-    supervisors?: Array<{
-        user_id?: number;
-    }>;
 };
 
 export type GroupResponse = Group & {
     id?: number;
     date_created?: string;
+};
+
+export type GroupSupervisorSummary = {
+    id: number;
+    name: string;
+    /**
+     * Additional supervisor count beyond the primary supervisor (e.g., 2 means "+2 more")
+     */
+    sup_count?: number;
+};
+
+export type GroupItem = Group & {
+    id: number;
+    group_type_name: string;
+    members_count: number;
+    supervisor?: GroupSupervisorSummary;
+    created_at?: string;
+};
+
+export type GroupUserRef = {
+    id: number;
+    name: string;
+    regno?: string | null;
+    email?: string | null;
+};
+
+export type GroupMembersDetail = {
+    group_id: number;
+    supervisors: Array<GroupUserRef>;
+    members: Array<GroupUserRef>;
 };
 
 export type Subgroup = {
@@ -766,6 +793,10 @@ export type ListUsersData = {
         page?: number;
         role?: string | null;
         /**
+         * Filter users by numeric class ID
+         */
+        class_id?: number;
+        /**
          * Maximum items returned per pagination block page window
          */
         limit?: number;
@@ -1183,10 +1214,61 @@ export type CreateGroupTypeResponses = {
     201: unknown;
 };
 
-export type ListGroupsData = {
+export type ListGroupTypesData = {
     body?: never;
     path?: never;
     query?: never;
+    url: '/api/v1/lookup/group-types';
+};
+
+export type ListGroupTypesErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListGroupTypesResponses = {
+    /**
+     * List of all group types in system
+     */
+    200: {
+        success?: boolean;
+        data?: Array<{
+            id?: number;
+            name?: string;
+            abbr?: string;
+        }>;
+    };
+};
+
+export type ListGroupTypesResponse = ListGroupTypesResponses[keyof ListGroupTypesResponses];
+
+export type ListGroupsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * The pagination page index number to view
+         */
+        page?: number;
+        /**
+         * Maximum items returned per pagination block page window
+         */
+        limit?: number;
+    };
     url: '/api/v1/groups';
 };
 
@@ -1213,7 +1295,11 @@ export type ListGroupsResponses = {
     /**
      * Groups list
      */
-    200: Array<GroupResponse>;
+    200: {
+        success?: boolean;
+        data?: Array<GroupItem>;
+        meta?: PaginationMeta;
+    };
 };
 
 export type ListGroupsResponse = ListGroupsResponses[keyof ListGroupsResponses];
@@ -1251,17 +1337,19 @@ export type CreateGroupResponses = {
     201: unknown;
 };
 
-export type AssignUsersToGroupData = {
-    body?: {
-        group_id?: number;
-        user_ids?: Array<number>;
+export type GetGroupMembersData = {
+    body?: never;
+    path: {
+        /**
+         * Unique group ID.
+         */
+        id: number;
     };
-    path?: never;
     query?: never;
-    url: '/api/v1/groups/members';
+    url: '/api/v1/groups/{id}/members';
 };
 
-export type AssignUsersToGroupErrors = {
+export type GetGroupMembersErrors = {
     /**
      * Invalid input
      */
@@ -1280,12 +1368,115 @@ export type AssignUsersToGroupErrors = {
     500: unknown;
 };
 
-export type AssignUsersToGroupResponses = {
+export type GetGroupMembersResponses = {
     /**
-     * Users assigned to group
+     * Group members loaded successfully
      */
-    200: unknown;
+    200: {
+        success: boolean;
+        data: GroupMembersDetail;
+    };
 };
+
+export type GetGroupMembersResponse = GetGroupMembersResponses[keyof GetGroupMembersResponses];
+
+export type AddGroupMemberData = {
+    body: {
+        user_id: number;
+        role: 'member' | 'supervisor';
+    };
+    path: {
+        /**
+         * Unique group ID.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}/members';
+};
+
+export type AddGroupMemberErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type AddGroupMemberResponses = {
+    /**
+     * Member or supervisor assigned successfully
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+    };
+};
+
+export type AddGroupMemberResponse = AddGroupMemberResponses[keyof AddGroupMemberResponses];
+
+export type RemoveGroupMemberData = {
+    body?: never;
+    path: {
+        /**
+         * Unique group ID.
+         */
+        id: number;
+        /**
+         * Unique user ID to remove.
+         */
+        userId: number;
+    };
+    query?: {
+        /**
+         * Specific role to drop.
+         */
+        role?: 'member' | 'supervisor';
+    };
+    url: '/api/v1/groups/{id}/members/{userId}';
+};
+
+export type RemoveGroupMemberErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type RemoveGroupMemberResponses = {
+    /**
+     * User removed successfully from group
+     */
+    200: {
+        success?: boolean;
+        message?: string;
+    };
+};
+
+export type RemoveGroupMemberResponse = RemoveGroupMemberResponses[keyof RemoveGroupMemberResponses];
 
 export type ListSubgroupsData = {
     body?: never;

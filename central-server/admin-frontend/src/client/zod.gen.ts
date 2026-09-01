@@ -274,16 +274,46 @@ export const zGroup = z.object({
     grouptype_id: z.int(),
     name: z.string(),
     expected_weekly_hours: z.optional(z.int()),
-    absence_threshold: z.int(),
-    supervisors: z.optional(z.array(z.object({
-        user_id: z.optional(z.int())
-    })))
+    absence_threshold: z.int()
 });
 
 export const zGroupResponse = zGroup.and(z.object({
     id: z.optional(z.int()),
     date_created: z.optional(z.iso.datetime())
 }));
+
+export const zGroupSupervisorSummary = z.object({
+    id: z.int(),
+    name: z.string(),
+    sup_count: z.optional(z.int())
+});
+
+export const zGroupItem = zGroup.and(z.object({
+    id: z.int(),
+    group_type_name: z.string(),
+    members_count: z.int(),
+    supervisor: z.optional(zGroupSupervisorSummary),
+    created_at: z.optional(z.iso.datetime())
+}));
+
+export const zGroupUserRef = z.object({
+    id: z.int(),
+    name: z.string(),
+    regno: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    email: z.optional(z.union([
+        z.string(),
+        z.null()
+    ]))
+});
+
+export const zGroupMembersDetail = z.object({
+    group_id: z.int(),
+    supervisors: z.array(zGroupUserRef),
+    members: z.array(zGroupUserRef)
+});
 
 export const zSubgroup = z.object({
     group_id: z.int(),
@@ -722,6 +752,7 @@ export const zListUsersData = z.object({
             z.string(),
             z.null()
         ])),
+        class_id: z.optional(z.int()),
         limit: z.optional(z.int()).default(10)
     }))
 });
@@ -855,16 +886,41 @@ export const zCreateGroupTypeData = z.object({
     query: z.optional(z.never())
 });
 
-export const zListGroupsData = z.object({
+export const zListGroupTypesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
 /**
+ * List of all group types in system
+ */
+export const zListGroupTypesResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(z.array(z.object({
+        id: z.optional(z.int()),
+        name: z.optional(z.string()),
+        abbr: z.optional(z.string())
+    })))
+});
+
+export const zListGroupsData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        page: z.optional(z.int()).default(1),
+        limit: z.optional(z.int()).default(10)
+    }))
+});
+
+/**
  * Groups list
  */
-export const zListGroupsResponse = z.array(zGroupResponse);
+export const zListGroupsResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(z.array(zGroupItem)),
+    meta: z.optional(zPaginationMeta)
+});
 
 export const zCreateGroupData = z.object({
     body: zGroup,
@@ -872,13 +928,58 @@ export const zCreateGroupData = z.object({
     query: z.optional(z.never())
 });
 
-export const zAssignUsersToGroupData = z.object({
-    body: z.optional(z.object({
-        group_id: z.optional(z.int()),
-        user_ids: z.optional(z.array(z.int()))
-    })),
-    path: z.optional(z.never()),
+export const zGetGroupMembersData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
     query: z.optional(z.never())
+});
+
+/**
+ * Group members loaded successfully
+ */
+export const zGetGroupMembersResponse = z.object({
+    success: z.boolean(),
+    data: zGroupMembersDetail
+});
+
+export const zAddGroupMemberData = z.object({
+    body: z.object({
+        user_id: z.int(),
+        role: z.enum(['member', 'supervisor'])
+    }),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Member or supervisor assigned successfully
+ */
+export const zAddGroupMemberResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
+});
+
+export const zRemoveGroupMemberData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int(),
+        userId: z.int()
+    }),
+    query: z.optional(z.object({
+        role: z.optional(z.enum(['member', 'supervisor']))
+    }))
+});
+
+/**
+ * User removed successfully from group
+ */
+export const zRemoveGroupMemberResponse = z.object({
+    success: z.optional(z.boolean()),
+    message: z.optional(z.string())
 });
 
 export const zListSubgroupsData = z.object({

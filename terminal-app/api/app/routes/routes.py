@@ -12,12 +12,13 @@ from app.services.face_service import extract_embedding
 from app.services.embedding_service import *
 import app.services.attendance_service as attendance_service
 from app.db.models.users import User
-from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy, get_user_id_by_code, get_user_original_face_template_by_id
+from app.crud.user_crud import get_user_details_by_id, get_user_face_template_by_id, get_user_auth_policy, get_user_id_by_code, get_user_original_face_template_by_id, get_user_fingerprint_template_by_id, get_all_fingerprint_templates
 from app.crud.attendance_crud import process_attendance_step
 from app.schemas.terminal import TerminalConfigUpdateRequest
 from app.core.config import update_terminal_id
 from app.crud.face_buffer import create_face_buffer_entry, get_face_buffer_count_for_user, get_face_buffers_by_user_id, clear_face_buffers_for_user
-
+import app.services.fingerprint_service as fingerprint_service
+from gi.repository import GLib
 
 # Creates a router object that will hold all routes in this file
 router = APIRouter()
@@ -422,3 +423,74 @@ async def update_terminal_config(payload: TerminalConfigUpdateRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+
+@router.post("/verify/fingerprint", response_model=VerifyResponse)
+async def verify_fingerprint(
+    user_id: int | None = Form(None),
+    event_id: int | None = Form(None),
+    terminal_id: int = Form(...),
+    auth_type: str = Form(...),
+    auth_type_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    context = "event" if event_id is not None else "daily"
+    user_details = None
+    if user_id is not None:
+        user_details = get_user_details_by_id(db, user_id, context)
+        if user_details is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        new_template = fingerprint_service.capture_and_extract()
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except GLib.Error:
+        raise HTTPException(
+            status_code=408, detail="No finger detected. Please try again.")
+
+    verified = False
+    best_user = None
+    attendance_status = None
+
+    if user_id is not None:
+        stored = get_user_fingerprint_template_by_id(db, user_id)
+        if stored is None:
+            user_record = db.query(User).filter(User.id == user_id).first()
+            user_record.fingerprint_template = new_template
+            user_record.sync_status = "pending"
+            db.commit()
+            verified = True
+            best_user = user_id
+        else:
+            verified, _ = fingerprint_service.match_templates(
+                stored, new_template)
+            best_user = user_id if verified else None
+    else:
+        known = get_all_fingerprint_templates(db)  # {user_id: template_bytes}
+        best_user, _ = fingerprint_service.identify(new_template, known)
+        verified = best_user is not None
+
+    if not user_details and verified and best_user is not None:
+        user_details = get_user_details_by_id(db, best_user, context)
+
+    if verified and user_details:
+        group_policy = get_user_auth_policy(
+            db, user_details.id, terminal_id, context, event_id)
+        result = process_attendance_step(
+            db, user_details.id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context)
+        attendance_status = result["status"]
+        next_step = result["next_step"]
+        attendance_type = result["attendance_type"]
+
+    if attendance_status == "error":
+        raise HTTPException(
+            status_code=400, detail="Invalid attendance action")
+
+    if verified and user_details:
+        return VerifyResponse(verified=True, attendance_status=attendance_status, next_step=next_step,
+                              attendance_type=attendance_type,
+                              user=UserResponse(id=user_details.id, groupId=user_details.group_id,
+                                                subgroupId=user_details.subgroup_id,
+                                                fName=user_details.fname, lName=user_details.lname))
+    return VerifyResponse(verified=False, user=None)

@@ -101,25 +101,97 @@ def get_user_auth_policy(db: Session, user_id: int, terminal_id: int, context: s
     return [p.auth_type_name for p in policies]
 
 
+# def handle_user_sync(db: Session, action: str, data: dict):
+#     user_id = data.get("id")
+#     needs_memory_refresh = False  # track if biometrics changed
+
+#     try:
+#         if action == "upsert":
+#             # 1. Sync User Core Data (The Identitiy)
+#             user = db.query(User).filter(User.id == user_id).first()
+#             if not user:
+#                 user = User(id=user_id)
+#                 db.add(user)
+#                 needs_memory_refresh = True  # new user with biometrics will require memory refresh
+
+#             # check if face template is actually changing
+#             new_face = data.get('face_template')
+#             if new_face:
+#                 decoded_face = base64.b64decode(new_face)
+#                 if user.face_template != decoded_face:
+#                     user.face_template = decoded_face
+#                     needs_memory_refresh = True
+
+#             user.fname = data.get("fname")
+#             user.lname = data.get("lname")
+#             user.gender = data.get("gender")
+#             user.user_type = data.get("user_type")
+#             user.card_serial_code = data.get("card_serial_code")
+
+#             if data.get('face_template'):
+#                 user.face_template = base64.b64decode(data['face_template'])
+#             if data.get('fingerprint_template'):
+#                 user.fingerprint_template = base64.b64decode(
+#                     data['fingerprint_template'])
+
+#             # 2. Sync User Permissions (The Authorization)
+#             # We delete existing local perms for this user to avoid stale data
+#             db.query(UserPermission).filter(
+#                 UserPermission.user_id == user_id).delete()
+
+#             permissions = data.get("permissions", [])
+#             for pol in permissions:
+#                 # Assuming you have a UserPermission model linked to tbl_user_permission
+#                 new_perm = UserPermission(
+#                     user_id=user_id,
+#                     group_id=pol.get("group_id"),
+#                     subgroup_id=pol.get("subgroup_id"),
+#                     context=pol.get("context"),  # 'daily' or 'event'
+#                     event_id=pol.get("event_id")
+#                 )
+#                 db.add(new_perm)
+
+#                 logging.info(
+#                     "User %s and permissions synced successfully.", user_id)
+#                 db.commit()
+
+#             # If biometrics changed, signal the attendance service to refresh its in-memory data
+#             if needs_memory_refresh:
+#                 logging.info(
+#                     "Biometric data changed for user %s. Signaling attendance service to refresh cache.", user_id)
+#                 load_users_into_memory()
+
+#     except Exception as e:
+#         db.rollback()
+#         logging.error("Error syncing user %s: %s", user_id, str(e))
+#         raise
+
 def handle_user_sync(db: Session, action: str, data: dict):
     user_id = data.get("id")
-    needs_memory_refresh = False  # track if biometrics changed
+    needs_memory_refresh = False  # Track if biometrics or user status changed
 
     try:
         if action == "upsert":
-            # 1. Sync User Core Data (The Identitiy)
+            # 1. Sync User Core Data (Identity)
             user = db.query(User).filter(User.id == user_id).first()
             if not user:
                 user = User(id=user_id)
                 db.add(user)
-                needs_memory_refresh = True  # new user with biometrics will require memory refresh
+                needs_memory_refresh = True  # New user added requires cache reload
 
-            # check if face template is actually changing
+            # Check if biometrics are updated
             new_face = data.get('face_template')
             if new_face:
                 decoded_face = base64.b64decode(new_face)
                 if user.face_template != decoded_face:
                     user.face_template = decoded_face
+                    needs_memory_refresh = True
+
+            new_finger = data.get('fingerprint_template')
+            if new_finger:
+                decoded_finger = base64.b64decode(new_finger)
+                if user.fingerprint_template != decoded_finger:
+                    user.fingerprint_template = decoded_finger
                     needs_memory_refresh = True
 
             user.fname = data.get("fname")
@@ -128,20 +200,14 @@ def handle_user_sync(db: Session, action: str, data: dict):
             user.user_type = data.get("user_type")
             user.card_serial_code = data.get("card_serial_code")
 
-            if data.get('face_template'):
-                user.face_template = base64.b64decode(data['face_template'])
-            if data.get('fingerprint_template'):
-                user.fingerprint_template = base64.b64decode(
-                    data['fingerprint_template'])
-
-            # 2. Sync User Permissions (The Authorization)
-            # We delete existing local perms for this user to avoid stale data
+            # 2. Sync User Permissions (Authorization)
+            # Delete existing local permissions for this user before applying new state
             db.query(UserPermission).filter(
-                UserPermission.user_id == user_id).delete()
+                UserPermission.user_id == user_id
+            ).delete()
 
             permissions = data.get("permissions", [])
             for pol in permissions:
-                # Assuming you have a UserPermission model linked to tbl_user_permission
                 new_perm = UserPermission(
                     user_id=user_id,
                     group_id=pol.get("group_id"),
@@ -151,19 +217,41 @@ def handle_user_sync(db: Session, action: str, data: dict):
                 )
                 db.add(new_perm)
 
-                logging.info(
-                    "User %s and permissions synced successfully.", user_id)
-                db.commit()
+            db.commit()
+            logging.info(
+                "User %s and permissions upserted successfully.", user_id)
 
-            # If biometrics changed, signal the attendance service to refresh its in-memory data
-            if needs_memory_refresh:
-                logging.info(
-                    "Biometric data changed for user %s. Signaling attendance service to refresh cache.", user_id)
-                load_users_into_memory()
+        elif action == "delete":
+            # 1. Clear linked local user permissions
+            db.query(UserPermission).filter(
+                UserPermission.user_id == user_id
+            ).delete()
+
+            # 2. Delete user record
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                db.delete(user)
+                needs_memory_refresh = True  # User removed -> purge biometrics from memory gallery
+
+            db.commit()
+            logging.info(
+                "User %s removed from terminal local DB successfully.", user_id)
+
+        else:
+            logging.warning("Unknown action '%s' for user %s", action, user_id)
+
+        # 3. Reload biometric feature vectors into RAM if user list/templates changed
+        if needs_memory_refresh:
+            logging.info(
+                "User biometric state changed (action=%s, user_id=%s). Refreshing RAM cache.",
+                action, user_id
+            )
+            load_users_into_memory()
 
     except Exception as e:
         db.rollback()
-        logging.error("Error syncing user %s: %s", user_id, str(e))
+        logging.error("Error syncing user %s (action=%s): %s",
+                      user_id, action, str(e))
         raise
 
 
@@ -176,3 +264,17 @@ def get_pending_users_face_templates(db: Session):
     logging.debug(
         "Fetching users with pending sync status for face template upload.")
     return db.query(User.id, User.face_template_refined).filter(User.sync_status == "pending").limit(25).all()
+
+
+def get_user_fingerprint_template_by_id(db: Session, user_id: int) -> bytes | None:
+    user = db.query(User).filter(User.id == user_id).first()
+    return user.fingerprint_template if user else None
+
+
+def get_all_fingerprint_templates(db: Session) -> dict[int, bytes]:
+    """
+    Returns {user_id: template_bytes} for every user with an enrolled
+    fingerprint — used as the identify() gallery for 1:N lookups.
+    """
+    users = db.query(User).filter(User.fingerprint_template.isnot(None)).all()
+    return {u.id: u.fingerprint_template for u in users}

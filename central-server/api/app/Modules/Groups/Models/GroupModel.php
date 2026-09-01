@@ -111,71 +111,146 @@ class GroupModel extends Database {
     }
 
     /**
-    * Fetch groups with their supervisors and members
-    */
-    public function fetch(int $groupId = 0, int $branchId = 0): array
+     * Fetch paginated groups matching OpenAPI GroupItem structure
+     */
+    public function fetch(int $page = 1, int $limit = 10): array
     {
-        // Read operations do not require mutation log tracking
-        $sqlGroups = "SELECT * FROM tbl_group";
-        $where = [];
-        $params = [];
+        $offset = ($page - 1) * $limit;
 
-        if ($branchId > 0) {
-            $where[] = "branch_id = ?";
-            $params[] = $branchId;
+        // 1. Get total record count for pagination meta
+        $countRes = $this->db->query("SELECT COUNT(*) AS total FROM tbl_group");
+        $totalRecords = (int)($countRes->fetch_assoc()['total'] ?? 0);
+
+        if ($totalRecords === 0) {
+            return [
+                'data' => [],
+                'total' => 0
+            ];
         }
 
-        if ($groupId > 0) {
-            $where[] = "id = ?";
-            $params[] = $groupId;
-        }
+        // 2. Fetch base groups with group type name
+        $sqlGroups = "SELECT 
+                        g.id,
+                        g.branch_id,
+                        g.grouptype_id,
+                        gt.name AS group_type_name,
+                        g.name,
+                        g.expected_weekly_hours,
+                        g.absence_threshold,
+                        g.date_created AS created_at
+                      FROM tbl_group g
+                      LEFT JOIN lkup_grouptype gt ON g.grouptype_id = gt.id
+                      ORDER BY g.id DESC
+                      LIMIT ? OFFSET ?";
 
-        if(!empty($where)){
-            $sqlGroups .= " WHERE " . implode(" AND ", $where);
-        }
-
-        $groupResult = $this->db->query($sqlGroups, $params);
-
+        $groupResult = $this->db->query($sqlGroups, [$limit, $offset]);
         if (!$groupResult || $groupResult->num_rows === 0) {
-            return [];
+            return ['data' => [], 'total' => $totalRecords];
         }
 
         $groups = $groupResult->fetch_all(MYSQLI_ASSOC);
         $groupIds = array_column($groups, 'id');
         $placeholders = implode(',', array_fill(0, count($groupIds), '?'));
 
-        $sqlSupervisors = "SELECT gs.group_id, u.id AS user_id, u.fname, u.lname 
-                        FROM tbl_group_supervisor gs
-                        JOIN tbl_user u ON gs.user_id = u.id
-                        WHERE gs.group_id IN ($placeholders)";
-    
+        // 3. Member counts per group
+        $sqlMemberCounts = "SELECT group_id, COUNT(user_id) AS total_members 
+                            FROM tbl_group_member 
+                            WHERE group_id IN ($placeholders) 
+                            GROUP BY group_id";
+        $countResult = $this->db->query($sqlMemberCounts, $groupIds);
+        $countsByGroup = [];
+        if ($countResult && $countResult->num_rows > 0) {
+            while ($row = $countResult->fetch_assoc()) {
+                $countsByGroup[$row['group_id']] = (int)$row['total_members'];
+            }
+        }
+
+        // 4. Supervisors per group
+        $sqlSupervisors = "SELECT gs.group_id, u.id AS user_id, CONCAT(u.fname, ' ', u.lname) AS name 
+                           FROM tbl_group_supervisor gs
+                           JOIN tbl_user u ON gs.user_id = u.id
+                           WHERE gs.group_id IN ($placeholders)
+                           ORDER BY gs.user_id ASC";
         $supResult = $this->db->query($sqlSupervisors, $groupIds);
         $supervisorsByGroup = [];
         if ($supResult && $supResult->num_rows > 0) {
-            foreach ($supResult->fetch_all(MYSQLI_ASSOC) as $sup) {
-                $supervisorsByGroup[$sup['group_id']][] = $sup;
+            while ($sup = $supResult->fetch_assoc()) {
+                $supervisorsByGroup[$sup['group_id']][] = [
+                    'id' => (int)$sup['user_id'],
+                    'name' => $sup['name']
+                ];
             }
         }
 
-        $sqlMembers = "SELECT gm.group_id, u.id AS user_id, u.fname, u.lname 
-                    FROM tbl_group_member gm
-                    JOIN tbl_user u ON gm.user_id = u.id
-                    WHERE gm.group_id IN ($placeholders)";
-    
-        $memResult = $this->db->query($sqlMembers, $groupIds);
-        $membersByGroup = [];
-        if ($memResult && $memResult->num_rows > 0) {
-            foreach ($memResult->fetch_all(MYSQLI_ASSOC) as $mem) {
-                $membersByGroup[$mem['group_id']][] = $mem;
-            }
-        }
-
+        // 5. Structure final output matrix
         foreach ($groups as &$group) {
-            $group['supervisors'] = $supervisorsByGroup[$group['id']] ?? [];
-            $group['members'] = $membersByGroup[$group['id']] ?? [];
+            $gId = (int)$group['id'];
+            $group['id'] = $gId;
+            $group['branch_id'] = (int)$group['branch_id'];
+            $group['grouptype_id'] = (int)$group['grouptype_id'];
+            $group['expected_weekly_hours'] = (int)$group['expected_weekly_hours'];
+            $group['absence_threshold'] = (int)$group['absence_threshold'];
+            $group['members_count'] = $countsByGroup[$gId] ?? 0;
+
+            $sups = $supervisorsByGroup[$gId] ?? [];
+            if (!empty($sups)) {
+                $primary = $sups[0];
+                $group['supervisor'] = [
+                    'id' => $primary['id'],
+                    'name' => $primary['name'],
+                    'sup_count' => count($sups) - 1
+                ];
+            } else {
+                $group['supervisor'] = null;
+            }
         }
 
-        return $groups;
+        return [
+            'data' => $groups,
+            'total' => $totalRecords
+        ];
+    }
+
+    /**
+     * Fetch detailed supervisors and members for a single group
+     */
+    public function getGroupMembersDetail(int $groupId): ?array
+    {
+        $check = $this->db->query("SELECT id FROM tbl_group WHERE id = ?", [$groupId]);
+        if (!$check || $check->num_rows === 0) {
+            return null;
+        }
+
+        $sqlSupervisors = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.email,
+                                  CASE WHEN u.user_type = 'staff' THEN st.sregno ELSE s.regno END AS regno
+                           FROM tbl_group_supervisor gs
+                           JOIN tbl_user u ON gs.user_id = u.id
+                           LEFT JOIN tbl_student s ON u.id = s.user_id
+                           LEFT JOIN tbl_staff st ON u.id = st.user_id
+                           WHERE gs.group_id = ?";
+        $supResult = $this->db->query($sqlSupervisors, [$groupId]);
+        $supervisors = $supResult ? $supResult->fetch_all(MYSQLI_ASSOC) : [];
+
+        $sqlMembers = "SELECT u.id, CONCAT(u.fname, ' ', u.lname) AS name, u.email,
+                              CASE WHEN u.user_type = 'staff' THEN st.sregno ELSE s.regno END AS regno
+                       FROM tbl_group_member gm
+                       JOIN tbl_user u ON gm.user_id = u.id
+                       LEFT JOIN tbl_student s ON u.id = s.user_id
+                       LEFT JOIN tbl_staff st ON u.id = st.user_id
+                       WHERE gm.group_id = ?";
+        $memResult = $this->db->query($sqlMembers, [$groupId]);
+        $members = $memResult ? $memResult->fetch_all(MYSQLI_ASSOC) : [];
+
+        $format = function ($row) {
+            $row['id'] = (int)$row['id'];
+            return $row;
+        };
+
+        return [
+            'group_id' => $groupId,
+            'supervisors' => array_map($format, $supervisors),
+            'members' => array_map($format, $members)
+        ];
     }
 
     /**
@@ -328,5 +403,197 @@ class GroupModel extends Database {
         }
 
         return array_values($groups);
+    }
+
+    public function fetchGroupTypes(): array
+    {
+        $sql = "SELECT id, name, abbreviation AS abbr FROM lkup_grouptype";
+        $res = $this->db->query($sql, []);
+        return $res ? mysqli_fetch_all($res, MYSQLI_ASSOC) : [];
+    }
+
+    /**
+     * Add a single member to an existing group and push sync records to terminals.
+     *
+     * @param int $groupId
+     * @param int $userId
+     * @return bool
+     */
+    public function addMember(int $groupId, int $userId): bool {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Prevent duplicate assignment
+            $checkRes = $this->db->query(
+                "SELECT COUNT(*) as cnt FROM tbl_group_member WHERE group_id = ? AND user_id = ?",
+                [$groupId, $userId]
+            );
+            $existing = $checkRes ? $checkRes->fetch_assoc() : null;
+            if ($existing && (int)($existing['cnt'] ?? 0) > 0) {
+                $this->db->rollback();
+                return true; // Already a member
+            }
+
+            // 2. Insert into tbl_group_member
+            $sqlMem = "INSERT INTO tbl_group_member(group_id, user_id) VALUES(?, ?)";
+            $this->db->query($sqlMem, [$groupId, $userId]);
+
+            // 3. Queue Terminal Sync
+            $terminals = $this->getGroupTerminals($groupId);
+            if (!empty($terminals)) {
+                foreach ($terminals as $tId) {
+                    $this->syncModel->setTerminalId($tId);
+                    $this->syncModel->setEntityType('tbl_user');
+                    $this->syncModel->setEntityId($userId);
+                    $this->syncModel->setAction('upsert');
+                    $this->syncModel->save();
+                }
+            }
+
+            $this->db->commit();
+
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin added user ID %d to group ID %d", $userId, $groupId),
+                null,
+                ['group_id' => $groupId, 'user_id' => $userId, 'action' => 'group_add_member']
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Remove a member from an existing group and push removal sync if applicable.
+     *
+     * @param int $groupId
+     * @param int $userId
+     * @return bool
+     */
+    public function removeMember(int $groupId, int $userId): bool {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Delete member record
+            $sqlDelete = "DELETE FROM tbl_group_member WHERE group_id = ? AND user_id = ?";
+            $this->db->query($sqlDelete, [$groupId, $userId]);
+
+            // 2. Fetch linked terminals for this group
+            $terminals = $this->getGroupTerminals($groupId);
+
+            if (!empty($terminals)) {
+                foreach ($terminals as $tId) {
+                    // Check if user still belongs to any other group linked to this terminal
+                    $sqlCheckOtherGroups = "
+                        SELECT COUNT(*) as cnt 
+                        FROM tbl_group_member gm
+                        JOIN tbl_terminal_access_policy tap ON gm.group_id = tap.group_id
+                        WHERE gm.user_id = ? AND tap.terminal_id = ?
+                    ";
+                    $checkRes = $this->db->query($sqlCheckOtherGroups, [$userId, $tId]);
+                    $otherGroupCount = $checkRes ? $checkRes->fetch_assoc() : null;
+
+                    if ((int)($otherGroupCount['cnt'] ?? 0) === 0) {
+                        // User no longer has access to this terminal -> send delete sync
+                        $this->syncModel->setTerminalId($tId);
+                        $this->syncModel->setEntityType('tbl_user');
+                        $this->syncModel->setEntityId($userId);
+                        $this->syncModel->setAction('delete');
+                        $this->syncModel->save();
+                    } else {
+                        // User is still present in another group on this terminal -> issue upsert
+                        $this->syncModel->setTerminalId($tId);
+                        $this->syncModel->setEntityType('tbl_user');
+                        $this->syncModel->setEntityId($userId);
+                        $this->syncModel->setAction('upsert');
+                        $this->syncModel->save();
+                    }
+                }
+            }
+
+            $this->db->commit();
+
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin removed user ID %d from group ID %d", $userId, $groupId),
+                null,
+                ['group_id' => $groupId, 'user_id' => $userId, 'action' => 'group_remove_member']
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Add a supervisor to a group.
+     *
+     * @param int $groupId
+     * @param int $userId
+     * @return bool
+     */
+    public function addSupervisor(int $groupId, int $userId): bool
+    {
+        try {
+            // 1. Prevent duplicate supervisor assignment
+            $checkRes = $this->db->query(
+                "SELECT COUNT(*) as cnt FROM tbl_group_supervisor WHERE group_id = ? AND user_id = ?",
+                [$groupId, $userId]
+            );
+            $existing = $checkRes ? $checkRes->fetch_assoc() : null;
+            if ($existing && (int)($existing['cnt'] ?? 0) > 0) {
+                return true; // Already a supervisor
+            }
+
+            // 2. Insert into tbl_group_supervisor
+            $sql = "INSERT INTO tbl_group_supervisor(group_id, user_id) VALUES(?, ?)";
+            $this->db->query($sql, [$groupId, $userId]);
+
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin added supervisor user ID %d to group ID %d", $userId, $groupId),
+                null,
+                ['group_id' => $groupId, 'user_id' => $userId, 'action' => 'group_add_supervisor']
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Remove a supervisor from a group.
+     *
+     * @param int $groupId
+     * @param int $userId
+     * @return bool
+     */
+    public function removeSupervisor(int $groupId, int $userId): bool
+    {
+        try {
+            $sql = "DELETE FROM tbl_group_supervisor WHERE group_id = ? AND user_id = ?";
+            $this->db->query($sql, [$groupId, $userId]);
+
+            Logger::log(
+                'system',
+                'info',
+                sprintf("Admin removed supervisor user ID %d from group ID %d", $userId, $groupId),
+                null,
+                ['group_id' => $groupId, 'user_id' => $userId, 'action' => 'group_remove_supervisor']
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            throw $e;
+        }
     }
 }

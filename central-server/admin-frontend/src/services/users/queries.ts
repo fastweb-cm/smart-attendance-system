@@ -8,6 +8,7 @@ export type ListusersFilters = {
     role?: string;                          
     status?: string;
     search?: string;
+    class_id?: number;
     page?: number;
     limit?: number;
 };
@@ -19,6 +20,7 @@ export const getUsersQuery = (filters?: ListusersFilters) =>
             role: filters?.role,
             status: filters?.status,
             search: filters?.search,
+            class_id: filters?.class_id,
             page: filters?.page,
             limit: filters?.limit
         }
@@ -32,6 +34,7 @@ export const userQueryKey = (filters?: ListusersFilters) =>
             role: filters?.role,
             status: filters?.status,
             search: filters?.search,
+            class_id: filters?.class_id,
             page: filters?.page,
             limit: filters?.limit
         }

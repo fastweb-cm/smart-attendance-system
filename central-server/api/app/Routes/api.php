@@ -21,7 +21,6 @@ use App\Modules\Logger\Controllers\LoggerController;
 |  Public Routes
 |--------------------------
 */
-
 $router->get('/', [UserRegistrationController::class, 'index']);
 $router->post('/api/v1/auth/login', [AuthController::class, 'login']);
 $router->post('/api/v1/auth/logout', [AuthController::class, 'logout']);
@@ -38,6 +37,7 @@ $router->get('/api/v1/lookup/users', [UserController::class, 'getUsersByType']);
 $router->get('/api/v1/lookup/branches', [BranchController::class, 'getBranches']);
 $router->get('/api/v1/lookup/auth-types', [TerminalController::class, 'getAuthTypes']);
 $router->get('/api/v1/lookup/auth-policies', [GroupController::class, 'getAuthPolicies']);
+$router->get('/api/v1/lookup/group-types', [GroupController::class, 'groupTypes']);
 $router->get('/api/v1/lookup/permissions/types', [PermissionController::class, 'types']);
 
 $router->post('/api/v1/terminal/activate', [TerminalController::class, 'activate']);
@@ -75,7 +75,10 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->put('/api/v1/branch/{branchId}', [BranchController::class, 'edit']);
 
     //groups routes
-    $router->get('/api/v1/group', [GroupController::class, 'index']);
+    $router->get('/api/v1/groups', [GroupController::class, 'index']);
+    $router->get('/api/v1/groups/{id}/members', [GroupController::class, 'members']);
+    $router->post('/api/v1/groups/{id}/members', [GroupController::class, 'addMember']);
+    $router->delete('/api/v1/groups/{id}/members/{userId}', [GroupController::class, 'removeMember']);
     $router->post('/api/v1/group', [GroupController::class, 'store']);
     $router->put('/api/v1/group', [GroupController::class, 'edit']);
     $router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);

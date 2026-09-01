@@ -19,6 +19,7 @@ from app.db.models.event_access_policy import EventAccessPolicy
 from app.db.models.event_checkin_checkout_range import EventCheckinCheckoutRange
 from app.db.models.user_permission import UserPermission
 from app.db.models.face_buffer import FaceBuffer
+from app.db.models.fingerprint_buffer import FingerprintBuffer
 
 # Global cache
 # user_biometric_cache: dict[int, np.ndarray] = {}

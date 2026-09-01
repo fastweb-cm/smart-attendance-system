@@ -32,6 +32,7 @@ class User(Base):
     face_template = Column(LargeBinary)
     face_template_refined = Column(LargeBinary)
     fingerprint_template = Column(LargeBinary)
+    fingerprint_template_refined = Column(LargeBinary)
 
     card_serial_code = Column(String(255))
     sync_status = Column(String(20), default="sync")
@@ -79,6 +80,12 @@ class User(Base):
 
     face_buffers = relationship(
         "FaceBuffer",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    fingerprint_buffers = relationship(
+        "FingerprintBuffer",
         back_populates="user",
         cascade="all, delete-orphan"
     )

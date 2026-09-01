@@ -337,3 +337,8 @@ export interface AttendanceSessionTableProps {
   paginationMeta: PaginationMetaProps;
   isRefreshing?: boolean;
 }
+
+export interface ListGroupsQueryParams {
+  page?: number;
+  limit?: number;
+}

@@ -33,12 +33,17 @@ services:
   # Python Logic
   terminal-api:
     build: ./api
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     container_name: terminal-api
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8085:8000"
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
     environment:
       - DB_HOST=db
       - DB_USER=root
