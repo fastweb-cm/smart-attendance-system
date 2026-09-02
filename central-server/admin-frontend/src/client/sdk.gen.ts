@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddGroupMemberData, AddGroupMemberErrors, AddGroupMemberResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateBranchData, CreateBranchErrors, CreateBranchResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteExceptionData, DeleteExceptionErrors, DeleteExceptionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, FetchLogsData, FetchLogsErrors, FetchLogsResponses, FetchOnePermissionData, FetchOnePermissionErrors, FetchOnePermissionResponses, GetAllPermissionsData, GetAllPermissionsErrors, GetAllPermissionsResponses, GetAttendanceLedgerData, GetAttendanceLedgerErrors, GetAttendanceLedgerResponses, GetAttendanceSessionsData, GetAttendanceSessionsErrors, GetAttendanceSessionsResponses, GetGroupMembersData, GetGroupMembersErrors, GetGroupMembersResponses, GetTerminalBySlugData, GetTerminalBySlugErrors, GetTerminalBySlugResponses, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsErrors, GetUserAttendanceAnalyticsResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListGroupTypesData, ListGroupTypesErrors, ListGroupTypesResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, OneExceptionData, OneExceptionErrors, OneExceptionResponses, PartialEditAttendanceData, PartialEditAttendanceErrors, PartialEditAttendanceResponses, RefreshData, RefreshErrors, RefreshResponses, RemoveGroupMemberData, RemoveGroupMemberErrors, RemoveGroupMemberResponses, ReviewPermissionData, ReviewPermissionErrors, ReviewPermissionResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateTerminalData, UpdateTerminalErrors, UpdateTerminalResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UpsertPermissionData, UpsertPermissionErrors, UpsertPermissionResponses } from './types.gen';
+import type { AddGroupMemberData, AddGroupMemberErrors, AddGroupMemberResponses, AssignUsersToSubgroupData, AssignUsersToSubgroupErrors, AssignUsersToSubgroupResponses, CreateAnnouncementData, CreateAnnouncementErrors, CreateAnnouncementResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateExceptionData, CreateExceptionErrors, CreateExceptionResponses, CreateGroupData, CreateGroupErrors, CreateGroupResponses, CreateGroupTypeData, CreateGroupTypeErrors, CreateGroupTypeResponses, CreateSubgroupData, CreateSubgroupErrors, CreateSubgroupResponses, CreateTerminalData, CreateTerminalErrors, CreateTerminalResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DeleteEventData, DeleteEventErrors, DeleteEventResponses, DeleteExceptionData, DeleteExceptionErrors, DeleteExceptionResponses, DeleteGroupData, DeleteGroupErrors, DeleteGroupResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, DeleteTerminalData, DeleteTerminalErrors, DeleteTerminalResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FaceEnrollmentData, FaceEnrollmentErrors, FaceEnrollmentResponses, FaceVerificationData, FaceVerificationErrors, FaceVerificationResponses, FetchLogsData, FetchLogsErrors, FetchLogsResponses, FetchOnePermissionData, FetchOnePermissionErrors, FetchOnePermissionResponses, GetAllPermissionsData, GetAllPermissionsErrors, GetAllPermissionsResponses, GetAttendanceLedgerData, GetAttendanceLedgerErrors, GetAttendanceLedgerResponses, GetAttendanceSessionsData, GetAttendanceSessionsErrors, GetAttendanceSessionsResponses, GetGroupMembersData, GetGroupMembersErrors, GetGroupMembersResponses, GetTerminalBySlugData, GetTerminalBySlugErrors, GetTerminalBySlugResponses, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsErrors, GetUserAttendanceAnalyticsResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, ListAnnouncementsData, ListAnnouncementsErrors, ListAnnouncementsResponses, ListBranchesData, ListBranchesErrors, ListBranchesResponses, ListClassesData, ListClassesErrors, ListClassesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListExceptionsData, ListExceptionsErrors, ListExceptionsResponses, ListGroupsData, ListGroupsErrors, ListGroupsResponses, ListGroupTypesData, ListGroupTypesErrors, ListGroupTypesResponses, ListRolesData, ListRolesErrors, ListRolesResponses, ListSubgroupsData, ListSubgroupsErrors, ListSubgroupsResponses, ListTerminalsData, ListTerminalsErrors, ListTerminalsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, OneExceptionData, OneExceptionErrors, OneExceptionResponses, PartialEditAttendanceData, PartialEditAttendanceErrors, PartialEditAttendanceResponses, RefreshData, RefreshErrors, RefreshResponses, RemoveGroupMemberData, RemoveGroupMemberErrors, RemoveGroupMemberResponses, ReviewPermissionData, ReviewPermissionErrors, ReviewPermissionResponses, SyncAttendanceSummaryData, SyncAttendanceSummaryErrors, SyncAttendanceSummaryResponses, SyncUsersData, SyncUsersErrors, SyncUsersResponses, TerminalAuthData, TerminalAuthErrors, TerminalAuthResponses, UpdateBranchData, UpdateBranchErrors, UpdateBranchResponses, UpdateGroupData, UpdateGroupErrors, UpdateGroupResponses, UpdateTerminalData, UpdateTerminalErrors, UpdateTerminalResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UpsertPermissionData, UpsertPermissionErrors, UpsertPermissionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -132,32 +132,6 @@ export const listRoles = <ThrowOnError extends boolean = false>(options?: Option
 });
 
 /**
- * List all branchs
- */
-export const listBranches = <ThrowOnError extends boolean = false>(options?: Options<ListBranchesData, ThrowOnError>) => (options?.client ?? client).get<ListBranchesResponses, ListBranchesErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/branches',
-    ...options
-});
-
-/**
- * Create a new branch
- *
- * Creat a new branch or campus within the institution
- */
-export const createBranch = <ThrowOnError extends boolean = false>(options: Options<CreateBranchData, ThrowOnError>) => (options.client ?? client).post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/branches',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * Update branch details
  */
 export const updateBranch = <ThrowOnError extends boolean = false>(options: Options<UpdateBranchData, ThrowOnError>) => (options.client ?? client).put<UpdateBranchResponses, UpdateBranchErrors, ThrowOnError>({
@@ -190,6 +164,26 @@ export const listGroupTypes = <ThrowOnError extends boolean = false>(options?: O
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/lookup/group-types',
+    ...options
+});
+
+/**
+ * List all the available branches in the system
+ */
+export const listBranches = <ThrowOnError extends boolean = false>(options?: Options<ListBranchesData, ThrowOnError>) => (options?.client ?? client).get<ListBranchesResponses, ListBranchesErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lookup/branches',
+    ...options
+});
+
+/**
+ * Get classes list for dropdown lookups
+ */
+export const listClasses = <ThrowOnError extends boolean = false>(options?: Options<ListClassesData, ThrowOnError>) => (options?.client ?? client).get<ListClassesResponses, ListClassesErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lookup/classes',
     ...options
 });
 
@@ -239,6 +233,28 @@ export const addGroupMember = <ThrowOnError extends boolean = false>(options: Op
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/groups/{id}/members',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a group by ID
+ */
+export const deleteGroup = <ThrowOnError extends boolean = false>(options: Options<DeleteGroupData, ThrowOnError>) => (options.client ?? client).delete<DeleteGroupResponses, DeleteGroupErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/groups/{id}',
+    ...options
+});
+
+/**
+ * Update a group by ID
+ */
+export const updateGroup = <ThrowOnError extends boolean = false>(options: Options<UpdateGroupData, ThrowOnError>) => (options.client ?? client).put<UpdateGroupResponses, UpdateGroupErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/groups/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

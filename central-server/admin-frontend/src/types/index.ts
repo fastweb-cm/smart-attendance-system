@@ -11,6 +11,7 @@ export interface InputFieldProps {
 type?: React.HTMLInputTypeAttribute;
   name: string;
   required?: boolean;
+  disabled?: boolean;
   options?: Option[];
   defaultValue?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement>;

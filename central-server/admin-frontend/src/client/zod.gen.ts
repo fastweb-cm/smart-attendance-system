@@ -2,6 +2,11 @@
 
 import * as z from 'zod';
 
+export const zLookupClass = z.object({
+    id: z.int(),
+    class_name: z.string()
+});
+
 export const zUserType = z.enum(['student', 'staff']);
 
 export const zUserStatus = z.enum([
@@ -275,6 +280,16 @@ export const zGroup = z.object({
     name: z.string(),
     expected_weekly_hours: z.optional(z.int()),
     absence_threshold: z.int()
+});
+
+export const zGroupCreate = z.object({
+    name: z.string(),
+    branch_id: z.int(),
+    grouptype_id: z.int(),
+    expected_weekly_hours: z.optional(z.int()),
+    absence_threshold: z.int(),
+    member_ids: z.optional(z.array(z.int())),
+    supervisor_ids: z.optional(z.array(z.int()))
 });
 
 export const zGroupResponse = zGroup.and(z.object({
@@ -843,30 +858,6 @@ export const zListRolesData = z.object({
  */
 export const zListRolesResponse = z.array(zRoleResponse);
 
-export const zListBranchesData = z.object({
-    body: z.optional(z.never()),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * List of branches
- */
-export const zListBranchesResponse = z.array(zBranchResponse);
-
-export const zCreateBranchData = z.object({
-    body: zBranch.and(z.object({
-        user_id: z.optional(z.int())
-    })),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * Branch created successfully
- */
-export const zCreateBranchResponse = zBranchResponse;
-
 export const zUpdateBranchData = z.object({
     body: z.optional(zBranch.and(z.object({
         user_id: z.optional(z.int())
@@ -904,6 +895,34 @@ export const zListGroupTypesResponse = z.object({
     })))
 });
 
+export const zListBranchesData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * List of all branches in system
+ */
+export const zListBranchesResponse = z.object({
+    success: z.optional(z.boolean()),
+    data: z.optional(z.array(z.object({
+        id: z.optional(z.int()),
+        name: z.optional(z.string())
+    })))
+});
+
+export const zListClassesData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * List of classes
+ */
+export const zListClassesResponse = z.array(zLookupClass);
+
 export const zListGroupsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -923,7 +942,7 @@ export const zListGroupsResponse = z.object({
 });
 
 export const zCreateGroupData = z.object({
-    body: zGroup,
+    body: zGroupCreate,
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
@@ -961,6 +980,22 @@ export const zAddGroupMemberData = z.object({
 export const zAddGroupMemberResponse = z.object({
     success: z.optional(z.boolean()),
     message: z.optional(z.string())
+});
+
+export const zDeleteGroupData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zUpdateGroupData = z.object({
+    body: zGroupCreate,
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.optional(z.never())
 });
 
 export const zRemoveGroupMemberData = z.object({

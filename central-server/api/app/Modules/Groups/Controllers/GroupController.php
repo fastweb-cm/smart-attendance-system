@@ -13,29 +13,42 @@ class GroupController extends Controller {
     }
 
     public function store() {
-        $data = $this->getJsonInput();
+    $data = $this->getJsonInput();
 
-        $this->g->setBranchId($data["branch_id"]);
-        $this->g->setGroupTypeId($data["grouptype_id"]);
-        $this->g->setName($data["name"]);
-        $this->g->setExpectedWeeklyHours($data["expected_weekly_hours"] ?? 40);
-        $this->g->setAbsenseThreshold($data["absence_threshold"] ?? 0);
-
-        try{
-            $this->g->save($data["supervisors"], $data["members"]);
-
-            $this->json([
-                "success" => true,
-                "message" => "Operation was successfull"
-            ]);
-        }catch(\Throwable $e){
-            $this->json([
-                "success" => false,
-                "message"=> $e->getMessage(),
-                "type" => get_class($e) // helpful for debugging
-            ], $e->getCode() ? : 500);
-        }
+    // Validation guard
+    if (empty($data["name"]) || empty($data["branch_id"]) || empty($data["grouptype_id"])) {
+        $this->json([
+            "success" => false,
+            "message" => "Name, Branch ID, and Group Type ID are required."
+        ], 400);
+        return;
     }
+
+    $this->g->setBranchId($data["branch_id"]);
+    $this->g->setGroupTypeId($data["grouptype_id"]);
+    $this->g->setName($data["name"]);
+    $this->g->setExpectedWeeklyHours($data["expected_weekly_hours"] ?? 40);
+    $this->g->setAbsenseThreshold($data["absence_threshold"] ?? 0); 
+
+    // Accept scalar ID arrays [1, 2] or array of objects [["user_id" => 1]]
+    $supervisors = $data["supervisors"] ?? $data["supervisor_ids"] ?? [];
+    $members = $data["members"] ?? $data["member_ids"] ?? [];
+
+    try {
+        $this->g->save($supervisors, $members);
+
+        $this->json([
+            "success" => true,
+            "message" => "Group created successfully"
+        ]);
+    } catch (\Throwable $e) {
+        $this->json([
+            "success" => false,
+            "message" => $e->getMessage(),
+            "type"    => get_class($e)
+        ], $e->getCode() ?: 500);
+    }
+}
 
     /**
      * GET /api/v1/groups
@@ -106,43 +119,47 @@ class GroupController extends Controller {
         }
     }
 
-    public function edit() {
-        $data = $this->getJsonInput();
-        $id = (int)($data["id"] ?? 0);
+public function edit(int $id) {
+    $data = $this->getJsonInput();
+    $id = (int)($id ?? 0);
 
-        if ($id < 0){
-            $this->json([
-                "success"=> false,
-                "message"=> "Invalid group"
-            ]);
-        }
-
-        $this->g->setBranchId($data["branch_id"]);
-        $this->g->setGroupTypeId($data["grouptype_id"]);
-        $this->g->setName($data["name"]);
-        $this->g->setExpectedWeeklyHours($data["expected_weekly_hours"] ?? 40);
-        $this->g->setAbsenseThreshold($data["absence_threshold"] ?? 0);
-        $this->g->setId($id);
-
-        try{
-            $this->g->update($data["supervisors"], $data["members"]);
-
-            $this->json([
-                "success" => true,
-                "message" => "Update was successfull"
-            ]);
-        }catch(Throwable $e){
-            $this->json([
-                "success" => false,
-                "message"=> $e->getMessage(),
-                "type" => get_class($e) // helpful for debugging
-            ], $e->getCode() ? : 500);
-        }
+    if ($id <= 0) {
+        $this->json([
+            "success" => false,
+            "message" => "Invalid group ID provided"
+        ], 400);
+        return;
     }
 
-    public function delete(int $groupId)
+    $this->g->setId($id);
+    $this->g->setBranchId($data["branch_id"]);
+    $this->g->setGroupTypeId($data["grouptype_id"]);
+    $this->g->setName($data["name"]);
+    $this->g->setExpectedWeeklyHours($data["expected_weekly_hours"] ?? 40);
+    $this->g->setAbsenseThreshold($data["absence_threshold"] ?? 0);
+
+    $supervisors = $data["supervisors"] ?? $data["supervisor_ids"] ?? [];
+    $members = $data["members"] ?? $data["member_ids"] ?? [];
+
+    try {
+        $this->g->update($supervisors, $members);
+
+        $this->json([
+            "success" => true,
+            "message" => "Update was successful"
+        ]);
+    } catch (\Throwable $e) {
+        $this->json([
+            "success" => false,
+            "message" => $e->getMessage(),
+            "type"    => get_class($e)
+        ], $e->getCode() ?: 500);
+    }
+}
+
+    public function delete(int $id)
     {
-        $groupdId = (int)($groupId ?? 0);
+        $groupdId = (int)($id ?? 0);
 
         if ($groupdId < 0) {
             $this->json([
@@ -152,10 +169,10 @@ class GroupController extends Controller {
         }
 
         try {
-            if ($this->g->delete($groupId)) { 
+            if ($this->g->delete($id)) { 
                 $this->json([
                     "success"=> true,
-                    "message"=> "Group ID ".$groupId." was successfully deleted"
+                    "message"=> "Group ID ".$id." was successfully deleted"
                 ]);
             }
         } catch (Throwable $e) {

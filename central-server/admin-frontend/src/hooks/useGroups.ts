@@ -3,7 +3,12 @@ import {
   getGroupMembersQueryKey,
 } from "@/client/@tanstack/react-query.gen";
 import { queryClient } from "@/lib/queryClient";
-import { addGroupMemberMut, removeGroupMemberMut } from "@/services/groups/mutation";
+import {
+  createGroupMut,
+  updateGroupMut,
+  addGroupMemberMut,
+  removeGroupMemberMut,
+} from "@/services/groups/mutation";
 import {
   getListGroupsQuery,
   listGroupsQueryKeyCustom,
@@ -28,7 +33,7 @@ export const useGroups = (filters?: ListGroupsQueryParams) =>
   });
 
 /**
- * Fetch supervisors and members for a specific group (Manage Members modal/drawer)
+ * Fetch supervisors and members for a specific group
  */
 export const useGroupMembers = (groupId: number, enabled: boolean = true) =>
   useQuery({
@@ -43,16 +48,65 @@ export const useGroupMembers = (groupId: number, enabled: boolean = true) =>
   });
 
 /**
+ * Create new group
+ */
+export const useCreateGroup = () => {
+  return useMutation({
+    ...createGroupMut(),
+    // eslint-disable-next-line
+    onSuccess: (res: any) => {
+      toast.success(res?.message || "Group created successfully");
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: listGroupsQueryKey(),
+      });
+    },
+    // eslint-disable-next-line
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to create group");
+    },
+  });
+};
+
+/**
+ * Update existing group
+ */
+export const useUpdateGroup = () => {
+  return useMutation({
+    ...updateGroupMut(),
+    // eslint-disable-next-line
+    onSuccess: (res: any) => {
+      toast.success(res?.message || "Group updated successfully");
+    },
+    onSettled: async (_, __, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: listGroupsQueryKey(),
+      });
+      if (variables?.path?.id) {
+        await queryClient.invalidateQueries({
+          queryKey: groupMembersQueryKeyCustom(variables.path.id),
+        });
+      }
+    },
+    // eslint-disable-next-line
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to update group");
+    },
+  });
+};
+
+/**
  * Add member or supervisor to group
  */
 export const useAddGroupMember = (groupId: number) => {
   return useMutation({
     ...addGroupMemberMut(),
-    onSuccess: (res) => {
+    // eslint-disable-next-line
+    onSuccess: (res: any) => {
       toast.success(res?.message || "User assigned successfully");
     },
     onSettled: async () => {
-      // Invalidate both group details and main list
       await queryClient.invalidateQueries({
         queryKey: groupMembersQueryKeyCustom(groupId),
       });
@@ -60,7 +114,7 @@ export const useAddGroupMember = (groupId: number) => {
         queryKey: listGroupsQueryKey(),
       });
     },
-    //eslint-disable-next-line
+    // eslint-disable-next-line
     onError: (error: any) => {
       toast.error(error?.message || "Failed to assign user");
     },
@@ -73,7 +127,8 @@ export const useAddGroupMember = (groupId: number) => {
 export const useRemoveGroupMember = (groupId: number) => {
   return useMutation({
     ...removeGroupMemberMut(),
-    onSuccess: (res) => {
+    // eslint-disable-next-line
+    onSuccess: (res: any) => {
       toast.success(res?.message || "User removed successfully");
     },
     onSettled: async () => {
@@ -84,7 +139,7 @@ export const useRemoveGroupMember = (groupId: number) => {
         queryKey: listGroupsQueryKey(),
       });
     },
-    //eslint-disable-next-line
+    // eslint-disable-next-line
     onError: (error: any) => {
       toast.error(error?.message || "Failed to remove user");
     },

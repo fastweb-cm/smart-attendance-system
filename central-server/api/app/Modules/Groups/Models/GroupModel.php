@@ -46,69 +46,73 @@ class GroupModel extends Database {
      * @param array $members
      * @return bool
      */
-    public function save(array $supervisors, array $members): bool {
-        try{
-            $this->db->beginTransaction();
+public function save(array $supervisors, array $members): bool {
+    try {
+        $this->db->beginTransaction();
 
-            $sqlGroup = "INSERT INTO tbl_group(branch_id,grouptype_id,name,expected_weekly_hours,absence_threshold)
-            VALUES(?,?,?,?,?)";
-            $groupParams = [
-                $this->branch_id,
-                $this->grouptype_id,
-                $this->name,
-                $this->expected_weekly_hours,
-                $this->absence_threshold
-            ];
-            $this->db->query($sqlGroup, $groupParams);
-            $this->id = $this->db->lastInsertId();
+        $sqlGroup = "INSERT INTO tbl_group (branch_id, grouptype_id, name, expected_weekly_hours, absence_threshold)
+                     VALUES (?, ?, ?, ?, ?)";
+        $groupParams = [
+            $this->branch_id,
+            $this->grouptype_id,
+            $this->name,
+            $this->expected_weekly_hours,
+            $this->absence_threshold
+        ];
+        $this->db->query($sqlGroup, $groupParams);
+        $this->id = (int)$this->db->lastInsertId();
 
-            if($this->id > 0){
-                $terminals = $this->getGroupTerminals($this->id);
-                foreach($members as $member) {
-                    $sqlMem = "INSERT INTO tbl_group_member(group_id,user_id)
-                    VALUES(?,?)";
-                    $paramsMem = [$this->id, $member["user_id"]];
-                    $this->db->query($sqlMem, $paramsMem);
+        if ($this->id > 0) {
+            $terminals = $this->getGroupTerminals($this->id);
 
-                    if (!empty($terminals)) {
-                        foreach ($terminals as $tId) {
-                            $this->syncModel->setTerminalId($tId);
-                            $this->syncModel->setEntityType('tbl_user');
-                            $this->syncModel->setEntityId($member["user_id"]);
-                            $this->syncModel->setAction('upsert');
-                            $this->syncModel->save();
-                        }
+            // Sync & Insert Members
+            foreach ($members as $member) {
+                // Extract scalar user_id regardless of input format [12] vs [["user_id" => 12]]
+                $userId = is_array($member) ? ($member["user_id"] ?? null) : $member;
+                if (!$userId) continue;
+
+                $sqlMem = "INSERT INTO tbl_group_member (group_id, user_id) VALUES (?, ?)";
+                $this->db->query($sqlMem, [$this->id, $userId]);
+
+                if (!empty($terminals)) {
+                    foreach ($terminals as $tId) {
+                        $this->syncModel->setTerminalId($tId);
+                        $this->syncModel->setEntityType('tbl_user');
+                        $this->syncModel->setEntityId($userId);
+                        $this->syncModel->setAction('upsert');
+                        $this->syncModel->save();
                     }
                 }
-
-                foreach($supervisors as $supervisor) {
-                    $sqlSup = "INSERT INTO tbl_group_supervisor(group_id,user_id)
-                    VALUES(?,?)";
-                    $paramsSup = [$this->id, $supervisor["user_id"]];
-                    $this->db->query($sqlSup, $paramsSup);
-                }
             }
-            
-            $this->db->commit();
 
-            // -----------------------------------------------------------------
-            // SYSTEM AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log(
-                'system',
-                'info',
-                sprintf("Admin created new operational group: '%s' (ID: %d) with %d members and %d supervisors", $this->name, $this->id, count($members), count($supervisors)),
-                null, // AppContext auto-picks up active Admin User ID
-                ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_create']
-            );
+            // Insert Supervisors
+            foreach ($supervisors as $supervisor) {
+                $supId = is_array($supervisor) ? ($supervisor["user_id"] ?? null) : $supervisor;
+                if (!$supId) continue;
 
-            return true;
-            
-        }catch(\Throwable $e) {
-            $this->db->rollback();
-            throw $e;
+                $sqlSup = "INSERT INTO tbl_group_supervisor (group_id, user_id) VALUES (?, ?)";
+                $this->db->query($sqlSup, [$this->id, $supId]);
+            }
         }
+        
+        $this->db->commit();
+
+        Logger::log(
+            'system',
+            'info',
+            sprintf("Admin created new operational group: '%s' (ID: %d) with %d members and %d supervisors", 
+                $this->name, $this->id, count($members), count($supervisors)),
+            null,
+            ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_create']
+        );
+
+        return true;
+        
+    } catch (\Throwable $e) {
+        $this->db->rollback();
+        throw $e;
     }
+}
 
     /**
      * Fetch paginated groups matching OpenAPI GroupItem structure
@@ -253,71 +257,84 @@ class GroupModel extends Database {
         ];
     }
 
-    /**
-     * update groups
-     */
-    public function update(array $supervisors, array $members): bool
-    {
-        if (is_null($this->id)){
-            throw new \RuntimeException("group id is required for update operation");
-        }
+/**
+ * Update group details, re-assign members/supervisors, and sync terminals.
+ */
+public function update(array $supervisors, array $members): bool
+{
+    if (empty($this->id) || $this->id <= 0) {
+        throw new \InvalidArgumentException("Valid group ID is required for update operation");
+    }
 
-        try {
-            $this->db->beginTransaction();
+    try {
+        $this->db->beginTransaction();
 
-            $sqlGroup = "UPDATE tbl_group 
-                        SET branch_id = ?, grouptype_id = ?, name = ?, 
-                            expected_weekly_hours = ?, absence_threshold = ?
-                        WHERE id = ?";
-        
-            $this->db->query($sqlGroup, [
-                $this->branch_id, 
-                $this->grouptype_id, 
-                $this->name, 
-                $this->expected_weekly_hours, 
-                $this->absence_threshold,
-                $this->id 
-            ]);
+        $sqlGroup = "UPDATE tbl_group 
+                    SET branch_id = ?, grouptype_id = ?, name = ?, 
+                        expected_weekly_hours = ?, absence_threshold = ?
+                    WHERE id = ?";
+    
+        $this->db->query($sqlGroup, [
+            $this->branch_id, 
+            $this->grouptype_id, 
+            $this->name, 
+            $this->expected_weekly_hours, 
+            $this->absence_threshold,
+            $this->id 
+        ]);
 
-            $this->db->query("DELETE FROM tbl_group_member WHERE group_id = ?", [$this->id]);
-            $this->db->query("DELETE FROM tbl_group_supervisor WHERE group_id = ?", [$this->id]);
+        // Clear existing associations
+        $this->db->query("DELETE FROM tbl_group_member WHERE group_id = ?", [$this->id]);
+        $this->db->query("DELETE FROM tbl_group_supervisor WHERE group_id = ?", [$this->id]);
 
-            if($this->id > 0){
-                foreach($members as $member) {
-                    $sqlMem = "INSERT INTO tbl_group_member(group_id,user_id)
-                    VALUES(?,?)";
-                    $paramsMem = [$this->id, $member["user_id"]];
-                    $this->db->query($sqlMem, $paramsMem);
-                }
+        $terminals = $this->getGroupTerminals($this->id);
 
-                foreach($supervisors as $supervisor) {
-                    $sqlSup = "INSERT INTO tbl_group_supervisor(group_id,user_id)
-                    VALUES(?,?)";
-                    $paramsSup = [$this->id, $supervisor["user_id"]];
-                    $this->db->query($sqlSup, $paramsSup);
+        // Re-insert Members & Sync to Hardware Terminals
+        foreach ($members as $member) {
+            $userId = is_array($member) ? ($member["user_id"] ?? null) : $member;
+            if (!$userId) continue;
+
+            $sqlMem = "INSERT INTO tbl_group_member (group_id, user_id) VALUES (?, ?)";
+            $this->db->query($sqlMem, [$this->id, $userId]);
+
+            if (!empty($terminals)) {
+                foreach ($terminals as $tId) {
+                    $this->syncModel->setTerminalId($tId);
+                    $this->syncModel->setEntityType('tbl_user');
+                    $this->syncModel->setEntityId($userId);
+                    $this->syncModel->setAction('upsert');
+                    $this->syncModel->save();
                 }
             }
-
-            $this->db->commit();
-
-            // -----------------------------------------------------------------
-            // SYSTEM AUDIT LOG
-            // -----------------------------------------------------------------
-            Logger::log(
-                'system',
-                'info',
-                sprintf("Admin updated settings for group: '%s' (ID: %d), syncing %d total members and %d supervisors", $this->name, $this->id, count($members), count($supervisors)),
-                null,
-                ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_update']
-            );
-
-            return true;
-
-        } catch(\Throwable $e) {
-            $this->db->rollback();
-            throw $e;
         }
+
+        // Re-insert Supervisors
+        foreach ($supervisors as $supervisor) {
+            $supId = is_array($supervisor) ? ($supervisor["user_id"] ?? null) : $supervisor;
+            if (!$supId) continue;
+
+            $sqlSup = "INSERT INTO tbl_group_supervisor (group_id, user_id) VALUES (?, ?)";
+            $this->db->query($sqlSup, [$this->id, $supId]);
+        }
+
+        $this->db->commit();
+
+        Logger::log(
+            'system',
+            'info',
+            sprintf("Admin updated settings for group: '%s' (ID: %d), syncing %d total members and %d supervisors", 
+                $this->name, $this->id, count($members), count($supervisors)),
+            null,
+            ['group_id' => $this->id, 'name' => $this->name, 'action' => 'group_update']
+        );
+
+        return true;
+
+    } catch (\Throwable $e) {
+        $this->db->rollback();
+        throw $e;
     }
+}
 
     /**
      * Delete group by id including it assoc members and supervisors

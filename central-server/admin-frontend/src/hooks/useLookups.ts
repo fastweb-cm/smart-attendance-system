@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axiosClient";
 import { GroupWithSubgroupsLookup, Lookup, LookupBranch, LookupClass } from "@/types";
 import { User } from "@/client";
-import { listTerminalsOptions, listEventsOptions, listGroupTypesOptions, listUsersOptions } from "@/client/@tanstack/react-query.gen";
+import { listTerminalsOptions, listEventsOptions, listGroupTypesOptions, listUsersOptions, listBranchesOptions, listClassesOptions } from "@/client/@tanstack/react-query.gen";
 import { ListusersFilters } from "@/services/users/queries";
 
 export const useClasses = (initialData?: LookupClass[]) => {
@@ -127,3 +127,29 @@ export const useUsersLookup = (params?: ListusersFilters) => useQuery({
     ...listUsersOptions({ query: params }),
     select: (res) => res.data
 })
+
+
+// Branches Lookup
+export const useBranchesLookup = () =>
+  useQuery({
+    ...listBranchesOptions({}),
+    // eslint-disable-next-line
+    select: (res: any) => {
+      // Handles direct array [] or wrapped { data: [] }
+      if (Array.isArray(res)) return res;
+      if (Array.isArray(res?.data)) return res.data;
+      return [];
+    },
+  });
+
+// Classes lookup for student filters
+export const useClassesLookup = () =>
+  useQuery({
+    ...listClassesOptions({}),
+    // eslint-disable-next-line
+    select: (res: any) => {
+      if (Array.isArray(res)) return res;
+      if (Array.isArray(res?.data)) return res.data;
+      return [];
+    },
+  });

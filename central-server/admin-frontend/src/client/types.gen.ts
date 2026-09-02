@@ -4,6 +4,11 @@ export type ClientOptions = {
     baseURL: 'http://smartattendance.fastwebcm.local/api/v1' | (string & {});
 };
 
+export type LookupClass = {
+    id: number;
+    class_name: string;
+};
+
 export type UserType = 'student' | 'staff';
 
 export type UserStatus = 'active' | 'inactive' | 'dismissed';
@@ -293,6 +298,16 @@ export type Group = {
     name: string;
     expected_weekly_hours?: number;
     absence_threshold: number;
+};
+
+export type GroupCreate = {
+    name: string;
+    branch_id: number;
+    grouptype_id: number;
+    expected_weekly_hours?: number;
+    absence_threshold: number;
+    member_ids?: Array<number>;
+    supervisor_ids?: Array<number>;
 };
 
 export type GroupResponse = Group & {
@@ -1066,81 +1081,6 @@ export type ListRolesResponses = {
 
 export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
 
-export type ListBranchesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/branches';
-};
-
-export type ListBranchesErrors = {
-    /**
-     * Invalid input
-     */
-    400: unknown;
-    /**
-     * Unauthorized - Invalid or missing token
-     */
-    401: unknown;
-    /**
-     * Resource not found
-     */
-    404: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type ListBranchesResponses = {
-    /**
-     * List of branches
-     */
-    200: Array<BranchResponse>;
-};
-
-export type ListBranchesResponse = ListBranchesResponses[keyof ListBranchesResponses];
-
-export type CreateBranchData = {
-    body: Branch & {
-        /**
-         * branch admin
-         */
-        user_id?: number;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/branches';
-};
-
-export type CreateBranchErrors = {
-    /**
-     * Invalid input
-     */
-    400: unknown;
-    /**
-     * Unauthorized - Invalid or missing token
-     */
-    401: unknown;
-    /**
-     * Resource not found
-     */
-    404: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type CreateBranchResponses = {
-    /**
-     * Branch created successfully
-     */
-    201: BranchResponse;
-};
-
-export type CreateBranchResponse = CreateBranchResponses[keyof CreateBranchResponses];
-
 export type UpdateBranchData = {
     body?: Branch & {
         user_id?: number;
@@ -1256,6 +1196,74 @@ export type ListGroupTypesResponses = {
 
 export type ListGroupTypesResponse = ListGroupTypesResponses[keyof ListGroupTypesResponses];
 
+export type ListBranchesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/lookup/branches';
+};
+
+export type ListBranchesErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListBranchesResponses = {
+    /**
+     * List of all branches in system
+     */
+    200: {
+        success?: boolean;
+        data?: Array<{
+            id?: number;
+            name?: string;
+        }>;
+    };
+};
+
+export type ListBranchesResponse = ListBranchesResponses[keyof ListBranchesResponses];
+
+export type ListClassesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/lookup/classes';
+};
+
+export type ListClassesErrors = {
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListClassesResponses = {
+    /**
+     * List of classes
+     */
+    200: Array<LookupClass>;
+};
+
+export type ListClassesResponse = ListClassesResponses[keyof ListClassesResponses];
+
 export type ListGroupsData = {
     body?: never;
     path?: never;
@@ -1305,7 +1313,7 @@ export type ListGroupsResponses = {
 export type ListGroupsResponse = ListGroupsResponses[keyof ListGroupsResponses];
 
 export type CreateGroupData = {
-    body: Group;
+    body: GroupCreate;
     path?: never;
     query?: never;
     url: '/api/v1/groups';
@@ -1425,6 +1433,76 @@ export type AddGroupMemberResponses = {
 };
 
 export type AddGroupMemberResponse = AddGroupMemberResponses[keyof AddGroupMemberResponses];
+
+export type DeleteGroupData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}';
+};
+
+export type DeleteGroupErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type DeleteGroupResponses = {
+    /**
+     * Group deleted successfully
+     */
+    200: unknown;
+};
+
+export type UpdateGroupData = {
+    body: GroupCreate;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}';
+};
+
+export type UpdateGroupErrors = {
+    /**
+     * Invalid input
+     */
+    400: unknown;
+    /**
+     * Unauthorized - Invalid or missing token
+     */
+    401: unknown;
+    /**
+     * Resource not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type UpdateGroupResponses = {
+    /**
+     * Group updated
+     */
+    200: unknown;
+};
 
 export type RemoveGroupMemberData = {
     body?: never;

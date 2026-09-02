@@ -35,6 +35,19 @@ components:
       description: Internal server error
 
   schemas:
+    LookupClass:
+      type: object
+      required:
+        - id
+        - class_name
+      properties:
+        id:
+          type: integer
+          example: 1
+        class_name:
+          type: string
+          example: Form 1 A
+
     UserType:
       type: string
       enum: [student, staff]
@@ -616,6 +629,39 @@ components:
           type: integer
           example: 3
 
+    GroupCreate:
+      type: object
+      required:
+        - name
+        - branch_id
+        - grouptype_id
+        - absence_threshold
+      properties:
+        name:
+          type: string
+          example: Class A
+        branch_id:
+          type: integer
+          example: 1
+        grouptype_id:
+          type: integer
+          example: 1
+        expected_weekly_hours:
+          type: integer
+          example: 40
+        absence_threshold:
+          type: integer
+          example: 3
+        member_ids:
+          type: array
+          items:
+            type: integer
+          example: [10, 12, 15]
+        supervisor_ids:
+          type: array
+          items:
+            type: integer
+          example: [2]
     GroupResponse:
       allOf:
         - $ref: "#/components/schemas/Group"
@@ -1740,62 +1786,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/v1/branches:
-    post:
-      operationId: createBranch
-      summary: Create a new branch
-      tags: [Branches]
-      description: Creat a new branch or campus within the institution
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "#/components/schemas/Branch"
-                - type: object
-                  properties:
-                    user_id:
-                      type: integer
-                      description: branch admin
-      responses:
-        "201":
-          description: Branch created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BranchResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    get:
-      operationId: listBranches
-      summary: List all branchs
-      tags: [Branches]
-      responses:
-        "200":
-          description: List of branches
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BranchResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /api/v1/branches/{id}:
     put:
       operationId: updateBranch
@@ -1895,6 +1885,59 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/lookup/branches:
+    get:
+      operationId: listBranches
+      summary: List all the available branches in the system
+      tags: [Branch]
+      responses:
+        "200":
+          description: List of all branches in system
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/lookup/classes:
+    get:
+      operationId: listClasses
+      summary: Get classes list for dropdown lookups
+      tags: [Lookups]
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LookupClass"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/v1/groups:
     post:
       operationId: createGroup
@@ -1905,7 +1948,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Group"
+              $ref: "#/components/schemas/GroupCreate"
       responses:
         "201":
           description: Group created
@@ -2048,6 +2091,57 @@ paths:
                   message:
                     type: string
                     example: User added as member successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/groups/{id}:
+    put:
+      operationId: updateGroup
+      summary: Update a group by ID
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreate"
+      responses:
+        "200":
+          description: Group updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group by ID
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group deleted successfully
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

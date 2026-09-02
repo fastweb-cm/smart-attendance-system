@@ -79,9 +79,9 @@ $router->group(['middleware' => [AuthMiddleware::class]], function($router) {
     $router->get('/api/v1/groups/{id}/members', [GroupController::class, 'members']);
     $router->post('/api/v1/groups/{id}/members', [GroupController::class, 'addMember']);
     $router->delete('/api/v1/groups/{id}/members/{userId}', [GroupController::class, 'removeMember']);
-    $router->post('/api/v1/group', [GroupController::class, 'store']);
-    $router->put('/api/v1/group', [GroupController::class, 'edit']);
-    $router->delete('/api/v1/group/{groupId}', [GroupController::class, 'delete']);
+    $router->post('/api/v1/groups', [GroupController::class, 'store']);
+    $router->put('/api/v1/groups/{id}', [GroupController::class, 'edit']);
+    $router->delete('/api/v1/groups/{id}', [GroupController::class, 'delete']);
 
     $router->post('/api/v1/terminal', [TerminalController::class, 'store']);
     $router->put('/api/v1/terminal', [TerminalController::class, 'edit']);

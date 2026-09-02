@@ -165,13 +165,13 @@ export default function GroupsTable({
                           Edit Group
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                        {/* <DropdownMenuItem
                           onClick={() => onDeleteGroup?.(group)}
                           className="gap-2 text-xs font-medium text-rose-600 focus:text-rose-600 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete Group
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </td>

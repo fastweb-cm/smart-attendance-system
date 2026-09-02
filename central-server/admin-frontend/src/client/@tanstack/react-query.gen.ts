@@ -4,8 +4,8 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { addGroupMember, assignUsersToSubgroup, createAnnouncement, createBranch, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteEvent, deleteException, deletePermission, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getAllPermissions, getAttendanceLedger, getAttendanceSessions, getGroupMembers, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listEvents, listExceptions, listGroups, listGroupTypes, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, removeGroupMember, reviewPermission, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
-import type { AddGroupMemberData, AddGroupMemberResponse, AssignUsersToSubgroupData, CreateAnnouncementData, CreateBranchData, CreateBranchResponse, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, DeleteUserResponse, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetAttendanceSessionsData, GetAttendanceSessionsResponse, GetGroupMembersData, GetGroupMembersResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListGroupTypesData, ListGroupTypesResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, RemoveGroupMemberData, RemoveGroupMemberResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
+import { addGroupMember, assignUsersToSubgroup, createAnnouncement, createEvent, createException, createGroup, createGroupType, createSubgroup, createTerminal, createUser, deleteEvent, deleteException, deleteGroup, deletePermission, deleteTerminal, deleteUser, faceEnrollment, faceVerification, fetchLogs, fetchOnePermission, getAllPermissions, getAttendanceLedger, getAttendanceSessions, getGroupMembers, getTerminalBySlug, getUserAttendanceAnalytics, getUserById, listAnnouncements, listBranches, listClasses, listEvents, listExceptions, listGroups, listGroupTypes, listRoles, listSubgroups, listTerminals, listUsers, login, logout, oneException, type Options, partialEditAttendance, refresh, removeGroupMember, reviewPermission, syncAttendanceSummary, syncUsers, terminalAuth, updateBranch, updateGroup, updateTerminal, updateUser, upsertPermission } from '../sdk.gen';
+import type { AddGroupMemberData, AddGroupMemberResponse, AssignUsersToSubgroupData, CreateAnnouncementData, CreateEventData, CreateExceptionData, CreateExceptionResponse, CreateGroupData, CreateGroupTypeData, CreateSubgroupData, CreateTerminalData, CreateTerminalResponse, CreateUserData, CreateUserResponse, DeleteEventData, DeleteExceptionData, DeleteExceptionResponse, DeleteGroupData, DeletePermissionData, DeletePermissionResponse, DeleteTerminalData, DeleteTerminalResponse, DeleteUserData, DeleteUserResponse, FaceEnrollmentData, FaceEnrollmentResponse, FaceVerificationData, FaceVerificationResponse, FetchLogsData, FetchLogsError, FetchLogsResponse, FetchOnePermissionData, FetchOnePermissionResponse, GetAllPermissionsData, GetAllPermissionsResponse, GetAttendanceLedgerData, GetAttendanceLedgerResponse, GetAttendanceSessionsData, GetAttendanceSessionsResponse, GetGroupMembersData, GetGroupMembersResponse, GetTerminalBySlugData, GetTerminalBySlugResponse, GetUserAttendanceAnalyticsData, GetUserAttendanceAnalyticsResponse, GetUserByIdData, GetUserByIdResponse, ListAnnouncementsData, ListAnnouncementsResponse, ListBranchesData, ListBranchesResponse, ListClassesData, ListClassesResponse, ListEventsData, ListEventsResponse, ListExceptionsData, ListExceptionsResponse, ListGroupsData, ListGroupsResponse, ListGroupTypesData, ListGroupTypesResponse, ListRolesData, ListRolesResponse, ListSubgroupsData, ListTerminalsData, ListTerminalsResponse, ListUsersData, ListUsersResponse, LoginData, LoginResponse2, LogoutData, LogoutResponse, OneExceptionData, OneExceptionResponse, PartialEditAttendanceData, PartialEditAttendanceResponse, RefreshData, RefreshResponse, RemoveGroupMemberData, RemoveGroupMemberResponse, ReviewPermissionData, ReviewPermissionResponse, SyncAttendanceSummaryData, SyncAttendanceSummaryResponse, SyncUsersData, SyncUsersResponse, TerminalAuthData, TerminalAuthResponse, UpdateBranchData, UpdateGroupData, UpdateTerminalData, UpdateTerminalResponse, UpdateUserData, UpdateUserResponse, UpsertPermissionData, UpsertPermissionResponse } from '../types.gen';
 
 /**
  * login admin users
@@ -269,43 +269,6 @@ export const listRolesOptions = (options?: Options<ListRolesData>) => queryOptio
     queryKey: listRolesQueryKey(options)
 });
 
-export const listBranchesQueryKey = (options?: Options<ListBranchesData>) => createQueryKey('listBranches', options);
-
-/**
- * List all branchs
- */
-export const listBranchesOptions = (options?: Options<ListBranchesData>) => queryOptions<ListBranchesResponse, AxiosError<DefaultError>, ListBranchesResponse, ReturnType<typeof listBranchesQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await listBranches({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listBranchesQueryKey(options)
-});
-
-/**
- * Create a new branch
- *
- * Creat a new branch or campus within the institution
- */
-export const createBranchMutation = (options?: Partial<Options<CreateBranchData>>): UseMutationOptions<CreateBranchResponse, AxiosError<DefaultError>, Options<CreateBranchData>> => {
-    const mutationOptions: UseMutationOptions<CreateBranchResponse, AxiosError<DefaultError>, Options<CreateBranchData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await createBranch({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
 /**
  * Update branch details
  */
@@ -356,6 +319,42 @@ export const listGroupTypesOptions = (options?: Options<ListGroupTypesData>) => 
         return data;
     },
     queryKey: listGroupTypesQueryKey(options)
+});
+
+export const listBranchesQueryKey = (options?: Options<ListBranchesData>) => createQueryKey('listBranches', options);
+
+/**
+ * List all the available branches in the system
+ */
+export const listBranchesOptions = (options?: Options<ListBranchesData>) => queryOptions<ListBranchesResponse, AxiosError<DefaultError>, ListBranchesResponse, ReturnType<typeof listBranchesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listBranches({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listBranchesQueryKey(options)
+});
+
+export const listClassesQueryKey = (options?: Options<ListClassesData>) => createQueryKey('listClasses', options);
+
+/**
+ * Get classes list for dropdown lookups
+ */
+export const listClassesOptions = (options?: Options<ListClassesData>) => queryOptions<ListClassesResponse, AxiosError<DefaultError>, ListClassesResponse, ReturnType<typeof listClassesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listClasses({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listClassesQueryKey(options)
 });
 
 export const listGroupsQueryKey = (options?: Options<ListGroupsData>) => createQueryKey('listGroups', options);
@@ -451,6 +450,40 @@ export const addGroupMemberMutation = (options?: Partial<Options<AddGroupMemberD
     const mutationOptions: UseMutationOptions<AddGroupMemberResponse, AxiosError<DefaultError>, Options<AddGroupMemberData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await addGroupMember({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a group by ID
+ */
+export const deleteGroupMutation = (options?: Partial<Options<DeleteGroupData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteGroupData>> => {
+    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<DeleteGroupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteGroup({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update a group by ID
+ */
+export const updateGroupMutation = (options?: Partial<Options<UpdateGroupData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<UpdateGroupData>> => {
+    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<UpdateGroupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateGroup({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
