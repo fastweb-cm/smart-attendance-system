@@ -1,0 +1,158 @@
+- Stop fprintd if already running on host pc
+sudo systemctl stop fprintd
+
+sudo systemctl mask fprintd
+
+
+Detection test - to see whether container can detect scanner
+docker exec -i terminal-api python - <<'EOF'
+import gi
+gi.require_version('FPrint', '2.0')
+from gi.repository import FPrint
+
+ctx = FPrint.Context()
+devs = ctx.get_devices()
+print("devices found:", len(devs))
+for d in devs:
+    print(d.get_driver(), "|", d.get_name(),
+          "| identify:", d.has_feature(FPrint.DeviceFeature.IDENTIFY))
+EOF
+devices found: 1
+uru4000 | Digital Persona U.are.U 4000/4000B/4500 | identify: True
+libusb: warning [libusb_exit] device 2.6 still referenced
+libusb: warning [libusb_exit] device 2.1 still referenced
+
+Next step is proving the full cycle your app needs: enroll, 
+serialize to bytes (what you'd store in MySQL), deserialize, then verify and identify.
+
+docker exec -i terminal-api python - <<'EOF'
+import gi
+gi.require_version('FPrint', '2.0')
+from gi.repository import FPrint
+
+ctx = FPrint.Context()
+dev = ctx.get_devices()[0]
+dev.open_sync()
+
+def on_progress(device, done, print_, data, error):
+    if error:
+        print("  retry:", error.message)
+    else:
+        print(f"  stage {done}/{device.get_nr_enroll_stages()} ok")
+
+# 1. ENROLL
+tpl = FPrint.Print.new(dev)
+tpl.set_finger(FPrint.Finger.RIGHT_INDEX)
+tpl.set_username("test-user-1")
+print("ENROLL: place and lift your finger repeatedly...")
+enrolled = dev.enroll_sync(tpl, None, on_progress, None)
+
+# 2. SERIALIZE (this is what goes in the DB)
+blob = enrolled.serialize()
+print("template bytes:", len(blob))
+
+# 3. DESERIALIZE (what you'd load back from the DB)
+stored = FPrint.Print.deserialize(blob)
+
+# 4. VERIFY (1:1)
+print("VERIFY: place the same finger...")
+matched, _ = dev.verify_sync(stored, None, None, None)
+print("verify matched:", matched)
+
+# 5. IDENTIFY (1:N against a gallery)
+print("IDENTIFY: place a finger...")
+match, found = dev.identify_sync([stored], None, None, None)
+print("identify result:", found.get_username() if found else None)
+
+dev.close_sync()
+EOF
+
+- further test - place same finger and different fingers
+docker exec -i terminal-api python - <<'EOF'
+import gi, time
+gi.require_version('FPrint', '2.0')
+from gi.repository import FPrint
+
+ctx = FPrint.Context()
+dev = ctx.get_devices()[0]
+dev.open_sync()
+try:
+    def on_progress(device, done, print_, data, error):
+        print("  retry:", error.message) if error else print(f"  stage {done}/{device.get_nr_enroll_stages()} ok")
+
+    tpl = FPrint.Print.new(dev)
+    tpl.set_finger(FPrint.Finger.RIGHT_INDEX)
+    tpl.set_username("test-user-1")
+    print("ENROLL with your RIGHT INDEX finger...")
+    enrolled = dev.enroll_sync(tpl, None, on_progress, None)
+    stored = FPrint.Print.deserialize(enrolled.serialize())
+
+    for label in ("SAME finger (right index)", "DIFFERENT finger"):
+        print(f"\n--- {label}: get ready, scanning starts in 4s ---")
+        time.sleep(4)
+        print("VERIFY: place finger now")
+        matched, _ = dev.verify_sync(stored, None, None, None)
+        print("  verify matched:", matched)
+        print("IDENTIFY: place finger again")
+        match, _ = dev.identify_sync([stored], None, None, None)
+        print("  identify:", match.get_username() if match else None)
+finally:
+    dev.close_sync()
+EOF
+
+- ultimate test
+docker exec -i terminal-api python -u - <<'EOF'
+import gi
+gi.require_version('FPrint', '2.0')
+from gi.repository import FPrint
+
+ctx = FPrint.Context()
+dev = ctx.get_devices()[0]
+dev.open_sync()
+try:
+    def prog(device, done, p, data, error):
+        if error:
+            print("   -> bad scan, try again:", error.message)
+        else:
+            print(f"   -> scan {done} of {device.get_nr_enroll_stages()} accepted. LIFT your finger, then place it again.")
+
+    tpl = FPrint.Print.new(dev)
+    tpl.set_finger(FPrint.Finger.RIGHT_INDEX)
+    tpl.set_username("test-user-1")
+
+    print("\n=== STEP 1: ENROLL ===")
+    print("Place your RIGHT INDEX finger on the scanner now (5 scans needed).")
+    enrolled = dev.enroll_sync(tpl, None, prog, None)
+    stored = FPrint.Print.deserialize(enrolled.serialize())
+    print("Enrollment complete.\n")
+
+    for i in range(1, 4):
+        print(f"=== STEP 2, try {i} of 3 ===")
+        print("Place your RIGHT INDEX finger again (the same one). Waiting...")
+        matched, _ = dev.verify_sync(stored, None, None, None)
+        print("   RESULT:", "MATCH" if matched else "NO MATCH", "\n")
+finally:
+    dev.close_sync()
+EOF
+
+
+How to maximize enrollment quality in production:
+
+1. Force Angular Variety during Enrollment: Rather than having the user press the exact same spot 5 times, instruct them via the Next.js UI to shift slightly on each step:
+
+    Stage 1: Flat center
+
+    Stage 2: Slightly rolled to the left
+
+    Stage 3: Slightly rolled to the right
+
+    Stage 4: Top tip of finger
+
+    Stage 5: Lower pad of finger
+    This builds a wide, high-coverage minutiae map in the database, dramatically reducing false rejections during daily verification.
+
+    Enroll Multi-Finger Templates: Store at least 2 fingers per user (e.g., Right Index and Left Index) in MySQL. If one finger fails due to a superficial cut or grease, the user can immediately use their backup finger.
+
+2. Verification / Identification Accuracy: Retry MechanismYour thought: "Subsequent times (verify/identify) ensure a retry mechanism $X$ times.
+"Refinement: Implement an automated non-blocking retry loop in FastAPI with clear real-time feedback sent to Next.js.Instead of failing immediately on the first bad alignment:Configure the backend to allow up to 3 consecutive hardware verification checks over a 3-second window per attempt.
+If attempt 1 fails, keep the sensor active, trigger a slight vibration or UI prompt ("Hold steady or press firmer"), and immediately run attempt 2.

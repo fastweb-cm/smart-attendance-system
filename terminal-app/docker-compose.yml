@@ -45,6 +45,9 @@ services:
     devices:
       - "/dev/bus/usb:/dev/bus/usb"
     environment:
+      - CUDA_VISIBLE_DEVICES=-1 # <--- FORCE TENSORFLOW TO USE CPU
+      - TF_CPP_MIN_LOG_LEVEL=2 # <--- SUPPRESS TENSORFLOW WARNINGS
+      - DEEPFACE_HOME=/app/.deepface # <--- EXPLICIT DEEPFACE LOCATION
       - DB_HOST=db
       - DB_USER=root
       - DB_PASSWORD=Password@2025
@@ -52,8 +55,10 @@ services:
       - ADMIN_API_URL=http://localhost:8087/api/v1 # The Central Admin IP
       - CENTRAL_API_URL=http://smartattendance.fastwebcm.local/api/v1
     volumes:
+      - /dev/bus/usb:/dev/bus/usb
       - ./api/sync_config.json:/app/sync_config.json
       - ./api/.env:/app/.env
+      - deepface_weights:/app/.deepface
     restart: always
     extra_hosts:
       - "smartattendance.fastwebcm.local:host-gateway"
@@ -97,3 +102,4 @@ services:
 
 volumes:
   terminal_data:
+  deepface_weights:

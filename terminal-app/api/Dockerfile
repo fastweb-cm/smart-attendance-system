@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System dependencies: Added libfprint, libusb, and build tools for hardware access
+# System dependencies: Added libcairo2-dev and cmake for PyGObject/pycairo compilation
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
@@ -17,17 +17,17 @@ RUN apt-get update && apt-get install -y \
     python3-gi-cairo \
     gobject-introspection \
     libgirepository1.0-dev \
+    libcairo2-dev \
+    cmake \
     fprintd \
     build-essential \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --default-timeout=5000 tensorflow==2.20.0
-RUN pip install --no-cache-dir --default-timeout=5000 opencv-python==4.13.0.92
-RUN pip install --no-cache-dir --default-timeout=5000 cryptography==42.0.5
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir --default-timeout=5000 -r requirements.txt
+# Use a bind cache mount so pip retains downloaded wheels even if the build fails later
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --default-timeout=5000 -r requirements.txt
 
 # Copy and run preload script to bake weights into the image
 COPY preload_models.py .

@@ -1,7 +1,9 @@
 import numpy as np
 import cv2
+import json
+import asyncio
 from deepface import DeepFace
-from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException, status
+from fastapi import UploadFile, File, Form, APIRouter, Depends, HTTPException, status, BackgroundTasks, Form
 import time
 import faiss
 from sqlalchemy.orm import Session
@@ -17,8 +19,8 @@ from app.crud.attendance_crud import process_attendance_step
 from app.schemas.terminal import TerminalConfigUpdateRequest
 from app.core.config import update_terminal_id
 from app.crud.face_buffer import create_face_buffer_entry, get_face_buffer_count_for_user, get_face_buffers_by_user_id, clear_face_buffers_for_user
-import app.services.fingerprint_service as fingerprint_service
-from gi.repository import GLib
+from fastapi.responses import StreamingResponse
+from app.services.fingerprint_service import fp_manager
 
 # Creates a router object that will hold all routes in this file
 router = APIRouter()
@@ -425,72 +427,68 @@ async def update_terminal_config(payload: TerminalConfigUpdateRequest):
         )
 
 
-@router.post("/verify/fingerprint", response_model=VerifyResponse)
-async def verify_fingerprint(
+@router.post("/verify/fingerprint/session/start")
+async def start_fingerprint_session(
+    background_tasks: BackgroundTasks,
+    action: str = Form(...),  # "ENROLL" or "VERIFY"
+    terminal_id: int = Form(...),
     user_id: int | None = Form(None),
     event_id: int | None = Form(None),
-    terminal_id: int = Form(...),
-    auth_type: str = Form(...),
-    auth_type_id: int = Form(...),
-    db: Session = Depends(get_db),
+    auth_type: str = Form("fingerprint"),
+    auth_type_id: int = Form(2),
 ):
-    context = "event" if event_id is not None else "daily"
-    user_details = None
-    if user_id is not None:
-        user_details = get_user_details_by_id(db, user_id, context)
-        if user_details is None:
-            raise HTTPException(status_code=404, detail="User not found")
+    """Starts a fingerprint hardware session and returns a session token."""
+    params = {
+        "user_id": user_id,
+        "event_id": event_id,
+        "terminal_id": terminal_id,
+        "auth_type": auth_type,
+        "auth_type_id": auth_type_id
+    }
 
     try:
-        new_template = fingerprint_service.capture_and_extract()
+        session = fp_manager.create_session(action, params)
+        loop = asyncio.get_running_loop()
+
+        # Offload libfprint calls to worker thread
+        background_tasks.add_task(
+            fp_manager.execute_session_task, session, loop)
+
+        return {"status": "ok", "session_id": session.session_id}
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except GLib.Error:
         raise HTTPException(
-            status_code=408, detail="No finger detected. Please try again.")
+            status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
-    verified = False
-    best_user = None
-    attendance_status = None
 
-    if user_id is not None:
-        stored = get_user_fingerprint_template_by_id(db, user_id)
-        if stored is None:
-            user_record = db.query(User).filter(User.id == user_id).first()
-            user_record.fingerprint_template = new_template
-            user_record.sync_status = "pending"
-            db.commit()
-            verified = True
-            best_user = user_id
-        else:
-            verified, _ = fingerprint_service.match_templates(
-                stored, new_template)
-            best_user = user_id if verified else None
-    else:
-        known = get_all_fingerprint_templates(db)  # {user_id: template_bytes}
-        best_user, _ = fingerprint_service.identify(new_template, known)
-        verified = best_user is not None
+@router.get("/verify/fingerprint/session/stream/{session_id}")
+async def stream_fingerprint_session(session_id: str):
+    """SSE endpoint streaming live mid-scan feedback to browser."""
+    session = fp_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Session expired or invalid")
 
-    if not user_details and verified and best_user is not None:
-        user_details = get_user_details_by_id(db, best_user, context)
+    async def event_generator():
+        try:
+            while session.is_active or not session.queue.empty():
+                try:
+                    data = await asyncio.wait_for(session.queue.get(), timeout=1.0)
+                    yield f"event: {data['event']}\ndata: {json.dumps(data)}\n\n"
 
-    if verified and user_details:
-        group_policy = get_user_auth_policy(
-            db, user_details.id, terminal_id, context, event_id)
-        result = process_attendance_step(
-            db, user_details.id, terminal_id, auth_type, group_policy, auth_type_id, event_id, context)
-        attendance_status = result["status"]
-        next_step = result["next_step"]
-        attendance_type = result["attendance_type"]
+                    # Close connection on terminal events to prevent EventSource auto-reconnect
+                    if data["event"] in ("success", "enroll_done", "failed", "error"):
+                        break
+                except asyncio.TimeoutError:
+                    # Keepalive ping to prevent proxy connection timeout
+                    yield ": ping\n\n"
+        finally:
+            fp_manager.cancel_session(session_id)
 
-    if attendance_status == "error":
-        raise HTTPException(
-            status_code=400, detail="Invalid attendance action")
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-    if verified and user_details:
-        return VerifyResponse(verified=True, attendance_status=attendance_status, next_step=next_step,
-                              attendance_type=attendance_type,
-                              user=UserResponse(id=user_details.id, groupId=user_details.group_id,
-                                                subgroupId=user_details.subgroup_id,
-                                                fName=user_details.fname, lName=user_details.lname))
-    return VerifyResponse(verified=False, user=None)
+
+@router.post("/verify/fingerprint/session/cancel/{session_id}")
+async def cancel_fingerprint_session(session_id: str):
+    """Explicit endpoint when user cancels or walks away."""
+    fp_manager.cancel_session(session_id)
+    return {"status": "ok", "message": "Session cancelled"}
