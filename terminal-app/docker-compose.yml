@@ -54,19 +54,25 @@ services:
       - DB_NAME=db_terminal
       - ADMIN_API_URL=http://localhost:8087/api/v1 # The Central Admin IP
       - CENTRAL_API_URL=http://smartattendance.fastwebcm.local/api/v1
+
+    device_cgroup_rules:
+      - "c 189:* rmw" # allow any USB device node (major 189), including ones created later
     volumes:
       - /dev/bus/usb:/dev/bus/usb
-      - ./api/sync_config.json:/app/sync_config.json
-      - ./api/.env:/app/.env
+      - ./api:/app # <--- Syncs your local code instantly!
+      # - ./api/sync_config.json:/app/sync_config.json
+      # - ./api/.env:/app/.env
       - deepface_weights:/app/.deepface
     restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # <--- Enables live reloading
     extra_hosts:
       - "smartattendance.fastwebcm.local:host-gateway"
 
-  # Next.js Frontend
+  # Next.js Frontend (Development Mode with Hot-Reloading)
   terminal-ui:
     build:
       context: ./terminal-frontend
+      target: development # <--- Targets the hot-reloading dev container
       args:
         - NEXT_PUBLIC_LOCAL_SERVICE_URL=http://localhost:8085
         - NEXT_PUBLIC_CENTRAL_API_URL=https://api.smartattendance.fastwebcm.org/api/v1
@@ -81,6 +87,9 @@ services:
       - DB_NAME=db_terminal
       - TERMINAL_CONFIG_DIR=/app/terminal-configs
     volumes:
+      - ./terminal-frontend:/app # <--- Syncs live code changes instantly
+      - /app/node_modules # <--- Prevents host node_modules clash
+      - /app/.next # <--- Prevents container build cache clash
       - ./terminal-frontend/terminal-configs:/app/terminal-configs
     depends_on:
       db:

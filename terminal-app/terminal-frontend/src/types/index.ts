@@ -22,6 +22,26 @@ export interface WebcamCaptureModalProps {
   attendance_type?: string | null;
 }
 
+export interface FingerPrintProps {
+  open: boolean;
+  onClose: () => void;
+  onResult: (
+    status: "success" | "error" | "capturing" | "verifying" | "idle",
+    message: string,
+    user?: User,
+    attendance_status?: string,
+    next_step?: AuthType | null,
+    attendance_type?: string | null
+  ) => void;
+  onFeedback: (msg: string) => void;
+  userId: number | null;
+  auth_type: string;
+  terminal_id: number | null;
+  auth_type_id: number | null;
+  attendance_type?: string | null;
+  action: "ENROLL" | "VERIFY";
+}
+
 export interface AuthProps {
   onFeedback: (msg: string) => void;
   onResult: (status: "success" | "error",message: string, user?: User | null, attendance_status?: string | null, next_step?: AuthType | null, attendance_type?: string | null) => void;

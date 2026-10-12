@@ -12,7 +12,8 @@ export default function AuthStepRenderer({ step, onSuccess, onFailure, userId, a
       return <CardAuth onSuccess={onSuccess} onFailure={onFailure} authType={auth_type} userId={userId} terminalId={terminal_id} authTypeId={auth_type_id}/>;
 
     case "fingerprint":
-      return <FingerprintAuth onSuccess={onSuccess} onFailure={onFailure} authType={auth_type} userId={userId} terminalId={terminal_id} authTypeId={auth_type_id} />;
+      // eslint-disable-next-line
+      return <FingerprintAuth onSuccess={onSuccess} onFailure={onFailure} userId={userId} auth_type={auth_type} terminal_id={terminal_id} auth_type_id={auth_type_id} action={(step as any).action || "VERIFY"} />;
 
     default:
       return <div>Unknown auth type</div>;

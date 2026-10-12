@@ -1,98 +1,115 @@
 "use client";
 
-import { AuthProps } from "@/types";
+import { useEffect, useRef } from "react";
 import apiClient from "@/lib/axiosClient";
-import { useEffect, useRef, useState } from "react";
-import { Fingerprint } from "lucide-react";
+import { FingerPrintProps } from "@/types";
 
-const MAX_RETRIES = 3;
+export default function FingerprintVerify({
+  open, onClose, onResult, onFeedback,
+  userId, terminal_id, auth_type_id, action,
+}: FingerPrintProps) {
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
-export default function FingerprintVerify({ onResult, onFeedback, ...props }: AuthProps) {
-  const [status, setStatus] = useState<"scanning" | "retrying" | "error">("scanning");
-  const attemptRef = useRef(0);
-  const hasFiredRef = useRef(false); // guards against double-fire in React strict mode / re-renders
-
-  const runScan = async () => {
-    setStatus("scanning");
-    onFeedback?.("Place your finger on the scanner...");
-
-    try {
-      const form = new FormData();
-      if (props?.userId) form.append("user_id", props.userId.toString());
-      if (props?.terminalId) form.append("terminal_id", props.terminalId.toString());
-      if (props?.authType) form.append("auth_type", props.authType);
-      if (props?.authTypeId) form.append("auth_type_id", props.authTypeId.toString());
-
-      const res = await apiClient.post("verify/fingerprint", form);
-
-      if (res.data.verified) {
-        onResult(
-          "success",
-          "Verification successful.",
-          res.data?.user,
-          res.data?.attendance_status,
-          res.data?.next_step ?? null,
-          res.data?.attendance_type ?? null
-        );
-      } else {
-        handleRetryableFailure("Fingerprint not recognized.");
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      const httpStatus = error.response?.status;
-      const detail = error.response?.data?.detail;
-      const errorMsg = typeof detail === "string"
-        ? detail
-        : (Array.isArray(detail) ? detail[0].msg : "Fingerprint scan failed");
-
-      // 408 = no finger was placed in time — this is expected/common, retry silently.
-      // 503 = reader hardware not found — this is fatal, don't retry.
-      if (httpStatus === 408) {
-        handleRetryableFailure(errorMsg);
-      } else if (httpStatus === 503) {
-        setStatus("error");
-        onResult("error", errorMsg);
-      } else if (httpStatus === 404) {
-        // user not found (only relevant in identify-only / user_id flows)
-        onResult("error", errorMsg);
-      } else {
-        handleRetryableFailure(errorMsg);
-      }
-    }
-  };
-
-  const handleRetryableFailure = (msg: string) => {
-    attemptRef.current += 1;
-    if (attemptRef.current >= MAX_RETRIES) {
-      setStatus("error");
-      onResult("error", `${msg} Too many attempts.`);
-      return;
-    }
-    setStatus("retrying");
-    onFeedback?.(`${msg} Retry ${attemptRef.current}/${MAX_RETRIES}`);
-    setTimeout(runScan, 800);
-  };
+  // Always call the LATEST callbacks without making them effect dependencies
+  const onCloseRef = useRef(onClose);
+  const onResultRef = useRef(onResult);
+  const onFeedbackRef = useRef(onFeedback);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    onResultRef.current = onResult;
+    onFeedbackRef.current = onFeedback;
+  });
 
   useEffect(() => {
-    if (hasFiredRef.current) return;
-    hasFiredRef.current = true;
-    runScan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!open) return;
+    let isMounted = true;
 
-  return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`w-24 h-24 rounded-full flex items-center justify-center transition-colors ${
-          status === "error" ? "bg-rose-100" : "bg-blue-100 animate-pulse"
-        }`}
-      >
-        <Fingerprint className={`w-12 h-12 ${status === "error" ? "text-rose-600" : "text-blue-600"}`} />
-      </div>
-      <p className="mt-4 font-bold text-slate-600">
-        {status === "error" ? "Scan failed" : "Scan your finger"}
-      </p>
-      <span className="sr-only">Ready for fingerprint input</span>
-    </div>
-  );
+    const closeStream = () => {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+    };
+
+    const start = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("action", action || "VERIFY");
+        if (terminal_id) formData.append("terminal_id", terminal_id.toString());
+        if (userId) formData.append("user_id", userId.toString());
+        if (auth_type_id) formData.append("auth_type_id", auth_type_id.toString());
+
+        const startRes = await apiClient.post("verify/fingerprint/session/start", formData);
+        const { session_id } = startRes.data;
+
+        if (!isMounted) {   // unmounted while the request was in flight
+          apiClient.post(`verify/fingerprint/session/cancel/${session_id}`).catch(() => {});
+          return;
+        }
+        sessionIdRef.current = session_id;
+
+        const baseUrl = process.env.NEXT_PUBLIC_LOCAL_SERVICE_URL || "http://localhost:8085";
+        const es = new EventSource(`${baseUrl}/verify/fingerprint/session/stream/${session_id}`);
+        eventSourceRef.current = es;
+
+        const feedback = (e: Event) => {
+          const d = JSON.parse((e as MessageEvent).data);
+          onFeedbackRef.current(d.hint || "Place finger on scanner");
+        };
+        es.addEventListener("waiting", feedback);
+        es.addEventListener("enroll_required", feedback);
+
+        es.addEventListener("enroll_progress", (e) => {
+          const d = JSON.parse((e as MessageEvent).data);
+          onFeedbackRef.current(`Scan ${d.stage}/${d.total}: ${d.hint}`);
+        });
+        es.addEventListener("attempt_failed", (e) => {
+          const d = JSON.parse((e as MessageEvent).data);
+          onFeedbackRef.current(`Attempt ${d.attempt}/${d.max}: ${d.hint}`);
+        });
+
+        es.addEventListener("success", (e) => {
+          const d = JSON.parse((e as MessageEvent).data);
+          closeStream();
+          onCloseRef.current();
+          onResultRef.current("success", "Fingerprint verified successfully.", d.user,
+            d.attendance_status, d.next_step ?? null, d.attendance_type ?? null);
+        });
+
+        es.addEventListener("failed", (e) => {
+          const d = JSON.parse((e as MessageEvent).data);
+          closeStream();
+          onCloseRef.current();
+          onResultRef.current("error", d.reason || "Fingerprint verification failed.");
+        });
+
+        // "error" is both our server-sent event and the browser's connection error
+        es.addEventListener("error", (e) => {
+          const raw = (e as MessageEvent).data;
+          closeStream();
+          if (raw) {   // sent by the backend
+            onCloseRef.current();
+            onResultRef.current("error", JSON.parse(raw).message || "Fingerprint scanner error.");
+          }
+        });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        if (!isMounted) return;
+        onCloseRef.current();
+        onResultRef.current("error", error.response?.data?.detail || "Failed to initialize fingerprint scanner.");
+      }
+    };
+
+    start();
+
+    return () => {
+      isMounted = false;
+      closeStream();
+      const sid = sessionIdRef.current;
+      sessionIdRef.current = null;
+      if (sid) apiClient.post(`verify/fingerprint/session/cancel/${sid}`).catch(() => {});
+    };
+    // ONLY inputs that should restart a session. Never the callbacks.
+  }, [open, userId, terminal_id, auth_type_id, action]);
+
+  return null;
 }
