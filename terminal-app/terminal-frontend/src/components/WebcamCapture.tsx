@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-toastify";
 import apiClient from "@/lib/axiosClient";
 import { WebcamCaptureModalProps } from "@/types";
 
@@ -24,20 +23,16 @@ export default function WebcamCaptureModal({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number | null>(null);
-
   const capturedRef = useRef(false);
 
   const [loadingModels, setLoadingModels] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFrameValid, setIsFrameValid] = useState(false);
 
-  const DETECTION_INTERVAL = 200; // 5 fps
+  const DETECTION_INTERVAL = 150; // Fast 6.6 FPS check loop
+  const TOTAL_CAPTURES = 5; // 5 clean frames is more than enough for embedding generation
 
-  const totalCaptures = 10;
-
-  /*
-   Load face-api models
-  */
   useEffect(() => {
     const load = async () => {
       try {
@@ -45,226 +40,188 @@ export default function WebcamCaptureModal({
           faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
         ]);
-
         setLoadingModels(false);
       } catch (err) {
         console.error(err);
         setError("Failed to load face models.");
       }
     };
-
     load();
   }, []);
 
-  /*
-   Stop webcam
-  */
   const stopWebcam = () => {
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
-
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   };
 
   /*
-   Blur Detection
+   Reasonable lighting safety check (replaces broken average brightness)
   */
-  const isBlurry = (canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return true;
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    let sum = 0;
-
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      sum += imageData.data[i];
-    }
-
-    const avg = sum / (imageData.data.length / 4);
-
-    return avg < 50;
-  };
-
-  /*
-   Lighting Check
-  */
-  const isTooDark = (canvas: HTMLCanvasElement) => {
+  const checkLighting = (canvas: HTMLCanvasElement): boolean => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return true;
 
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let totalLuminance = 0;
+    const sampleStep = 16; // Speed up execution by sampling pixels
 
-    let brightness = 0;
-
-    for (let i = 0; i < pixels.length; i += 4) {
-      brightness += (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+    for (let i = 0; i < pixels.length; i += 4 * sampleStep) {
+      // Standard perceived luminance formula
+      totalLuminance += 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
     }
 
-    brightness /= pixels.length / 4;
-
-    return brightness < 60;
+    const avgLuminance = totalLuminance / (pixels.length / (4 * sampleStep));
+    return avgLuminance >= 35; // Lower threshold to allow ambient room lighting
   };
 
   /*
-   Capture Image
+   Capture loop with retry resilience
   */
   const captureMultiple = async (video: HTMLVideoElement) => {
-  const embeddingsImages: Blob[] = [];
+    const embeddingsImages: Blob[] = [];
+    let attempts = 0;
 
-  for (let i = 0; i < totalCaptures; i++) {
-    setFeedback(`Capturing ${i + 1}/${totalCaptures}... Hold still`);
+    while (embeddingsImages.length < TOTAL_CAPTURES && attempts < TOTAL_CAPTURES * 3) {
+      attempts++;
+      setFeedback(`Capturing template ${embeddingsImages.length + 1}/${TOTAL_CAPTURES}...`);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      if (ctx) {
+        // Render unmirrored frame to sending canvas
+        ctx.drawImage(video, 0, 0);
 
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
+        if (!checkLighting(canvas)) {
+          setFeedback("Environment too dark. Adjust room lighting.");
+          await new Promise((r) => setTimeout(r, 200));
+          continue;
+        }
 
-    if (isBlurry(canvas)) {
-      setFeedback("Image blurry. Hold still.");
+        const blob: Blob | null = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.9)
+        );
+
+        if (blob) {
+          embeddingsImages.push(blob);
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 200)); // 200ms spacing between shots
+    }
+
+    if (embeddingsImages.length < TOTAL_CAPTURES) {
+      capturedRef.current = false;
+      setFeedback("Capture interrupted. Please try again.");
       return;
     }
 
-    if (isTooDark(canvas)) {
-      setFeedback("Lighting too dark.");
-      return;
+    const formData = new FormData();
+    formData.append("user_id", String(userId ?? 17));
+
+    embeddingsImages.forEach((img) => {
+      formData.append("images", img);
+    });
+
+    stopWebcam();
+    onClose();
+    onCaptureStart();
+
+    try {
+      await apiClient.post("enroll-face", formData);
+      onResult("success", "Face template successfully registered.");
+    } catch (error: any) {
+      onResult("error", error.response?.data?.detail || "Face Registration failed");
     }
-
-    const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.95)
-    );
-
-    if (blob) embeddingsImages.push(blob);
-
-    // wait 400ms between captures
-    await new Promise((r) => setTimeout(r, 400));
-  }
-
-  const formData = new FormData();
-  formData.append("user_id", String(17));
-
-  embeddingsImages.forEach((img) => {
-    formData.append("images", img);
-  });
-
-  stopWebcam()
-  onClose()
-  onCaptureStart()
-
-  try {
-    await apiClient.post("enroll-face", formData);
-
-    onResult(
-      "success",
-      "Face template successfully registered."
-    );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    onResult(
-      "error",
-      error.response?.data?.detail || "Face Registration failed"
-    );
-  }
-};
+  };
 
   /*
-   Detection Loop
+   Detection Loop with relaxed thresholds
   */
   const detect = async () => {
-  const video = videoRef.current;
+    const video = videoRef.current;
+    if (!video || capturedRef.current) return;
 
-  if (!video || capturedRef.current) return;
+    const detection = await faceapi
+      .detectSingleFace(
+        video,
+        new faceapi.TinyFaceDetectorOptions({
+          inputSize: 224, // Increased input size for better pose tolerance
+          scoreThreshold: 0.4, // Lower score threshold so slight turns aren't ignored
+        })
+      )
+      .withFaceLandmarks();
 
-  const detection = await faceapi
-    .detectSingleFace(
-      video,
-      new faceapi.TinyFaceDetectorOptions({
-        inputSize: 160,
-        scoreThreshold: 0.5,
-      })
-    )
-    .withFaceLandmarks();
+    if (!detection) {
+      setFeedback("No face detected. Look at the camera.");
+      setIsFrameValid(false);
+      setTimeout(() => {
+        animationRef.current = requestAnimationFrame(detect);
+      }, DETECTION_INTERVAL);
+      return;
+    }
 
-  if (!detection) {
-    setFeedback("No face detected.");
+    const box = detection.detection.box;
 
-    setTimeout(() => {
-      animationRef.current = requestAnimationFrame(detect);
-    }, DETECTION_INTERVAL);
+    // 1. Relaxed distance check (15% frame width instead of 25%)
+    const faceWidthRatio = box.width / video.videoWidth;
+    if (faceWidthRatio < 0.15) {
+      setFeedback("Move slightly closer");
+      setIsFrameValid(false);
+      setTimeout(() => {
+        animationRef.current = requestAnimationFrame(detect);
+      }, DETECTION_INTERVAL);
+      return;
+    }
 
-    return;
-  }
+    // 2. Relaxed centering check (30% bounding tolerance instead of 15%)
+    const centerX = video.videoWidth / 2;
+    const centerY = video.videoHeight / 2;
+    const faceX = box.x + box.width / 2;
+    const faceY = box.y + box.height / 2;
 
-  const box = detection.detection.box;
+    const offsetX = Math.abs(centerX - faceX);
+    const offsetY = Math.abs(centerY - faceY);
+    const toleranceX = video.videoWidth * 0.3;
+    const toleranceY = video.videoHeight * 0.3;
 
-  const faceWidthRatio = box.width / video.videoWidth;
+    if (offsetX > toleranceX || offsetY > toleranceY) {
+      setFeedback("Center your face in the box");
+      setIsFrameValid(false);
+      setTimeout(() => {
+        animationRef.current = requestAnimationFrame(detect);
+      }, DETECTION_INTERVAL);
+      return;
+    }
 
-if (faceWidthRatio < 0.25) {
-  setFeedback("Move closer to the camera");
+    // Pass quality checks
+    setIsFrameValid(true);
+    setFeedback("Hold still... capturing");
+    capturedRef.current = true;
 
-  setTimeout(() => {
-    animationRef.current = requestAnimationFrame(detect);
-  }, DETECTION_INTERVAL);
+    await captureMultiple(video);
+  };
 
-  return;
-}
-
-  const centerX = video.videoWidth / 2;
-  const centerY = video.videoHeight / 2;
-
-  const faceX = box.x + box.width / 2;
-  const faceY = box.y + box.height / 2;
-
-  const offsetX = Math.abs(centerX - faceX);
-  const offsetY = Math.abs(centerY - faceY);
-
-  const threshold = video.videoWidth * 0.15;
-
-  if (offsetX > threshold || offsetY > threshold) {
-    setFeedback("Center your face.");
-
-    setTimeout(() => {
-      animationRef.current = requestAnimationFrame(detect);
-    }, DETECTION_INTERVAL);
-
-    return;
-  }
-
-  setFeedback("Hold still... capturing");
-
-  capturedRef.current = true;
-
-  await captureMultiple(video);
-};
-
-  /*
-   Start Webcam
-  */
   useEffect(() => {
     if (!open || loadingModels) return;
 
     const start = async () => {
       try {
         capturedRef.current = false;
-
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
+          video: { width: 640, height: 480, facingMode: "user" },
         });
 
         streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-
           videoRef.current.onloadedmetadata = async () => {
             await videoRef.current?.play();
             detect();
@@ -276,43 +233,53 @@ if (faceWidthRatio < 0.25) {
     };
 
     start();
-
     return () => stopWebcam();
   }, [open, loadingModels]);
 
-  /*
-   UI
-  */
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Record Attendance</DialogTitle>
-          <DialogDescription>
-            Align your face with the camera.
-          </DialogDescription>
+          <DialogTitle>Face Registration</DialogTitle>
+          <DialogDescription>Position your face naturally in the camera frame.</DialogDescription>
         </DialogHeader>
 
-        {error && (
-          <div className="p-3 bg-red-100 text-red-600 rounded">{error}</div>
-        )}
+        {error && <div className="p-3 bg-red-100 text-red-600 rounded">{error}</div>}
 
         {!error && (
           <div className="flex flex-col items-center gap-4">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full h-64 rounded-xl bg-black object-cover"
-            />
+            <div className="relative w-full h-72 rounded-xl overflow-hidden bg-black flex items-center justify-center">
+              {/* Mirrored video preview for user comfort */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover transform -scale-x-100"
+              />
+
+              {/* Visual Oval Framing Target */}
+              <div
+                className={`absolute w-48 h-60 rounded-[50%] border-4 transition-colors duration-300 pointer-events-none ${
+                  isFrameValid
+                    ? "border-green-500 bg-green-500/10"
+                    : "border-yellow-500/70 bg-transparent"
+                }`}
+              />
+            </div>
 
             {feedback && (
-              <div className="text-sm text-yellow-600">{feedback}</div>
+              <div
+                className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                  isFrameValid ? "text-green-600 bg-green-50" : "text-yellow-700 bg-yellow-50"
+                }`}
+              >
+                {feedback}
+              </div>
             )}
           </div>
         )}
 
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end mt-2">
           <Button
             variant="secondary"
             onClick={() => {
