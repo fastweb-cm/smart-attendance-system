@@ -78,7 +78,8 @@ async def enroll_face(
             faces = DeepFace.extract_faces(
                 img,
                 detector_backend="opencv",
-                enforce_detection=True
+                enforce_detection=True,
+                anti_spoofing=True
             )  # attempt to detect face from the extracted image
 
             if len(faces) == 0:
@@ -176,7 +177,8 @@ async def verify_face(
         faces = DeepFace.extract_faces(
             img,
             detector_backend="opencv",
-            enforce_detection=True
+            enforce_detection=True,
+            anti_spoofing=True
         )
 
         if len(faces) == 0:
