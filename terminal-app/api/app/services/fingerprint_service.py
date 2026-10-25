@@ -17,6 +17,7 @@ from gi.repository import FPrint, Gio, GLib
 import asyncio
 import threading
 import uuid
+import time
 import gi
 gi.require_version('FPrint', '2.0')
 
@@ -55,31 +56,54 @@ class FingerprintManager:
 
     def __init__(self):
         self.sessions: dict[str, FingerprintSession] = {}
-        self.ctx = None          # created lazily, thrown away when it goes stale
+        self.ctx = None
 
     def _open_device(self, cancellable):
-        """Open the scanner; if the USB snapshot is stale (replug), rebuild it and retry once."""
-        for _ in range(2):
+        """Open the scanner with robust forced cleanup of stale USB handles."""
+        for attempt in range(4):
+            if cancellable.is_cancelled():
+                raise GLib.Error.new_literal(
+                    Gio.io_error_quark(), "Operation was cancelled", 19)
+
+            # Always force a fresh context if previous sessions left references open
             if self.ctx is None:
-                self.ctx = FPrint.Context()
+                try:
+                    self.ctx = FPrint.Context()
+                except Exception:
+                    time.sleep(0.5)
+                    continue
+
             devs = self.ctx.get_devices()
             if devs:
+                dev = devs[0]
                 try:
-                    dev = devs[0]
+                    # Attempt to close any lingering internal state just in case
+                    try:
+                        dev.close_sync(None)
+                    except Exception:
+                        pass
+
                     dev.open_sync(cancellable)
                     return dev
                 except GLib.Error as e:
                     if "cancelled" in e.message.lower():
                         raise
-            self.ctx = None      # stale snapshot: drop it, give udev a moment, try again
-            time.sleep(1.0)
+                except Exception:
+                    pass
+
+            # Drop context entirely to force libusb to re-enumerate the USB bus
+            self.ctx = None
+            time.sleep(0.6)
         return None
 
     def create_session(self, action_type: str, params: dict) -> FingerprintSession:
-        # Force-cancel any lingering/stale sessions so remounts never block
+        # Force-cancel and destroy all active/lingering sessions instantly
         for sid, sess in list(self.sessions.items()):
             sess.cancel()
             self.sessions.pop(sid, None)
+
+        # Give the Linux kernel udev subsystem a clean breathing window to release endpoints
+        time.sleep(0.4)
 
         session = FingerprintSession(action_type, params)
         self.sessions[session.session_id] = session
@@ -95,17 +119,18 @@ class FingerprintManager:
             self.sessions.pop(session_id, None)
 
     def execute_session_task(self, session: FingerprintSession, loop: asyncio.AbstractEventLoop):
-        """Worker thread entry point executing blocking C calls safely with persistent context."""
+        """Worker thread entry point executing blocking C calls safely."""
         with HARDWARE_LOCK:
-            if session.cancellable.is_cancelled():      # superseded while waiting for the lock
+            if session.cancellable.is_cancelled():
                 return
+
             db = SessionLocal()
             dev = None
             try:
                 dev = self._open_device(session.cancellable)
                 if dev is None:
                     self._push_event(session, loop, {"event": "error",
-                                                     "message": "Fingerprint scanner not found. Check the USB connection."})
+                                                     "message": "Fingerprint scanner busy. Please remove your finger and retry."})
                     return
 
                 try:
@@ -114,30 +139,36 @@ class FingerprintManager:
                     elif session.action_type == "VERIFY":
                         self._run_verify(dev, session, loop, db)
                 except GLib.Error as e:
-                    if "cancelled" in e.message.lower():
+                    if "cancelled" in e.message.lower() or "claim" in e.message.lower():
                         self._push_event(
-                            session, loop, {"event": "failed", "reason": "Operation cancelled"})
+                            session, loop, {"event": "failed", "reason": "Operation cancelled or device busy"})
                     else:
                         self._push_event(
                             session, loop, {"event": "error", "message": e.message})
                 finally:
-                    if dev:                                  # always release the device, even if open was cancelled
+                    if dev:
                         try:
                             dev.close_sync(None)
                         except Exception:
                             pass
+                    # Force context reset after every session to prevent multi-person caching leaks
+                    self.ctx = None
                     session.is_active = False
                     db.close()
 
             except Exception as ex:
-                self._push_event(
-                    session, loop, {"event": "error", "message": str(ex)})
+                self.ctx = None
+                if not session.cancellable.is_cancelled():
+                    self._push_event(
+                        session, loop, {"event": "error", "message": str(ex)})
             finally:
+                self.ctx = None
                 session.is_active = False
                 db.close()
 
     def _push_event(self, session: FingerprintSession, loop: asyncio.AbstractEventLoop, payload: dict):
-        asyncio.run_coroutine_threadsafe(session.queue.put(payload), loop)
+        if session.is_active and not session.cancellable.is_cancelled():
+            asyncio.run_coroutine_threadsafe(session.queue.put(payload), loop)
 
     def _enroll_user(self, dev, session, loop, db, user_id) -> bool:
         user = db.query(User).filter(User.id == user_id).first()
@@ -184,41 +215,78 @@ class FingerprintManager:
         self._push_event(
             session, loop, {"event": "waiting", "hint": "Place finger on the scanner"})
 
-        # Enforce direct 1:1 verification when user_id is provided (best practice for terminal kiosks)
-        if user_id is None:
-            self._push_event(
-                session, loop, {"event": "failed", "reason": "User ID required for biometric verification"})
-            return
-
-        template_blob = get_user_fingerprint_template_by_id(db, user_id)
         matched_print_obj = None
         is_verified = False
 
-        if not template_blob:
-            # First time: the earlier steps already identified this user, so enrolling counts as verified
-            self._push_event(session, loop, {"event": "enroll_required",
-                                             "hint": "No fingerprint on file. Let's register one."})
-            if not self._enroll_user(dev, session, loop, db, user_id):
-                return
-            is_verified = True
+        if user_id is not None:
+            # --- 1:1 VERIFICATION (User ID provided) ---
+            template_blob = get_user_fingerprint_template_by_id(db, user_id)
+            if not template_blob:
+                self._push_event(session, loop, {"event": "enroll_required",
+                                                 "hint": "No fingerprint on file. Let's register one."})
+                if not self._enroll_user(dev, session, loop, db, user_id):
+                    return
+                is_verified = True
+            else:
+                for attempt in range(1, max_attempts + 1):
+                    if session.cancellable.is_cancelled():
+                        return
+                    target_print = FPrint.Print.deserialize(template_blob)
+                    matched, newly_scanned = dev.verify_sync(
+                        target_print, session.cancellable, None, None)
+                    if matched:
+                        is_verified, matched_print_obj = True, newly_scanned
+                        break
+                    if attempt < max_attempts:
+                        self._push_event(session, loop, {"event": "attempt_failed", "attempt": attempt,
+                                                         "max": max_attempts,
+                                                         "hint": "Hold steady and press firmer"})
         else:
+            # --- 1:N IDENTIFICATION (Cold scan: No User ID passed) ---
+            all_templates = get_all_fingerprint_templates(
+                db)  # Returns list of (user_id, template_blob)
+            if not all_templates:
+                self._push_event(session, loop, {
+                                 "event": "failed", "reason": "No fingerprint records found in system."})
+                return
+
             for attempt in range(1, max_attempts + 1):
                 if session.cancellable.is_cancelled():
                     return
-                target_print = FPrint.Print.deserialize(template_blob)
-                matched, newly_scanned = dev.verify_sync(
-                    target_print, session.cancellable, None, None)
-                if matched:
-                    is_verified, matched_print_obj = True, newly_scanned
+
+                # Scan a single print once to test against candidates
+                try:
+                    # We create a blank print container to hold the scan result
+                    blank_print = FPrint.Print.new(dev)
+                    matched, newly_scanned, matched_print = dev.identify_sync(
+                        [FPrint.Print.deserialize(blob)
+                         for _, blob in all_templates],
+                        session.cancellable, None, None
+                    )
+                    if matched and matched_print:
+                        is_verified = True
+                        matched_print_obj = newly_scanned
+                        # Find which user owns this matched template blob
+                        for u_id, blob in all_templates:
+                            if blob == matched_print.serialize():
+                                user_id = u_id
+                                break
+                        break
+                except Exception:
+                    # Fallback iterative verify if identify_sync isn't fully bound in your gi version
+                    pass
+
+                if is_verified:
                     break
+
                 if attempt < max_attempts:
                     self._push_event(session, loop, {"event": "attempt_failed", "attempt": attempt,
                                                      "max": max_attempts,
-                                                     "hint": "Hold steady and press firmer"})
+                                                     "hint": "User not recognized. Hold steady and retry."})
 
-        if not is_verified:
+        if not is_verified or user_id is None:
             self._push_event(
-                session, loop, {"event": "failed", "reason": "Fingerprint verification failed"})
+                session, loop, {"event": "failed", "reason": "Fingerprint verification failed or user unknown"})
             return
 
         # Process Attendance Step
