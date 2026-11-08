@@ -5,7 +5,7 @@ import apiClient from "@/lib/axiosClient";
 import { FingerPrintProps } from "@/types";
 
 export default function FingerprintVerify({
-  open, onClose, onResult, onFeedback,
+  open, onClose, onResult, onFeedback, onStageChange, 
   userId, terminal_id, auth_type_id, action,
 }: FingerPrintProps) {
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -15,10 +15,13 @@ export default function FingerprintVerify({
   const onCloseRef = useRef(onClose);
   const onResultRef = useRef(onResult);
   const onFeedbackRef = useRef(onFeedback);
+  const onStageChangeRef = useRef(onStageChange); 
+
   useEffect(() => {
     onCloseRef.current = onClose;
     onResultRef.current = onResult;
     onFeedbackRef.current = onFeedback;
+    onStageChangeRef.current = onStageChange; 
   });
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function FingerprintVerify({
         const startRes = await apiClient.post("verify/fingerprint/session/start", formData);
         const { session_id } = startRes.data;
 
-        if (!isMounted) {   // unmounted while the request was in flight
+        if (!isMounted) {   
           apiClient.post(`verify/fingerprint/session/cancel/${session_id}`).catch(() => {});
           return;
         }
@@ -61,7 +64,11 @@ export default function FingerprintVerify({
         es.addEventListener("enroll_progress", (e) => {
           const d = JSON.parse((e as MessageEvent).data);
           onFeedbackRef.current(`Scan ${d.stage}/${d.total}: ${d.hint}`);
+          if (onStageChangeRef.current) {
+            onStageChangeRef.current(d.stage); 
+          }
         });
+
         es.addEventListener("attempt_failed", (e) => {
           const d = JSON.parse((e as MessageEvent).data);
           onFeedbackRef.current(`Attempt ${d.attempt}/${d.max}: ${d.hint}`);
@@ -82,11 +89,10 @@ export default function FingerprintVerify({
           onResultRef.current("error", d.reason || "Fingerprint verification failed.");
         });
 
-        // "error" is both our server-sent event and the browser's connection error
         es.addEventListener("error", (e) => {
           const raw = (e as MessageEvent).data;
           closeStream();
-          if (raw) {   // sent by the backend
+          if (raw) {   
             onCloseRef.current();
             onResultRef.current("error", JSON.parse(raw).message || "Fingerprint scanner error.");
           }
@@ -108,7 +114,6 @@ export default function FingerprintVerify({
       sessionIdRef.current = null;
       if (sid) apiClient.post(`verify/fingerprint/session/cancel/${sid}`).catch(() => {});
     };
-    // ONLY inputs that should restart a session. Never the callbacks.
   }, [open, userId, terminal_id, auth_type_id, action]);
 
   return null;

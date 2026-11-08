@@ -34,6 +34,7 @@ export interface FingerPrintProps {
     attendance_type?: string | null
   ) => void;
   onFeedback: (msg: string) => void;
+  onStageChange?: (stage: number | null) => void;
   userId: number | null;
   auth_type: string;
   terminal_id: number | null;
