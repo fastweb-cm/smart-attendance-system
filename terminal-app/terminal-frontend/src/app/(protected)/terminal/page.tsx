@@ -76,6 +76,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, SkipForward, Play } from "lucide-react";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { AuthType, User } from "@/types";
+import { speak } from "@/lib/speaker";
 
 export default function TerminalPage() {
   const config = useTerminalConfig();
@@ -106,6 +107,21 @@ export default function TerminalPage() {
   const [started, setStarted] = useState(true);
   const [message, setMessage] = useState("");
   const hasMounted = useHasMounted();
+
+  // Speak final welcome or goodbye once the entire multi-auth flow is complete
+  useEffect(() => {
+    if (!isComplete) return;
+
+    if (identifiedUser) {
+      const greeting = direction === "checkin" ? "Welcome" : "Goodbye";
+      // const timeOfDay = direction === "checkin" ? "day" : "evening";
+      speak(
+        `${greeting}, ${identifiedUser.fName}! You have successfully ${direction}.`
+      );
+    } else {
+      speak("Attendance recorded. Thank you for verifying.");
+    }
+  }, [isComplete, direction, identifiedUser]);
 
   // add an effect to auto-reset after complete verification steps
   // so the terminal goes back to a waiting state
@@ -145,7 +161,7 @@ export default function TerminalPage() {
         <h2 className="text-3xl font-bold text-slate-900">{identifiedUser ? `${direction === "checkin" ? "Welcome" : "Goodbye"}, ${identifiedUser.fName}!` : "Attendance Recorded"}</h2>
         <p className="text-slate-500 mt-2 font-medium text-lg">
             {identifiedUser 
-                ? `You have successfully ${direction}. Have a great ${direction === "checkin" ? "day" : "evening"} ${identifiedUser.fName} ${identifiedUser.lName}!`
+                ? `You have successfully ${direction}.`
                 : "Thank you for verifying!"}
         </p>
         <button 
@@ -161,28 +177,8 @@ export default function TerminalPage() {
       </motion.div>
     );
   }
-  
-
-  // if (!started) {
-  //   return (
-  //     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-  //       <div className="text-center space-y-2">
-  //         <h1 className="text-4xl font-black text-slate-800 tracking-tight uppercase">Ready to Scan</h1>
-  //         <p className="text-slate-500 font-medium">Please tap the button below to begin</p>
-  //       </div>
-  //       <button 
-  //         onClick={() => setStarted(true)}
-  //         className="group relative flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-2xl font-bold transition-all shadow-xl hover:shadow-blue-200"
-  //       >
-  //         <Play className="fill-current w-6 h-6" />
-  //         START ATTENDANCE
-  //       </button>
-  //     </div>
-  //   );
-  // }
 
   if (!started) return null;
-
 
   return (
     <div className="w-2xl mx-auto py-8">
@@ -254,6 +250,7 @@ export default function TerminalPage() {
               onFailure={(msg: string) => {
                 if(msg === "User not found" || msg === "Invalid attendance action") {
                   setMessage("Not allowed.");
+                  speak("Not allowed.");
                   setTimeout(()=>{
                     reset();
                     setStarted(false);
