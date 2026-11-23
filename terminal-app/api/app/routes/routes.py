@@ -79,7 +79,7 @@ async def enroll_face(
                 img,
                 detector_backend="opencv",
                 enforce_detection=True,
-                anti_spoofing=True
+                # anti_spoofing=True install Pytorch (Torch) for CPU/GPU since deepface uses it under the hood for anti_spoofing
             )  # attempt to detect face from the extracted image
 
             if len(faces) == 0:
@@ -178,7 +178,7 @@ async def verify_face(
             img,
             detector_backend="opencv",
             enforce_detection=True,
-            anti_spoofing=True
+            # anti_spoofing=True
         )
 
         if len(faces) == 0:
@@ -187,7 +187,8 @@ async def verify_face(
         face = faces[0]["face"]
         face = cv2.resize(face, (160, 160))
 
-    except Exception:
+    except Exception as e:
+        print(f"DeepFace Error: {str(e)}")
         raise HTTPException(
             status_code=400, detail="Face detection failed. Please ensure you are not sending a blurry or dark image")
 
